@@ -13,8 +13,8 @@
 
 **findmutations.py** is a custom python script which takes alignment files and converts these into read coverage along the genome as well as mutation load estimates at each nucleobase.  This script also generates .pdf reports plotting coverage and mutation load for each sample.
 
-[<img src="reports/bulk_mutation_load.png">]
+<img src="reports/bulk_mutation_load.png">
 
 It also generates plots of mutation load profiles across all eight samples for all 16,569 locations on the genome.
 
-[<img src="reports/01492.png">]
+<img src="reports/01492.png">
