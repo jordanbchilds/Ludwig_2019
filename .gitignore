@@ -9,7 +9,6 @@ pileup/*
 *.fastq
 *.fq
 *.gz
-*.txt
 *.sam
 *.bam
 *.bt2
@@ -142,3 +141,4 @@ dmypy.json
 *.sam
 *.bt2
 *.fna
+seqnames.txt
