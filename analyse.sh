@@ -10,6 +10,8 @@ mkdir pileup;
 mkdir frames;
 mkdir frames_examine;
 mkdir reports;
+mkdir nuc;
+mkdir mito;
 
 # To download the samples, you might be tempted to use fastq-dump from sra-tools.
 # However, this is slow and unable to resume from broken connection.
@@ -32,6 +34,18 @@ rm -rf sra;
 readarray -t rts < $gse\_sra.txt;
 #readarray -t rts < ExamplePath_sra.txt;
 
+# Download reference human genome
+wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
+gunzip GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
+grep '^>' GCA_000001405.28_GRCh38.p13_genomic.fna > seqnames.txt;
+
+# Split into nuclear sequences and mitochondrial sequences
+python3 split_genome.py;
+
+# Build indices for reference sequences
+bowtie2-build mito/mito.fna mito/mito&
+bowtie2-build nuc/nuc.fna nuc/nuc;
+
 for rt in "${rts[@]}"
 do
 
@@ -42,8 +56,10 @@ do
     echo "${rt} already aligned";
  else 
     echo "Aligning ${rt} to mitochondrial genome...";
-    #bowtie2 -p 22 -D20 -R 10 -N 1 -L 20 -i C,1 -x mtDNA/mtDNA -U fastq/${rt}.fastq -S ${rt}_aligned_mito.sam
-    bowtie2 -p 22 --very-sensitive-local -x mtDNA/mtDNA -U fastq/${rt}.fastq -S ${rt}_aligned_mito.sam;
+    #bowtie2 -p 22 -D20 -R 10 -N 1 -L 20 -i C,1 -x mito/mito -U fastq/${rt}.fastq -S ${rt}_aligned_mito.sam
+    #bowtie2 -p 22 --very-sensitive-local -x mito/mito -U fastq/${rt}.fastq -S ${rt}_aligned_mito.sam;
+	bowtie2 -p 22 --very-sensitive-local -x nuc/nuc -U fastq/${rt}.fastq -un fastq/${rt}_unmapped.fastq;
+	bowtie2 -p 22 --very-sensitive-local -x mito/mito -U fastq/${rt}_unmapped.fastq -S ${rt}_aligned_mito.sam;
 
     echo "Generating output files...";
     samtools view -Sb  ${rt}_aligned_mito.sam -u| samtools view -h -f 0 -q 1 - >  ${rt}_unsorted.sam;
