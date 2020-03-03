@@ -40,7 +40,7 @@ gunzip GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
 grep '^>' GCA_000001405.28_GRCh38.p13_genomic.fna > seqnames.txt;
 
 # Split into nuclear sequences and mitochondrial sequences
-python3 split_genome.py;
+python3 split_genome.py GCA_000001405.28_GRCh38.p13_genomic.fna;
 
 # Build indices for reference sequences
 bowtie2-build mito/mito.fna mito/mito&
