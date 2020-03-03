@@ -43,6 +43,7 @@ grep '^>' GCA_000001405.28_GRCh38.p13_genomic.fna > seqnames.txt;
 python3 split_genome.py GCA_000001405.28_GRCh38.p13_genomic.fna;
 
 # Build indices for reference sequences
+# The second line takes many hours to complete...
 bowtie2-build mito/mito.fna mito/mito&
 bowtie2-build nuc/nuc.fna nuc/nuc;
 
