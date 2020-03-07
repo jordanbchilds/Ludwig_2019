@@ -142,3 +142,4 @@ dmypy.json
 *.bt2
 *.fna
 seqnames.txt
+*.ht2
