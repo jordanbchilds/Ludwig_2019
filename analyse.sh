@@ -1,4 +1,15 @@
 # Make sure you have SRA toolkit installed.
+mkdir sra-tools
+cd sra-tools
+
+# Download and extract NCBI SRA-toolkit from GitHub: Ubuntu Lixux 64 bit archetecture version 2.11
+wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.0/sratoolkit.2.11.0-ubuntu64.tar.gz
+tar -xzvf sratoolkit.2.11.0-ubuntu64.tar.gz
+
+# Export to shell PATH variable
+export PATH=$PATH:`pwd`
+cd ..
+
 # Note that version from ubuntu repos is too out of date:
 # https://ncbi.github.io/sra-tools/install_config.html
 
