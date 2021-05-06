@@ -147,3 +147,4 @@ seqnames.txt
 
 # test sra-tools directory
 test/sra-tools/*
+test/sra-tools/*/
