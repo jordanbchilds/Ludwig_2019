@@ -145,6 +145,6 @@ seqnames.txt
 *.ht2
 
 
-# test sra-tools directory
+# test directory
 test/sra-tools/*
-test/sra-tools/*/
+test/slurm-*.out
