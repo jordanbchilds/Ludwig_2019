@@ -1,3 +1,12 @@
+#!/bin/bash
+#
+#SBATCH --workdir=/nobackup/clsclmr
+#SBATCH -p short
+#
+
+module load # put python3 module name
+
+
 # Make sure you have SRA toolkit installed.
 mkdir sra-tools;
 cd sra-tools;
