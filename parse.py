@@ -1,3 +1,6 @@
+
+# get list of SRA sequence names from GSEst of SRA sequence names from GSE
+
 import GEOparse
 import csv
 
@@ -12,6 +15,7 @@ def write_sra(gse_name, meta):
     for m in meta:
       txtfile.write(m["sra"]+"\n")
 
+# use GEOpar.get_GEO to 
 def make_meta(gse_name):
   gse = GEOparse.get_GEO(geo=gse_name)
   gsms = list(gse.gsms.keys())
