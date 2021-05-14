@@ -2,10 +2,10 @@
 #
 #SBATCH --workdir=/nobackup/clsclmr
 #SBATCH -p short
-#
+
 
 module load # put python3 module name
-
+module load SAMtools
 
 # Make sure you have SRA toolkit installed.
 mkdir sra-tools;
@@ -23,7 +23,6 @@ cd ..;
 # https://ncbi.github.io/sra-tools/install_config.html
 
 # Don't forget to add the contents of sra-tools directory to your path
-mkdir sra;
 mkdir fastq;
 mkdir bam;
 mkdir pileup;
@@ -38,18 +37,22 @@ mkdir mito;
 # Better to run sra-tools prefetch first, then fastq-dump on result
 
 # Use custom python script to download metadata
+
 # https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE115218
 # https://doi.org/10.1016/j.cell.2019.01.022
+
 gse='GSE115218';
+# gets list of SRA sequence names from GSE series of "Human lineage tracing enabled by mitochondrial mutations and single cell genomics"
 python3 parse.py $gse;
 
 # Next, update the prefetch download directory as required:
 # However, command below doesn't seem to work...  Watch out, huge SRA files stored at ~/ncbi/public/sra
 # Need to delete once have .fastq files
 #echo '/repository/user/main/public/rt = '"\"$(pwd)/sra\"" > $HOME/ncbi/user-settings.mkfg;
-#prefetch $(<$gse\_sra.txt) 
-#fastq-dump --outdir fastq $(<$gse\_sra.txt)
-#rm -rf sra;
+prefetch $(<$gse\_sra.txt) 
+# fasterq-dump????
+fastq-dump --outdir fastq $(<$gse\_sra.txt)
+rm -rf sra;
 
 readarray -t rts < $gse\_sra.txt;
 #readarray -t rts < ExamplePath_sra.txt;
@@ -97,4 +100,9 @@ do
     #samtools mpileup -a bam/${rt}_header.bam > pileup/${rt}.pileup -f mtDNA.fa
   fi
 
+module purge
+
 done
+
+
+
