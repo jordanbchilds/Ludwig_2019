@@ -1,28 +1,28 @@
 #!/bin/bash
 #
-#SBATCH --workdir=/nobackup/clsclmr
-#SBATCH -p short
+#SBATCH --workdir=/nobackup/proj/clsclmr/Ludwig_2019
+#SBATCH -p defq
+#SBATCH -A clsclmr
+#SBATCH -t 01:00:00
+#
 
 
-module load Python/3.8.6-GCCcore-10.2.0 # put python3 module name
-module load SAMtools
+module load Python/3.8.6-GCCcore-10.2.0;
+module load SAMtools;
 
 # Make sure you have SRA toolkit installed.
-mkdir sra-tools;
-cd sra-tools;
-
+# implement a check for SRA toolkit
 # Download and extract NCBI SRA-toolkit from GitHub: Ubuntu Lixux 64 bit archetecture version 2.11
 wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.0/sratoolkit.2.11.0-ubuntu64.tar.gz;
 tar -xzvf sratoolkit.2.11.0-ubuntu64.tar.gz;
-
+rm sratoolkit.2.11.0-ubuntu64.tar.gz; 
 # Export to shell PATH variable
-export PATH=$PATH:`pwd`;
-cd ..;
+export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
 
 # Note that version from ubuntu repos is too out of date:
 # https://ncbi.github.io/sra-tools/install_config.html
 
-# Don't forget to add the contents of sra-tools directory to your path
+# Make directories
 mkdir fastq;
 mkdir bam;
 mkdir pileup;
@@ -31,6 +31,7 @@ mkdir frames_examine;
 mkdir reports;
 mkdir nuc;
 mkdir mito;
+mkdir sra;
 
 # To download the samples, you might be tempted to use fastq-dump from sra-tools.
 # However, this is slow and unable to resume from broken connection.
@@ -47,20 +48,22 @@ python3 parse.py $gse;
 
 # Next, update the prefetch download directory as required:
 # However, command below doesn't seem to work...  Watch out, huge SRA files stored at ~/ncbi/public/sra
-# Need to delete once have .fastq files
+# Need to delete once have .fastq files.
+mkdir $HOME/.ncbi;  # is $HOME still applicable using sbatch?
+touch $HOME/.ncbi/user-settings.mkfg;
 echo '/repository/user/main/public/rt = '"\"$(pwd)/sra\"" > $HOME/.ncbi/user-settings.mkfg;
-
-prefetch $(<$gse\_sra.txt) 
+prefetch $(<$gse\_sra.txt) ;
 # fasterq-dump????
-fastq-dump --outdir fastq $(<$gse\_sra.txt)
+fastq-dump --outdir fastq $(<$gse\_sra.txt);
 #rm -rf sra;
 
 readarray -t rts < $gse\_sra.txt;
 #readarray -t rts < ExamplePath_sra.txt;
 
 # Download reference human genome
-wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
+wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz ; 
 gunzip GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
+rm GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
 grep '^>' GCA_000001405.28_GRCh38.p13_genomic.fna > seqnames.txt;
 
 # Split into nuclear sequences and mitochondrial sequences
@@ -110,5 +113,5 @@ python3 split_genome.py GCA_000001405.28_GRCh38.p13_genomic.fna;
 
 module purge
 
-
+rm -r $HOME/.ncbi
 
