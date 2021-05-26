@@ -65,4 +65,5 @@ rm GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
 grep '^>' GCA_000001405.28_GRCh38.p13_genomic.fna > seqnames.txt;
 
 
+module purge;
 
