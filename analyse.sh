@@ -36,13 +36,12 @@ readarray -t rts < SRR_Acc_List.txt;
 
 
 
-# Split into nuclear sequences and mitochondrial sequences
-python3 split_genome.py GCA_000001405.28_GRCh38.p13_genomic.fna;
+## Split into nuclear sequences and mitochondrial sequences
+#python3 split_genome.py GCA_000001405.28_GRCh38.p13_genomic.fna;
 
-# Build indices for reference sequences
-# The second line takes many hours to complete...
-bowtie2-build --threads 8 mito/mito.fna mito/mito&
-bowtie2-build --threads 8 nuc/nuc.fna nuc/nuc;
+## Build indices for reference sequences
+#bowtie2-build --threads 8 mito/mito.fna mito/mito&
+#bowtie2-build --threads 8 nuc/nuc.fna nuc/nuc;
 
 
 #hisat2-build -p 8 mito/mito.fna mito/mito;
@@ -64,11 +63,10 @@ do
  if [ -f "bam/${rt}_header.bam" ]; then
     echo "${rt} already aligned";
  else 
+    
     echo "Aligning ${rt} to mitochondrial genome...";
-    #bowtie2 -p 22 -D20 -R 10 -N 1 -L 20 -i C,1 -x mito/mito -U fastq/${rt}.fastq -S ${rt}_aligned_mito.sam
-    #bowtie2 -p 22 --very-sensitive-local -x mito/mito -U fastq/${rt}.fastq -S ${rt}_aligned_mito.sam;
-	bowtie2 -p 8 --very-sensitive -x /nobackup/proj/clsclmr/Ludwig_2019/nuc/nuc -U /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}.fastq --un /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}_unmapped.fastq -S /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}_tmp.sam;
-	bowtie2 -p 8 --very-sensitive -x /nobackup/proj/clsclmr/Ludwig_2019/mito/mito -U /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}_unmapped.fastq -S ${rt}_aligned_mito.sam;
+    hisat2 -p 8 -x /nobackup/proj/clsclmr/Ludwig_2019/nuc/nuc -U /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}.fastq --un /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}_unmapped.fastq -S /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}_tmp.sam;
+    hisat2 -p 8 -x /nobackup/proj/clsclmr/Ludwig_2019/mito/mito -U /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}_unmapped.fastq -S ${rt}_aligned_mito.sam;
 
     echo "Generating output files...";
     samtools view -Sb ${rt}_aligned_mito.sam -u| samtools view -h -f 0 -q 1 - >  ${rt}_unsorted.sam;
@@ -82,4 +80,3 @@ do
 
 done
 module purge;
-
