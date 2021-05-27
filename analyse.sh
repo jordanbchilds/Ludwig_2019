@@ -60,21 +60,24 @@ do
  echo ${rt};
  #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
 
- if [ -f "bam/${rt}_header.bam" ]; then
+ if [ -f "bam/${rt}_sorted_indexed.bam" ]; then
     echo "${rt} already aligned";
  else 
     
+    echo "Aligning ${rt} to nuclear genome...";
+    hisat2 -p 8 -x nuc/nuc -U fastq/${rt}.fastq --un fastq/${rt}_unmapped.fastq -S fastq/${rt}_tmp.sam;
     echo "Aligning ${rt} to mitochondrial genome...";
-    hisat2 -p 8 -x /nobackup/proj/clsclmr/Ludwig_2019/nuc/nuc -U /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}.fastq --un /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}_unmapped.fastq -S /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}_tmp.sam;
-    hisat2 -p 8 -x /nobackup/proj/clsclmr/Ludwig_2019/mito/mito -U /nobackup/proj/clsclmr/Ludwig_2019/fastq/${rt}_unmapped.fastq -S ${rt}_aligned_mito.sam;
+    hisat2 -p 8 -x mito/mito -U fastq/${rt}_unmapped.fastq -S ${rt}_aligned_mito.sam;
 
     echo "Generating output files...";
-    samtools view -Sb ${rt}_aligned_mito.sam -u| samtools view -h -f 0 -q 1 - >  ${rt}_unsorted.sam;
-    samtools view -Sb ${rt}_unsorted.sam -u|samtools sort - bam/${rt}_header;
-    samtools view -h bam/${rt}_header.bam > ${rt}_header.sam
-    samtools index bam/${rt}_header.bam bam/${rt}_header.bam;
+#  first filter: -u outputs uncompressed bam into pipe: -h (header), -f 0 (do not output alignments with 0 bits), -q 1 (skip alignments with MAPQ quality <1)    
+    samtools view -Sb ${rt}_aligned_mito.sam -u| samtools view -h -f 0 -q 1 > ${rt}_unsorted.sam;  
+    samtools view -Sb ${rt}_unsorted.sam -u|samtools sort --threads 8 > bam/${rt}_sorted.bam;  # -u pipes bam of rt_unsorted.sam: sorts by reference index
+    samtools view -h bam/${rt}_sorted.bam > ${rt}_header.sam  # why
+    samtools index --threads 8 bam/${rt}_sorted.bam bam/${rt}_sorted_indexed.bam;  # index sorted bam file
     rm ${rt}_unsorted.sam;
     rm ${rt}_header.sam;
+    rm bam/${rt}_sorted.bam
     rm ${rt}_aligned_mito.sam;
  fi
 
