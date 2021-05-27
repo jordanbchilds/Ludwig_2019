@@ -54,11 +54,15 @@ readarray -t rts < SRR_Acc_List.txt;
 #rm nuc/nuc.fna;
 
 
+
 for rt in "${rts[@]}"
 do
 
  echo ${rt};
  #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
+
+# trim reads for low quality. REMEMBER: change hisat2 input to _trimmed.fastq
+#cutadapt -q 15,10 -o fastq/${rt}_trimmed.fastq fastq/${rt}.fastq
 
  if [ -f "bam/${rt}_sorted_indexed.bam" ]; then
     echo "${rt} already aligned";
@@ -74,7 +78,7 @@ do
     samtools view -Sb ${rt}_aligned_mito.sam -u| samtools view -h -f 0 -q 1 > ${rt}_unsorted.sam;  
     samtools view -Sb ${rt}_unsorted.sam -u|samtools sort --threads 8 > bam/${rt}_sorted.bam;  # -u pipes bam of rt_unsorted.sam: sorts by reference index
     samtools view -h bam/${rt}_sorted.bam > ${rt}_header.sam  # why
-    samtools index --threads 8 bam/${rt}_sorted.bam bam/${rt}_sorted_indexed.bam;  # index sorted bam file
+    samtools index -@ 8 bam/${rt}_sorted.bam bam/${rt}_sorted_indexed.bam;  # index sorted bam file
     rm ${rt}_unsorted.sam;
     rm ${rt}_header.sam;
     rm bam/${rt}_sorted.bam
