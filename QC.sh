@@ -10,7 +10,6 @@
 module load FastQC/0.11.8-Java-1.8.0_144
 module load parallel/20200522-GCCcore-10.2.0
 
-
-find fastq/SRR*.fastq.gz | parallel --job 8 "fastqc --noextract --outdir multiQC {}"
+find fastq/SRR*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir multiQC/ {}"
 
 module purge
