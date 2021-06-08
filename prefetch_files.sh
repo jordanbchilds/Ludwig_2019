@@ -9,7 +9,8 @@
 
     ## load modules
 module load Python/3.8.6-GCCcore-10.2.0;
-module load SAMtools;  # which version
+module load SAMtools/1.12-GCC-10.2.0;
+
 
     ## Make sure you have SRA toolkit installed.
 # if not see configure_sratoolkilt.sh
@@ -18,15 +19,15 @@ module load SAMtools;  # which version
 export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
 
 # make directories
-mkdir fastq;
-mkdir bam;
-mkdir pileup;
-mkdir frames;
-mkdir frames_examine;
-mkdir reports;
-mkdir nuc;
-mkdir mito;
-mkdir sra;
+#mkdir fastq;
+#mkdir bam;
+#mkdir pileup;
+#mkdir frames;
+#mkdir frames_examine;
+#mkdir reports;
+#mkdir nuc;
+#mkdir mito;
+#mkdir sra;
 
 
 # To download the samples, you might be tempted to use fastq-dump from sra-tools.
@@ -39,30 +40,59 @@ mkdir sra;
 # https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE115218
 # https://doi.org/10.1016/j.cell.2019.01.022
 
-gse='GSE115218';
+#gse='GSE115218';
 # parse.py gets list of SRA sequence names from GSE series of "Human lineage tracing enabled by mitochondrial mutations and single cell genomics"
 
 # install GEOparse python3 module. pip3 install _ won't install if module is already installed.
-pip3 install GEOparse;
+#pip3 install GEOparse;
 
 # run parse.py
-python3 parse.py $gse;
+#python3 parse.py $gse;
 
 
     ## Prefetch .sra files ##
 # Need to delete once have .fastq files.
 #vdb-dump --info
 
-prefetch --option-file $gse\_sra.txt;
+#prefetch --option-file ${gse}\_sra.txt;
 # fasterq-dump????
+
+
+    ## Validate	sra files ##
+
+readarray -t rts < SRR_Acc_List.txt;
+
+
+# validate each prefetched file and output any missing or incomplete to 'failed_to_prefetch.txt'
+for i in "${rts[@]}"
+do
+
+echo $i
+vdb-validate sra/sra/${i}.sra &> sra/${i}_validation.txt;
+
+if grep -q 'err' sra/${i}_validation.txt; 
+then
+echo ${i} >> failed_to_prefetch.txt
+prefetch ${i}
+fi
+
+if grep -q "could not be found" sra/${i}_validation.txt;
+then
+echo ${i} >> failed_to_prefetch.txt
+prefetch ${i}
+fi
+
+done
+
+
 
 
     ## Download reference human genome ##
 
-wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz ; 
-gunzip GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
-rm GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
-grep '^>' GCA_000001405.28_GRCh38.p13_genomic.fna > seqnames.txt;
+#wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz ; 
+#gunzip GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
+#rm GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
+#grep '^>' GCA_000001405.28_GRCh38.p13_genomic.fna > seqnames.txt;
 
 
 module purge;
