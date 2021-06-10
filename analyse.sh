@@ -3,7 +3,7 @@
 #SBATCH --workdir=/nobackup/proj/clsclmr/Ludwig_2019
 #SBATCH -p defq
 #SBATCH -A clsclmr
-#SBATCH -t 12:00:00
+#SBATCH -t 24:00:00
 #SBATCH -c 8
 #
 
@@ -44,6 +44,12 @@ sem --wait;
 #rm -rf sra;
 
 
+readarray -t types < categories.txt
+for i in types; do
+# trim reads for low quality. REMEMBER: change hisat2 input to _trimmed.fastq for alignment
+cutadapt -j 0 -q 30 -a TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG -A GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG -o fastq/${i}_2_trimmed.fastq -p fastq/${i}_2_trimmed.fastq fastq/${rt}_1.fastq fastq/${rt}_2.fastq
+# ^ NOT reverse complement of adaptors
+done
 
 ## Split into nuclear sequences and mitochondrial sequences
 #python3 split_genome.py GCA_000001405.28_GRCh38.p13_genomic.fna;
@@ -67,9 +73,6 @@ sem --wait;
 #
 # echo ${rt};
 # #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
-#
-## trim reads for low quality. REMEMBER: change hisat2 input to _trimmed.fastq
-#cutadapt -j 0 -q 15,10 -o fastq/${rt}_trimmed.fastq fastq/${rt}.fastq
 #
 # if [ -f "bam/${rt}_sorted_indexed.bam" ]; then
 #    echo "${rt} already aligned";
