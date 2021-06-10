@@ -3,7 +3,7 @@
 #SBATCH --workdir=/nobackup/proj/clsclmr/Ludwig_2019
 #SBATCH -p defq
 #SBATCH -A clsclmr
-#SBATCH -t 48:00:00
+#SBATCH -t 12:00:00
 #SBATCH -c 8
 #
 
@@ -12,6 +12,9 @@ module load Python/3.8.6-GCCcore-10.2.0;
 module load SAMtools/1.12-GCC-10.2.0; 
 module load HISAT2/2.1.0-foss-2017b;
 module load Bowtie2/2.3.4.2-foss-2018b;
+module load parallel/20200522-GCCcore-10.2.0
+
+echo "modules loaded";
 
 #Export sratools bin to shell PATH variable
 export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
@@ -20,17 +23,23 @@ gse='GSE115218';
 
 #readarray -t rts < ExamplePath_sra.txt;
 readarray -t rts < SRR_Acc_List.txt;
-
+#readarray -t rts < multiQC/paired_fastq_unsplit/group_SRP149536_SRRs.txt
 
     ## Convert prefetched .sra files to fasta format ##
 
-## loop to convert each prefetched .sra file to fasta format
-#for i in "${rts[@]}"
-#do
-##echo "next"
-#echo $i
-#fastq-dump --outdir "fastq" "sra/sra/${i}"
-#done
+# loop to convert each prefetched .sra file to fasta format
+for i in "${rts[@]}";
+do
+
+if test -f "fastq/${i}_1.fastq.gz";
+then
+  echo "${i}_1.fastq.gz file exists";
+else
+  sem --jobs 8 "fastq-dump --split-files --gzip --outdir fastq/ sra/sra/${i}.sra";
+fi
+
+done
+sem --wait;
 
 #rm -rf sra;
 
@@ -49,41 +58,41 @@ readarray -t rts < SRR_Acc_List.txt;
 #hisat2-build -p 8 nuc/nuc.fna nuc/nuc;
 #echo histat2-build mitochondrial indices building stopped
  
-# remove .fna files so bowtie2 recognises indexes properly when aligning
-#rm mito/mito.fna;
-#rm nuc/nuc.fna;
 
 
+  ## Align reads ##
 
-for rt in "${rts[@]}"
-do
+#for rt in "${rts[@]}"
+#do
+#
+# echo ${rt};
+# #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
+#
+## trim reads for low quality. REMEMBER: change hisat2 input to _trimmed.fastq
+#cutadapt -j 0 -q 15,10 -o fastq/${rt}_trimmed.fastq fastq/${rt}.fastq
+#
+# if [ -f "bam/${rt}_sorted_indexed.bam" ]; then
+#    echo "${rt} already aligned";
+# else 
+#    
+#    echo "Aligning ${rt} to nuclear genome...";
+#    hisat2 -p 8 -x nuc/nuc -U fastq/${rt}.fastq --un fastq/${rt}_unmapped.fastq -S fastq/${rt}_tmp.sam;
+#    echo "Aligning ${rt} to mitochondrial genome...";
+#    hisat2 -p 8 -x mito/mito -U fastq/${rt}_unmapped.fastq -S ${rt}_aligned_mito.sam;
+#
+#    echo "Generating output files...";
+##  first filter: -u outputs uncompressed bam into pipe: -h (header), -f 0 (do not output alignments with 0 bits), -q 1 (skip alignments with MAPQ quality <1)    
+#    samtools view -Sb ${rt}_aligned_mito.sam -u| samtools view -h -f 0 -q 1 > ${rt}_unsorted.sam;  
+#    samtools view -Sb ${rt}_unsorted.sam -u|samtools sort --threads 8 > bam/${rt}_sorted.bam;  # -u pipes bam of rt_unsorted.sam: sorts by reference index
+#    samtools view -h bam/${rt}_sorted.bam > ${rt}_header.sam  # why
+#    samtools index -@ 8 bam/${rt}_sorted.bam bam/${rt}_sorted_indexed.bam;  # index sorted bam file
+#    rm ${rt}_unsorted.sam;
+#    rm ${rt}_header.sam;
+#    rm bam/${rt}_sorted.bam
+#    rm ${rt}_aligned_mito.sam;
+# fi
+#
+#done
+#
 
- echo ${rt};
- #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
-
-# trim reads for low quality. REMEMBER: change hisat2 input to _trimmed.fastq
-#cutadapt -q 15,10 -o fastq/${rt}_trimmed.fastq fastq/${rt}.fastq
-
- if [ -f "bam/${rt}_sorted_indexed.bam" ]; then
-    echo "${rt} already aligned";
- else 
-    
-    echo "Aligning ${rt} to nuclear genome...";
-    hisat2 -p 8 -x nuc/nuc -U fastq/${rt}.fastq --un fastq/${rt}_unmapped.fastq -S fastq/${rt}_tmp.sam;
-    echo "Aligning ${rt} to mitochondrial genome...";
-    hisat2 -p 8 -x mito/mito -U fastq/${rt}_unmapped.fastq -S ${rt}_aligned_mito.sam;
-
-    echo "Generating output files...";
-#  first filter: -u outputs uncompressed bam into pipe: -h (header), -f 0 (do not output alignments with 0 bits), -q 1 (skip alignments with MAPQ quality <1)    
-    samtools view -Sb ${rt}_aligned_mito.sam -u| samtools view -h -f 0 -q 1 > ${rt}_unsorted.sam;  
-    samtools view -Sb ${rt}_unsorted.sam -u|samtools sort --threads 8 > bam/${rt}_sorted.bam;  # -u pipes bam of rt_unsorted.sam: sorts by reference index
-    samtools view -h bam/${rt}_sorted.bam > ${rt}_header.sam  # why
-    samtools index -@ 8 bam/${rt}_sorted.bam bam/${rt}_sorted_indexed.bam;  # index sorted bam file
-    rm ${rt}_unsorted.sam;
-    rm ${rt}_header.sam;
-    rm bam/${rt}_sorted.bam
-    rm ${rt}_aligned_mito.sam;
- fi
-
-done
 module purge;
