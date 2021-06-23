@@ -54,19 +54,13 @@ cat dump_list.txt | parallel --jobs 8 "fastq-dump --split-files --gzip --outdir 
 
 #python3 split_genome.py GCA_000001405.28_GRCh38.p13_genomic.fna;
 
-## Build indices for reference sequences
-#bowtie2-build --threads 8 mito/mito.fna mito/mito&
-#bowtie2-build --threads 8 nuc/nuc.fna nuc/nuc;
-
-echo "hisat2-build reference indices";
+#echo "hisat2-build reference indices";
 #hisat2-build -p 8 nuc/GCA_000001405.28_GRCh38.p13_genomic.fna nuc/ref;
 #hisat2-build -p 8 mito/mito.fna mito/mito;
 #echo histat2-build mitochondrial indices building stopped
 #hisat2-build -p 8 nuc/nuc.fna nuc/nuc;
 #echo histat2-build mitochondrial indices building stopped
- 
 
-# TODO read array of just TF1 cell line SRRs into rts #
 
 
   ## Align reads ##
@@ -100,6 +94,24 @@ do
 done
 
 
+
+  ##Get qualimap ##
+wget https://bitbucket.org/kokonech/qualimap/downloads/qualimap_v2.2.1.zip
+unzip qualimap_v2.2.1.zip
+rm qualimap_v2.2.1.zip
+
+module load Java?
+
+  ## Run qualimap ##
+# 'qualimap multiqc' needs a config file made up of two columns: sample_name path_to_bam
+qualimap_v2.2.1/qualimap multi-bamqc -d alignment_QC/qualimap_config.txt -r -outdir alignment_QC/
+
+#  ## Get RNA-SeQC ##
+#wget http://www.broadinstitute.org/cancer/cga/tools/rnaseqc/RNA-SeQC_v1.1.8.jar
+#
+#  ## Get gtf annotation file for Hg19 reference genome ##
+#wget http://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/gencode.v19.annotation.gtf.gz
+
+
+
 module purge;
-
-
