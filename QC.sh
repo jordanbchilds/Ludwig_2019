@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --workdir=/nobackup/proj/clsclmr/Ludwig_2019
+#SBATCH --chdir=/nobackup/proj/clsclmr/Ludwig_2019
 #SBATCH -p defq
 #SBATCH -A clsclmr
-#SBATCH -t 00:03:00
+#SBATCH -t 03:00:00
 #SBATCH -c 8
 #
 
@@ -12,12 +12,19 @@ module load parallel/20200522-GCCcore-10.2.0;
 module load MultiQC/1.7-foss-2018b-Python-3.6.6;
 
 
-# run fastqc on each SRR*.fastq.gz file
-#find fastq/SRR*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}"
+  ## run fastqc on each SRR*.fastq.gz file, forward and reverse read. (Edited to run specific SRR file).
+find fastq/SRR7245916.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+#find fastq/SRR72458*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+#find fastq/SRR724590*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+#find fastq/SRR724591*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+#find fastq/SRR724592*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+#find fastq/SRR724593*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+#find fastq/SRR724594*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+#
 
 
 
- ## Get metadata for all from: https://www.ncbi.nlm.nih.gov/Traces/study/?query_key=1&WebEnv=MCID_60b8a39352def33200839b51&o=acc_s%3Aa
+  ## Get metadata for all from: https://www.ncbi.nlm.nih.gov/Traces/study/?query_key=1&WebEnv=MCID_60b8a39352def33200839b51&o=acc_s%3Aa
 
 # get file sizes for SRR*.fastq.gz files, and change file name to SRR number
 #ls -la fastq/ > fastqgz_list.txt;
@@ -36,12 +43,21 @@ module load MultiQC/1.7-foss-2018b-Python-3.6.6;
 readarray -t types < categories.txt
 
 echo ${types[@]}
+# Change to supported UTF-8 variable
+locale;
+
+export LANG=en_GB.utf8
+export LC_ALL="en_GB.utf8"
+
+locale;
+
+
+  ## run multiqc ##
 
 for j in ${types[@]}
 do
   mkdir tmp_multiqc
-# grep all lines with ATAC-seq as sequencing technology, take SRR number and put into group_RNA_SRRs.txt
-  echo ${j}
+  # extract all lines from metadata_ls.csv containing $j from categories.txt line
   grep ${j} metadata_ls.csv | cut -d ',' -f 2 > multiQC/group_${j}_SRRs.txt; 
     
   # read SRRs of group into array
@@ -62,5 +78,9 @@ multiqc tmp_multiqc/*_fastqc.zip -n group_${j}_multiQC_report -o multiQC/
 rm -r tmp_multiqc/
 done
 
+# Revert to system locale environment variables
+export LANG=C.UTF-8 ;
+export LC_ALL= ;
+locale;
 
 module purge
