@@ -46,14 +46,17 @@ rm dump_list.txt;
 #rm -rf sra;
 
  ## Download reference genome ##
-cd nuc/;
-wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz;
-gunzip human_g1k_v37.fasta.gz;
-cd ..;
+#cd nuc/;
+#wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz;
+#gunzip human_g1k_v37.fasta.gz;
+#cd ..;
 
 #echo "bowtie2-build reference indices";
-bowtie2-build --threads 8 nuc/human_g1k_v37.fasta nuc/btref;
+#bowtie2-build --threads 8 nuc/human_g1k_v37.fasta nuc/btref;
 
+locale;
+export LANG=en_GB.utf8                                                                                                  export LC_ALL="en_GB.utf8" 
+locale;
 
   ## Align reads ##
 
@@ -69,10 +72,11 @@ do
     
     echo "Aligning ${rt} to whole genome...";
     # bowtie2 parameters: -p 8 cores, forward and reverse read, ref, local alignment (soft-clipping allowed), very sensitive (-L 20: 20 bp substrings in multiseed, -i s,1,0.50: shorter intervals between seed substrings, -D 20 -R 3: see manual), -t: time to align in stout,  out? -X 2000???.
-    # samtools view parameters:  first filter: -u outputs uncompressed bam into pipe: - (input from stdin), -h (header), -f 0 (do not output alignments with 0 bits), -q 1 (skip alignments with MAPQ quality <1).
+    # samtools view parameters:  first filter: - (input from stdin), -h (header), -f 0 (do not output alignments with 0 bits), -q 1 (skip alignments with MAPQ quality <10), -u outputs uncompressed bam into pipe.
   
-    bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --very-sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -f 1 -q 10 -u | samtools sort --threads 8 > bam/${rt}_sorted.bam ;  
-    samtools index -@ 8 bam/${rt}_sorted.bam bam/${rt}_sorted.bai;  # index sorted bam file
+    bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --very-sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -f 1 -q 10 -u | samtools sort - --threads 8 -o bam/${rt}_sorted.bam ;  
+echo "bam/${rt}_sorted.bam finished. Indexing.."
+samtools index --threads 8 bam/${rt}_sorted.bam bam/${rt}_sorted.bai;  # index sorted bam file
     
 #    echo "Generating output files...";
 ##  first filter: -u outputs uncompressed bam into pipe: -h (header), -f 0 (do not output alignments with 0 bits), -q 1 (skip alignments with MAPQ quality <1)    
@@ -87,7 +91,9 @@ do
  fi
 done
 
-
+locale;
+export LANG=C.UTF-8 ;                                                                                                   export LC_ALL= ;
+locale;
 
 
 # ATACseqQC bioconductor package?
