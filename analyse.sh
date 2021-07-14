@@ -10,7 +10,7 @@
     ## load modules
 module load Python/3.8.6-GCCcore-10.2.0;
 module load SAMtools/1.12-GCC-10.2.0; 
-module load HISAT2/2.1.0-foss-2017b;
+module load Bowtie2/2.3.4.2-foss-2018b;
 module load parallel/20200522-GCCcore-10.2.0
 
 echo "modules loaded";
@@ -46,61 +46,48 @@ rm dump_list.txt;
 #rm -rf sra;
 
  ## Download reference genome ##
-#wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz ; 
-#gunzip GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
+cd nuc/;
+wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz;
+gunzip human_g1k_v37.fasta.gz;
+cd ..;
 
-
-#python3 split_genome.py GCA_000001405.28_GRCh38.p13_genomic.fna;
-
-#echo "hisat2-build reference indices";
-#hisat2-build -p 8 nuc/GCA_000001405.28_GRCh38.p13_genomic.fna nuc/ref;
-#hisat2-build -p 8 mito/mito.fna mito/mito;
-#echo histat2-build mitochondrial indices building stopped
-#hisat2-build -p 8 nuc/nuc.fna nuc/nuc;
-#echo histat2-build mitochondrial indices building stopped
-
+#echo "bowtie2-build reference indices";
+bowtie2-build --threads 8 nuc/human_g1k_v37.fasta nuc/btref;
 
 
   ## Align reads ##
 
-#for rt in "${rts[@]}"
-#do
-#
-# echo ${rt};
-# #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
-#
-# if [ -f "bam/${rt}_sorted.bai" ]; then
-#    echo "${rt} already aligned";
-# else 
-#    
-#    #echo "Aligning ${rt} to nuclear genome...";
-#    #hisat2 -p 8 -x nuc/ref -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz --un fastq/${rt}_unmapped.fastq -S sam/${rt}_aligned.sam;
-#    #echo "Aligning ${rt} to mitochondrial genome...";
-#    #hisat2 -p 8 -x mito/mito -U fastq/${rt}_unmapped.fastq -S ${rt}_aligned_mito.sam;
-#
+for rt in "${rts[@]}"
+do
+
+ echo ${rt};
+ #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
+
+ if [ -f "bam/${rt}_sorted.bai" ]; then
+    echo "${rt} already aligned";
+ else 
+    
+    echo "Aligning ${rt} to whole genome...";
+    # bowtie2 parameters: -p 8 cores, forward and reverse read, ref, local alignment (soft-clipping allowed), very sensitive (-L 20: 20 bp substrings in multiseed, -i s,1,0.50: shorter intervals between seed substrings, -D 20 -R 3: see manual), -t: time to align in stout,  out? -X 2000???.
+    # samtools view parameters:  first filter: -u outputs uncompressed bam into pipe: - (input from stdin), -h (header), -f 0 (do not output alignments with 0 bits), -q 1 (skip alignments with MAPQ quality <1).
+  
+    bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --very-sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -f 1 -q 10 -u | samtools sort --threads 8 > bam/${rt}_sorted.bam ;  
+    samtools index -@ 8 bam/${rt}_sorted.bam bam/${rt}_sorted.bai;  # index sorted bam file
+    
 #    echo "Generating output files...";
 ##  first filter: -u outputs uncompressed bam into pipe: -h (header), -f 0 (do not output alignments with 0 bits), -q 1 (skip alignments with MAPQ quality <1)    
-#    #samtools view -@ 8 -Sb sam/${rt}_aligned.sam -u| samtools view -@ 8 -h -f 1 -q 10 > sam/${rt}_unsorted.sam; 
-#    #samtools view -@ 8 -Sb sam/${rt}_unsorted.sam -u| samtools sort --threads 8 > bam/${rt}_sorted.bam;  # -u pipes bam of rt_unsorted.sam: sorts by reference index
-#    #samtools view -h bam/${rt}_sorted.bam > ${rt}_header.sam  # why
+#    samtools view -@ 8 -Sb sam/${rt}_aligned.sam -u| samtools view -@ 8 -h -f 1 -q 10 > sam/${rt}_unsorted.sam; 
+#    samtools view -@ 8 -Sb sam/${rt}_unsorted.sam -u| samtools sort --threads 8 > bam/${rt}_sorted.bam;  # -u pipes bam of rt_unsorted.sam: sorts by reference index
+#    samtools view -h bam/${rt}_sorted.bam > ${rt}_header.sam  # why
 #    samtools index -@ 8 bam/${rt}_sorted.bam bam/${rt}_sorted.bai;  # index sorted bam file
 #    rm sam/${rt}_unsorted.sam;
 #    #rm ${rt}_header.sam;
 #    #rm bam/${rt}_sorted.bam
 #    rm sam/${rt}_aligned.sam;
-# fi
-#done
-#
-#
+ fi
+done
 
-#  ##Get qualimap ##
-#if ! [-f "qualimap_v2.2.1/qualimap"]; then
-#  wget https://bitbucket.org/kokonech/qualimap/downloads/qualimap_v2.2.1.zip;
-#  unzip qualimap_v2.2.1.zip;
-#  rm qualimap_v2.2.1.zip;
-#fi
-#
-#module load Java/11.0.2;
+
 
 
 # ATACseqQC bioconductor package?
