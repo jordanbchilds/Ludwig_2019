@@ -47,15 +47,16 @@ rm dump_list.txt;
 
  ## Download reference genome ##
 #cd nuc/;
-#wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz;
-#gunzip human_g1k_v37.fasta.gz;
+#wget http://hgdownload.cse.ucsc.edu/goldenpath/hg38/bigZips/hg38.fa.gz
+#gunzip hg38.fa.gz
 #cd ..;
 
 #echo "bowtie2-build reference indices";
-#bowtie2-build --threads 8 nuc/human_g1k_v37.fasta nuc/btref;
+#bowtie2-build --threads 8 nuc/hg38.fa nuc/btref;
 
 locale;
-export LANG=en_GB.utf8                                                                                                  export LC_ALL="en_GB.utf8" 
+export LANG=en_GB.utf8
+export LC_ALL="en_GB.utf8" 
 locale;
 
   ## Align reads ##
@@ -66,46 +67,34 @@ do
  echo ${rt};
  #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
 
- if [ -f "bam/${rt}_sorted.bai" ]; then
+ if [ -f "bam/${rt}_sorted.bam" ]; then
     echo "${rt} already aligned";
  else 
-    
+   
     echo "Aligning ${rt} to whole genome...";
     # bowtie2 parameters: -p 8 cores, forward and reverse read, ref, local alignment (soft-clipping allowed), very sensitive (-L 20: 20 bp substrings in multiseed, -i s,1,0.50: shorter intervals between seed substrings, -D 20 -R 3: see manual), -t: time to align in stout,  out? -X 2000???.
-    # samtools view parameters:  first filter: - (input from stdin), -h (header), -f 0 (do not output alignments with 0 bits), -q 1 (skip alignments with MAPQ quality <10), -u outputs uncompressed bam into pipe.
-  
-    bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --very-sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -f 1 -q 10 -u | samtools sort - --threads 8 -o bam/${rt}_sorted.bam ;  
-echo "bam/${rt}_sorted.bam finished. Indexing.."
-samtools index --threads 8 bam/${rt}_sorted.bam bam/${rt}_sorted.bai;  # index sorted bam file
+    # samtools view parameters:  first filter: - (input from stdin), -h (header), eg. -F 0 (do not output alignments with FLAG integer), eg. -q 10 (skip alignments with MAPQ quality <10), -u outputs uncompressed bam into pipe.
+    bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -u | samtools sort --threads 8 - > bam/${rt}_sorted.bam ;
+    echo "bam/${rt}_sorted.bam finished. Indexing..";
     
-#    echo "Generating output files...";
-##  first filter: -u outputs uncompressed bam into pipe: -h (header), -f 0 (do not output alignments with 0 bits), -q 1 (skip alignments with MAPQ quality <1)    
-#    samtools view -@ 8 -Sb sam/${rt}_aligned.sam -u| samtools view -@ 8 -h -f 1 -q 10 > sam/${rt}_unsorted.sam; 
-#    samtools view -@ 8 -Sb sam/${rt}_unsorted.sam -u| samtools sort --threads 8 > bam/${rt}_sorted.bam;  # -u pipes bam of rt_unsorted.sam: sorts by reference index
-#    samtools view -h bam/${rt}_sorted.bam > ${rt}_header.sam  # why
-#    samtools index -@ 8 bam/${rt}_sorted.bam bam/${rt}_sorted.bai;  # index sorted bam file
-#    rm sam/${rt}_unsorted.sam;
-#    #rm ${rt}_header.sam;
-#    #rm bam/${rt}_sorted.bam
-#    rm sam/${rt}_aligned.sam;
+    # index sorted bam files
+    samtools index -@ 8 bam/${rt}_sorted.bam ;
+
+    # create bam containing only mitochondrial aligned reads
+#    samtools view --threads 8 -b -h bam/${rt}_sorted.bam MT > bam/${rt}_sorted_chrM.bam;
+
  fi
 done
+
+
+# calculate coverage
+#samtools coverage -b multiQC/group_SRP149534_SRRs.txt -r MT
+
+
 
 locale;
 export LANG=C.UTF-8 ;                                                                                                   export LC_ALL= ;
 locale;
-
-
-# ATACseqQC bioconductor package?
-  ## Run qualimap ##
-# 'qualimap multiqc' needs a config file made up of two columns: sample_name path_to_bam
-#qualimap_v2.2.1/qualimap multi-bamqc -d qualimap_config.txt -r ;
-
-#  ## Get RNA-SeQC ##
-#wget http://www.broadinstitute.org/cancer/cga/tools/rnaseqc/RNA-SeQC_v1.1.8.jar
-#
-#  ## Get gtf annotation file for Hg19 reference genome ##
-#wget http://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/gencode.v19.annotation.gtf.gz
 
 
 
