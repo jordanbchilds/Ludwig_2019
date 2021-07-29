@@ -67,7 +67,7 @@ do
  echo ${rt};
  #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
 
- if [ -f "bam/${rt}_sorted.bam" ]; then
+ if [ -f "bam/${rt}_sorted.bam.bai" ]; then
     echo "${rt} already aligned";
  else 
    

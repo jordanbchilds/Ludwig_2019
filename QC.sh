@@ -13,7 +13,7 @@ module load MultiQC/1.7-foss-2018b-Python-3.6.6;
 
 
   ## run fastqc on each SRR*.fastq.gz file, forward and reverse read. (Edited to run specific SRR file).
-find fastq/SRR7245916.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+#find fastq/SRR7245916.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
 #find fastq/SRR72458*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
 #find fastq/SRR724590*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
 #find fastq/SRR724591*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
@@ -58,7 +58,7 @@ for j in ${types[@]}
 do
   mkdir tmp_multiqc
   # extract all lines from metadata_ls.csv containing $j from categories.txt line
-  grep ${j} metadata_ls.csv | cut -d ',' -f 2 > multiQC/group_${j}_SRRs.txt; 
+  grep ${j} SraRunTable_1.csv | cut -d ',' -f 1 > multiQC/group_${j}_SRRs.txt; 
     
   # read SRRs of group into array
   wc -l multiQC/group_${j}_SRRs.txt
