@@ -39,12 +39,15 @@ do
   else 
     
     # default settings: min heteroplasmy level=0.01, mapping quality=20, base quality=20, alignment quality=30
-#    echo "Calling variants for ${rt}...";
-#    ./mutserve/mutserve call bam/${rt}_sorted.bam --threads 8 --reference mutserve/rCRS.fasta --output vcf/${rt}.vcf ;
+    echo "Calling variants for ${rt}...";
+    ./mutserve/mutserve call bam/${rt}_sorted.bam --threads 8 --reference mutserve/rCRS.fasta --output vcf/${rt}.vcf ;
     
     echo "Annotating mutserve .txt output";
     ./mutserve/mutserve annotate --input vcf/${rt}.txt --annotation mutserve/rCRS_annotation_2020-08-20.txt --output vcf/${rt}_annotated.txt
   fi
 done
+
+
+
 
 module purge;
