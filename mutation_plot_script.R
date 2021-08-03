@@ -1,3 +1,7 @@
+#args <- commandArgs(trailingOnly = T)
+#print(args)
+#setwd(args[1])
+setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
   ## Load packages ##
 # add instructions to install packages if not already done.
 
@@ -5,15 +9,17 @@ library(tidyr)
 library(ggplot2) 
 library(gridExtra)
 library(ggrepel)
+library("cowplot")
+library("egg")
+
 
   ## Read coverage files ##
-depths <- read.table("/home/thomas/Documents/Research_proj/depths.txt", sep = "\t", header = F)
-depths_qfilt <- read.table("/home/thomas/Documents/Research_proj/depths_mapq_20_baseq_20.txt", sep = "\t", header = F)
+depths <- read.table("depths.txt", sep = "\t", header = F)
+depths_qfilt <- read.table("depths_mapq_20_baseq_20.txt", sep = "\t", header = F)
 
 
   ## Read SRR files ##
-#setwd("/home/thomas/Documents/Research_proj/vcf/")
-filenames <- list.files(path = "/home/thomas/Documents/Research_proj/vcf/", pattern="*.csv")
+filenames <- list.files("vcf/", pattern="*.csv")
 # Create list of data frame names without the ".csv" part 
 SRR_names <-substr(filenames,1,10)
 SRR_table_list <- list()
@@ -37,7 +43,7 @@ coverage_plots$SRR7245881
 
 # Load files into list of data.frames
 for(i in SRR_names){
-  filepath <- file.path("/home/thomas/Documents/Research_proj/vcf/",paste(i,"_annotated.csv",sep=""))
+  filepath <- file.path("./vcf/",paste(i,"_annotated.csv",sep=""))
   #assign(i, read.table(filepath, sep = "\t", header = T))
   SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T)
 }
@@ -81,19 +87,18 @@ for (i in SRR_names){
     scale_colour_manual(values = colours) + 
     geom_point(aes(colour = factor(Filter)), size = 0.8) +
     theme_minimal() + 
-    geom_text_repel(aes(label = Pos), size = 2.5, nudge_y = 0.03, label.padding = 0.03, box.padding = 0.03)#, angle = "45") #min.segment.length = 0,
-}
+    ylab(i) +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 5),
+          legend.position = "none",
+          plot.margin = margin(0, 0, 0, 0, "cm")) +
+    geom_text_repel(aes(label = Pos), size = 2.5, nudge_y = 0.03, label.padding = 0.03, box.padding = 0.03)
+  }
 
 
 plots$SRR7245880
-#
-#
-#  # Check levels of nlevels of Filter #
-#lvls <- list()
-#for (i in SRR_names){
-#  lvls <- c(lvls, nlevels(SRR_table_list[[i]]$Filter))
-#}
-#
 
 
 #Lineage B3
@@ -117,23 +122,28 @@ SRRs_in_lineage <- c(
 n_samples <- length(SRRs_in_lineage)
 fig_pos <- list()
 n=0
-for (i in SRRs_in_lineage){
-  ystart <- n*1/n_samples
-  yend <- n*2/n_samples
-  fig_param <- c(0,1,ystart,yend)
-  par(fig=fig_param, new=T)
-  plots[[i]]
-  n <- n+1
-}
+#for (i in SRRs_in_lineage){
+#  ystart <- n*1/n_samples
+#  yend <- n*2/n_samples
+#  fig_param <- c(0,1,ystart,yend)
+#  par(fig=fig_param, new=T)
+#  plots[[i]]
+#  n <- n+1
+#}
   
-par(mfrow = c(1,length(SRRs_in_lineage)))
+plots_in_lineage <- list()
 for (i in SRRs_in_lineage){
-  plots[[i]]
+  plots_in_lineage[[i]] <- plots[[i]]
 }
 
 
+lineage_plot <- ggarrange(plots = plots_in_lineage, nrow = length(plots_in_lineage), align = "hv")
+lineage_plot
+#grid.arrange(grobs = lapply(
+#  plot_names, 
+#))
 
-par(fig=c(0,1,0,1), new=T)
+
 plots$SRR7245880
 
 

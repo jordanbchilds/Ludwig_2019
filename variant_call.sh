@@ -7,9 +7,6 @@
 #
 
     ## load modules
-#module load Python/3.8.6-GCCcore-10.2.0;
-#module load SAMtools/1.12-GCC-10.2.0;
-#module load BCFtools/1.10.2-foss-2019b
 module load Java/11.0.2
 
   ## check if mutserve is installed
@@ -26,8 +23,6 @@ fi
   ## Variant call
 # read bulk ATAC-seq from TF1 cells into array
 readarray -t rts < multiQC/group_SRP149534_SRRs.txt;
-
-
 
 for rt in "${rts[@]}"
 do
@@ -46,8 +41,6 @@ do
     ./mutserve/mutserve annotate --input vcf/${rt}.txt --annotation mutserve/rCRS_annotation_2020-08-20.txt --output vcf/${rt}_annotated.txt
   fi
 done
-
-
 
 
 module purge;
