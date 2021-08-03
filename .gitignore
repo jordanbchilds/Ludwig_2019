@@ -3,6 +3,35 @@ fastq/*
 frames/*
 frames_examine/*
 pileup/*
+vcf/*
+sra/*
+multiQC/*
+multi_bamqc/*
+nuc/*
+fastQC_results/*
+
+# output files
+
+coverage_mapq_20_baseq_20.txt
+coverages.txt
+depths.txt
+depths_mapq_20_baseq_20.txt
+failed_to_prefetch.txt
+fastQC_results/
+fastqgz_list.txt
+requirements.txt
+
+# SLURM stdout files
+slurm-*
+
+# Qualimap
+qualimap_v2.2.1/*
+
+# Mutserve
+mutserve/*
+
+# Sratools
+sratoolkit.2.11.0-ubuntu64/*
 
 *.fna
 *.fasta
@@ -148,3 +177,4 @@ seqnames.txt
 # test directory
 test/sra-tools/*
 test/slurm-*.out
+
