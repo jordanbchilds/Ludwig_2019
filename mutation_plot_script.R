@@ -9,8 +9,8 @@ library(tidyr)
 library(ggplot2) 
 library(gridExtra)
 library(ggrepel)
-library("cowplot")
-library("egg")
+#library(cowplot)
+library(egg)
 library(grid)
 
 
@@ -75,7 +75,96 @@ for (i in SRR_names){
   #print(colnames(SRR_table_list[[i]]))
   print(i)
   SRR_table_list[[i]]  <- merge(SRR_table_list[[i]], barplot_lims, by.x = "Pos", by.y = "Pos", all = T)
-  # number levels for filter
+}
+
+
+#Lineage B3
+#bulk
+#SRR7245888
+#SRR7245905
+
+?#SRRs_in_lineage <- c(
+  #"SRR7245881",
+  #"SRR7245887",
+  #"SRR7245909",
+  #"SRR7245915",
+  #"SRR7245929",
+  #"SRR7245937",
+  #"SRR7245942",
+  #"SRR7245944",
+  #"SRR7245945")
+  
+
+
+  ## Combine figures by lineage ##
+paths <- list()
+paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
+  
+#plots_in_lineage <- list()
+for (p in paths){
+  print(p)
+  print(str(p))
+    if (p[[1]] == "#"){
+    print("skipping comment line...")
+    next
+    }
+  plots_in_lineage <- list()
+  n=0
+  for (i in p){
+    # Skip Lineage path name (1st in character vector of paths[[p]])
+    n=n+1
+    if (n==1){
+      next
+    }
+    # colour according to filter: PASS, STRAND_BIAS, or BLACKLISTED
+    if (nlevels(SRR_table_list[[i]]$Filter)==3){
+      colours <- c("black", "green4", "red")
+    }
+    if (nlevels(SRR_table_list[[i]]$Filter)==2){
+      colours <- c("green4", "red")
+    }
+    plots_in_lineage[[i]] <- ggplot(data = SRR_table_list[[i]], aes(Pos, VariantLevel)) + 
+      geom_col(aes(colour = factor(Filter)), width = 1) + 
+      scale_colour_manual(values = colours) + 
+      geom_point(aes(colour = factor(Filter)), size = 0.8) +
+      theme_minimal() + 
+      ylab(i) +
+      theme(axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_blank(),
+            axis.title.y = element_text(size = 8),
+            legend.position = "none",
+            plot.margin = margin(0.1, 0.1, 0.1, 0.1, "cm")) +
+      geom_text_repel(aes(label = Pos), size = 2.5, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13)
+    }
+  lineage_plot <- ggarrange(plots = plots_in_lineage, nrow = length(plots_in_lineage), align = "hv")
+
+   # Add x and y labels to grid of plots
+  y.grob <- textGrob("Variant Level", 
+                       gp=gpar(col="black", fontsize=12), rot=90)
+  x.grob <- textGrob("Position in mitochondrial genome", 
+                     gp=gpar(col="black", fontsize=12))
+
+  lab_lineage_grob <- arrangeGrob(lineage_plot, left = y.grob, bottom = x.grob)
+  file_string <- paste0(p[[1]],".png")
+  ggsave(file=file_string, lab_lineage_grob)
+}
+
+  
+
+
+
+
+
+
+
+
+
+
+
+for (i in SRR_names){
+  #print(colnames(SRR_table_list[[i]]))
+  print(i)
   if (nlevels(SRR_table_list[[i]]$Filter)==3){
     colours <- c("black", "green4", "red")
   }
@@ -95,70 +184,19 @@ for (i in SRR_names){
           legend.position = "none",
           plot.margin = margin(0.1, 0.1, 0.1, 0.1, "cm")) +
     geom_text_repel(aes(label = Pos), size = 2.5, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13)
-  }
+}
 
 
-plots$SRR7245880
 
 
-#Lineage B3
-#bulk
-#SRR7245888
-#SRR7245905
 
-  ## Combine figures by lineage ##
 
-SRRs_in_lineage <- c(
-"SRR7245881",
-"SRR7245887",
-"SRR7245909",
-"SRR7245915",
-"SRR7245929",
-"SRR7245937",
-"SRR7245942",
-"SRR7245944",
-"SRR7245945")
+
+
+
+
 
   
-plots_in_lineage <- list()
-for (i in SRRs_in_lineage){
-  #print(colnames(SRR_table_list[[i]]))
-  print(i)
-  # number levels for filter
-  if (nlevels(SRR_table_list[[i]]$Filter)==3){
-    colours <- c("black", "green4", "red")
-  }
-  if (nlevels(SRR_table_list[[i]]$Filter)==2){
-    colours <- c("green4", "red")
-  }
-  plots_in_lineage[[i]] <- ggplot(data = SRR_table_list[[i]], aes(Pos, VariantLevel)) + 
-    geom_col(aes(colour = factor(Filter)), width = 1) + 
-    scale_colour_manual(values = colours) + 
-    geom_point(aes(colour = factor(Filter)), size = 0.8) +
-    theme_minimal() + 
-    ylab(i) +
-    theme(axis.text.x = element_blank(),
-          axis.ticks.x = element_blank(),
-          axis.title.x = element_blank(),
-          axis.title.y = element_text(size = 8),
-          legend.position = "none",
-          plot.margin = margin(0.1, 0.1, 0.1, 0.1, "cm")) +
-    geom_text_repel(aes(label = Pos), size = 2.5, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13)
-  
-  }
-
-
-lineage_plot <- ggarrange(plots = plots_in_lineage, nrow = length(plots_in_lineage), align = "hv")
-
- # Add x and y labels to grid of plots
-y.grob <- textGrob("Variant Level", 
-                     gp=gpar(col="black", fontsize=12), rot=90)
-x.grob <- textGrob("Position in mitochondrial genome", 
-                   gp=gpar(col="black", fontsize=12))
-
-lab_lineage_plot <- grid.arrange(arrangeGrob(lineage_plot, left = y.grob, bottom = x.grob))
-
-
   ## position-specific mutation load plots
 mut_load_change <- data.frame(matrix(nrow = length(SRRs_in_lineage), ncol = 3))
 colnames(mut_load_change) <- c("SRR", "Generation", "VariantLevel")
