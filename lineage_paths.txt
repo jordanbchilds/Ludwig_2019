@@ -1,0 +1,6 @@
+#          ### Mutation plots for multiple SRRs ###
+# 
+# FORMAT: One image per line. NO SPACES AT THE END OF THE LINE.
+# Commented lines with a "# " are ignored (the space is important)
+Bulk-to-S0066 SRR7245880 SRR7245887 SRR7245909 SRR7245915 SRR7245929 SRR7245937 SRR7245942 SRR7245944 SRR7245945 VARIANTS_OF_INTEREST 3173 4769
+bulks SRR7245880 SRR7245881 
