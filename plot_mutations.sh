@@ -7,6 +7,7 @@
 #SBATCH -c 8
 #
 
+mkdir plots
 
 loc=$PWD
 echo $loc

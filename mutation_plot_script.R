@@ -1,11 +1,16 @@
-#args <- commandArgs(trailingOnly = T)
-#print(args)
-#setwd(args[1])
-setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
+
+
+  ## NOTE: this script should be called via the bash script "plot_mutations.sh" ##
+
+# set working directory
+args <- commandArgs(trailingOnly = T)
+print(args)
+setwd(args[1])
+#setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
   
 
   ## Load packages ##
-# add instructions to install packages if not already done.
+# TODO check if packages installed, install if not.
 
 library(tidyr)
 library(ggplot2) 
@@ -166,7 +171,7 @@ for (p in paths){
   lab_lineage_grob <- arrangeGrob(lineage_plot, left = y.grob, bottom = x.grob)
   
 # save plot
-  file_string <- paste0(p[[1]],".png")
+  file_string <- paste0("plots/",p[[1]],".png")
   px_height <- 500*length(plots_in_lineage)+370
   ggsave(file=file_string, plot=lab_lineage_grob, width = 3600, height = px_height, units = "px")
 }
@@ -193,13 +198,16 @@ for (p in paths){
     next
   }
   SRRs_in_path <- list()
-  n=0
+  index=0
   at.positions = F
   
   for (string in p){
-    n=n+1
+    print(string)
+    index=index+1
+    print(index)
+    print(at.positions)
 # skip lineage name
-    if (n==1){
+    if (index==1){
       next
     }
 # Add SRR to list, until the positions of variants of interest are listed
@@ -208,28 +216,34 @@ for (p in paths){
 # eg. 
 #    LINEAGE_PATH_NAME SRR1 SRR2 SRR3 VARIANTS_OF_INTEREST 1495 12788
 
-    SRRs_in_path <- c(SRRs_in_path, string)
     if (string == "VARIANTS_OF_INTEREST") {
       print("Reached VARIANTS_OF_INTEREST for this lineage")
       at.positions <- T
-      n=0  # reset n
+      print(paste("n =",n))
+      n=0
       next
     }
+    paste(string, at.positions)
+    if (at.positions == F){
+      SRRs_in_path <- c(SRRs_in_path, string)
+    }
     if (at.positions == T){
-      n<-n+1
-      pos_of_interest <- string
-      print("Plotting position:", pos_of_interest, ", for lineage path:", p[[1]])
+      print(paste("n=",n))
+      pos_of_interest <- as.numeric(string)
+      print(paste0("Plotting position: ", pos_of_interest, ", for lineage path: ", p[[1]]))
 
 # make new data frame for new variant position
-      mut_load_change <- data.frame(matrix(nrow = length(SRRs_in_lineage), ncol = 3))
+      mut_load_change <- data.frame(matrix(nrow = length(SRRs_in_path), ncol = 3))
       colnames(mut_load_change) <- c("SRR", "Generation", "VariantLevel")
-      
+      print(paste("SRRs_in_path: ", SRRs_in_path))
       for (SRR_name in SRRs_in_path){
-        print(SRR_name, SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]) # row 1 = pos 0
-        mut_load_change$SRR[n] <- SRR_name
+        n=n+1
+        print(SRR_name)
+        mut_load_change$SRR[[n]] <- SRR_name
         mut_load_change$Generation[n] <- n-1
         mut_load_change$VariantLevel[n] <- SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]
-        n=n+1
+        
+
       }
 # make new plot for new variant position
       mut_load_change[is.na(mut_load_change)] <- 0
@@ -237,38 +251,13 @@ for (p in paths){
         geom_line() +
         theme_minimal()
 # save plot
-      file_string <- paste0("plot_mutload_",p[[1]], "_",pos_of_interest,".png")
+      file_string <- paste0("plots/",p[[1]],"_pos_",pos_of_interest, ".png")
       ggsave(file=file_string, plot=mut_plot)
-    
+      n=0
+      print("n reset")
       } else {  # for if VARIANTS_OF_INTEREST hasn't been reached.
       next
     }
 
   }
 }
-
-
-
-
-
-
-
-
-
-  n<-n+1
-  print(i)
-  print(SRR_table_list[[i]]$VariantLevel[pos_of_interest+1])
-  mut_load_change$SRR[n] <- i
-  mut_load_change$Generation[n] <- n-1
-  mut_load_change$VariantLevel[n] <- SRR_table_list[[i]]$VariantLevel[pos_of_interest+1]
-
-mut_load_change[is.na(mut_load_change)] <- 0
-plot <- ggplot(data = mut_load_change, aes(x=Generation,y=VariantLevel)) +
-  geom_line() +
-  theme_minimal()
-  
-
-plot
-
-
-

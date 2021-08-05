@@ -9,6 +9,7 @@ multiQC/*
 multi_bamqc/*
 nuc/*
 fastQC_results/*
+plots/
 
 # output files
 
