@@ -33,13 +33,13 @@ lapply(packages, FUN = function(i) {
 
 
   ## Read coverage files ##
-depths <- read.table("depths.txt", sep = "\t", header = F)
-depths_qfilt <- read.table("depths_mapq_20_baseq_20.txt", sep = "\t", header = F)
+depths <- read.table("depths.txt", sep = "\t", header = F, stringsAsFactors = T)
+depths_qfilt <- read.table("depths_mapq_20_baseq_20.txt", sep = "\t", header = F, stringsAsFactors = T)
 
 
   ## Read SRR files ##
 filenames <- list.files("vcf/", pattern="*.txt")
-# Create list of data frame names without the ".csv" part 
+# Create list of data frame names without the ".txt" part 
 SRR_names <-substr(filenames,1,10)
 SRR_table_list <- list()
 
@@ -55,7 +55,7 @@ for (i in SRR_names){
     geom_line()
 }
 
-coverage_plots$SRR7245881
+#coverage_plots$SRR7245881
 
 #mean_coverage_plot<- ggplot(data = depths, aes(Pos, mean(depths)) + 
 #geom_line()
@@ -63,11 +63,13 @@ coverage_plots$SRR7245881
 
 # Load files into list of data.frames
 for(i in SRR_names){
-  filepath <- file.path("./vcf/",paste(i,"_annotated.txt",sep=""))
-  #assign(i, read.table(filepath, sep = "\t", header = T))
-  SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T)
+  filepath <- file.path("vcf",paste(i,"_annotated.txt",sep=""))
+  print("Filepath=")
+  print(filepath)  
+  SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T)
 }
-
+print("Before merging structure of SRR_table_list")
+print(str(SRR_table_list[["SRR7245880"]]))
 
   ## Variant calling stats ##
 variant_stats <- data.frame(matrix(nrow = length(SRR_table_list), ncol = 8))
@@ -77,7 +79,6 @@ variant_stats$SRR <- SRR_names
 #for (i in SRR_names){
 #  variant_stats$No.Variants[[i]] <- nrow(SRR_table_list[[i]])
 #}
-
 
 
   ########################   Mutation Plots   ############################
@@ -94,9 +95,9 @@ for (i in SRR_names){
 print("length of SRR_table_list:")
 print(length(SRR_table_list))
 print("structure of SRR 80 in SRR_table_list[[SRR 80]]")
-print(str(SRR_table_list[[SRR7245880]]))
-print(nrow(SRR_table_list[[SRR7245880]]$Pos))
-
+print(str(SRR_table_list[["SRR7245880"]]))
+print(nrow(SRR_table_list[["SRR7245880"]]$Pos))
+print(levels(SRR_table_list[["SRR7245880"]]$Filter))
   ## Combine figures by lineage ##
 
 #  read path/s of a lineage from lineage_paths.txt
@@ -119,6 +120,8 @@ for (p in paths){
   for (SRR in p){
 # Skip Lineage path name (1st in character vector of paths[[p]] )
     n=n+1
+    print(SRR)
+    print(typeof(SRR))
     if (n==1){
       next
     }
