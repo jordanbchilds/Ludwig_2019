@@ -38,7 +38,7 @@ depths_qfilt <- read.table("depths_mapq_20_baseq_20.txt", sep = "\t", header = F
 
 
   ## Read SRR files ##
-filenames <- list.files("vcf/", pattern="*.csv")
+filenames <- list.files("vcf/", pattern="*.txt")
 # Create list of data frame names without the ".csv" part 
 SRR_names <-substr(filenames,1,10)
 SRR_table_list <- list()
@@ -63,7 +63,7 @@ coverage_plots$SRR7245881
 
 # Load files into list of data.frames
 for(i in SRR_names){
-  filepath <- file.path("./vcf/",paste(i,"_annotated.csv",sep=""))
+  filepath <- file.path("./vcf/",paste(i,"_annotated.txt",sep=""))
   #assign(i, read.table(filepath, sep = "\t", header = T))
   SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T)
 }
@@ -134,9 +134,6 @@ for (p in paths){
     if (nlevels(SRR_table_list[[SRR]]$Filter)==2){
       colours <- c("green4", "red")
     }
-    if (nlevels(SRR_table_list[[SRR]]$Filter)==1){
-    print(SRR, "level of factor filter is 1??")
-      }
 # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 1, aes(colour = factor(Filter))) + 
