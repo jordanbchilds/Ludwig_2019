@@ -50,7 +50,7 @@ colnames(depths) <- c("Chromosome", "Pos", SRR_names)
 #av sd, min max coverage
 coverage_plots <- list()
 for (i in SRR_names){
-  print(mean(depths[[i]]))
+#  print(mean(depths[[i]]))
   coverage_plots[[i]] <- ggplot(data = depths, aes(Pos, depths[[i]])) + 
     geom_line()
 }
@@ -79,6 +79,7 @@ variant_stats$SRR <- SRR_names
 #}
 
 
+
   ########################   Mutation Plots   ############################
 
 barplot_lims <- data.frame(0:16569, rep(1,16570))
@@ -90,6 +91,11 @@ for (i in SRR_names){
   SRR_table_list[[i]]  <- merge(SRR_table_list[[i]], barplot_lims, by.x = "Pos", by.y = "Pos", all = T)
 }
 
+print("length of SRR_table_list:")
+print(length(SRR_table_list))
+print("structure of SRR 80 in SRR_table_list[[SRR 80]]")
+print(str(SRR_table_list[[SRR7245880]]))
+print(nrow(SRR_table_list[[SRR7245880]]$Pos))
 
   ## Combine figures by lineage ##
 
@@ -103,8 +109,6 @@ paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 #   combine plots on top of each other and save to file
 
 for (p in paths){
-  print(p)
-  print(str(p))
     if (p[[1]] == "#"){
     print("skipping comment line...")
     next
