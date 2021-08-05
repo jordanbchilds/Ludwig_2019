@@ -188,8 +188,8 @@ for (p in paths){
   
 # save plot
   file_string <- paste0("plots/",p[[1]],".png")
-  px_height <- 500*length(plots_in_lineage)+370
-  ggsave(file=file_string, plot=lab_lineage_grob, width = 3600, height = px_height, units = "px")
+  px_height <- 1.2*length(plots_in_lineage)+0.8
+  ggsave(file=file_string, plot=lab_lineage_grob, width = 8, height = px_height, units = "in")
 }
 
 
@@ -265,7 +265,9 @@ for (p in paths){
       mut_load_change[is.na(mut_load_change)] <- 0
       mut_plot <- ggplot(data = mut_load_change, aes(x=Generation,y=VariantLevel)) +
         geom_line() +
-        theme_minimal()
+        theme_minimal() +
+        theme(panel.background = element_rect(fill = "white",
+                                colour = "white"))
 # save plot
       file_string <- paste0("plots/",p[[1]],"_pos_",pos_of_interest, ".png")
       ggsave(file=file_string, plot=mut_plot)
