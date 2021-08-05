@@ -1,6 +1,8 @@
 #          ### Mutation plots for multiple SRRs ###
 # 
-# FORMAT: One image per line. NO SPACES AT THE END OF THE LINE.
-# Commented lines with a "# " are ignored (the space is important)
+# FORMAT: one lineage path per line, with sample names separated by a single space " ". The first string on line is an arbitrary name for the path through a lineage. This is also the base name for output image files. Next the SRR names of the samples should be listed in the correct order. To plot a mutation load profile for a specific position across the lineage path, the string "VARIANTS_OF_INTEREST" should be appended and followed by the position of interest.
+# NOTE: There must be NO SPACES AT THE END OF A LINE.
+# Commented lines with a "# " are ignored (a space after the # is necessary)
+# 
 Bulk-to-S0066 SRR7245880 SRR7245887 SRR7245909 SRR7245915 SRR7245929 SRR7245937 SRR7245942 SRR7245944 SRR7245945 VARIANTS_OF_INTEREST 3173 4769
-bulks SRR7245880 SRR7245881 
+Bulks SRR7245880 SRR7245881
