@@ -3,9 +3,10 @@
 #SBATCH --chdir=/nobackup/proj/clsclmr/Ludwig_2019
 #SBATCH -p defq
 #SBATCH -A clsclmr
-#SBATCH -t 48:00:00
+#SBATCH -t 00:30:00
 #SBATCH -c 8
 #
+module load R/3.6.2-fosscuda-2019b
 
 mkdir plots
 
