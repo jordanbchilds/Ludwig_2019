@@ -3,23 +3,31 @@
 #SBATCH --chdir=/nobackup/proj/clsclmr/Ludwig_2019
 #SBATCH -p defq
 #SBATCH -A clsclmr
-#SBATCH -t 02:00:00
+#SBATCH -t 04:00:00
 #SBATCH -c 8
 #
 
 module load SAMtools/1.12-GCC-10.2.0
 
+
+ls -1 bam/ | grep -v "bai" > ls_bam_files.txt
+
+cd bam/;
+
   ## SAMtools ##
-# calculate depth for all positions (-a), comment line of column names (-H), base (-q) and mapping quality (-Q) greater than 20: (based on default settings for mutserve variant caller), region chrM (-r)
-#samtools depth -f ls_bam_files.txt -a -H -q 20 -Q 20 -r chrM -o depths_mapq_20_baseq_20.txt
+# calculate depth for all positions (-a), comment line of column names (-H), base (-q) and mapping quality (-Q) greater than 20: (based on default settings for mutserve variant caller), region chrM (-r), remove depth limit (-d 0) 
+#samtools depth -f ../ls_bam_files.txt -a -H -q 20 -Q 20 -r chrM -d 0 -o ../depths_qfilt.txt
 
 # no specified quality limits: defaults?
-#samtools depth -f ls_bam_files.txt -a -H -r chrM -o depths.txt
+samtools depth -f ../ls_bam_files.txt -a -H -r chrM -d 0 -o depths.txt
 
-samtools coverage -b ls_bam_files.txt -q 20 -Q 20 -r chrM -o coverage_mapq_20_baseq_20.txt
-samtools coverage -b ls_bam_files.txt -r chrM -o coverages.txt
+# calculate mean depth, SD, no reads aligned, mean base quality, mean mapping quality, proportion of bases with depth <1 (why 1??) and output tab separated file. 
+# list of bam files (-b), min base quality (-q), min mapping quality (-Q), mitochondrial chromosome (-r chrM).
+samtools coverage -b ../ls_bam_files.txt -q 20 -Q 20 -r chrM -o ../coverages_qfilt.txt
+samtools coverage -b ../ls_bam_files.txt -r chrM -o ../coverages.txt
 
-
+cd ../
+rm ls_bam_files.txt
 
 #  ##Get qualimap ##
 #if ! [-f "qualimap_v2.2.1/qualimap"]; then
