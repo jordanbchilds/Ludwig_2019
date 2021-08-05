@@ -151,6 +151,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# R stuff
+.Rhistory
+Rplots.pdf
+
 # Spyder project settings
 .spyderproject
 .spyproject
