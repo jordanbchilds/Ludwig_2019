@@ -10,14 +10,22 @@ setwd(args[1])
   
 
   ## Load packages ##
-# TODO check if packages installed, install if not.
-
-library(tidyr)
-library(ggplot2) 
-library(gridExtra)
-library(ggrepel)
-library(egg)
-library(grid)
+# Check if packages are installed, install if not.
+packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid")
+lapply(packages, FUN = function(i) {
+  if (!require(i, character.only = TRUE)) {
+    install.packages(i, dependencies = TRUE)
+    library(i, character.only = TRUE)
+  }
+  }
+)
+get_packages
+#library(tidyr)
+#library(ggplot2) 
+#library(gridExtra)
+#library(ggrepel)
+#library(egg)
+#library(grid)
 
 
   ## Read coverage files ##
