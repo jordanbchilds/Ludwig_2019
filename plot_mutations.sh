@@ -6,9 +6,11 @@
 #SBATCH -t 00:30:00
 #SBATCH -c 8
 #
-module load R/3.6.2-fosscuda-2019b
+module load R/4.0.0-foss-2020a
 
 mkdir plots
+mkdir .R_local_lib/
+ 
 
 loc=$PWD
 echo $loc

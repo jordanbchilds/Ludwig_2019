@@ -11,15 +11,19 @@ setwd(args[1])
 
   ## Load packages ##
 # Check if packages are installed, install if not.
+local_lib_path <- paste0(args[1],"/.R_local_lib/")
+print(local_lib_path)
+.libPaths(c(local_lib_path, .libPaths()))
+
 packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid")
 lapply(packages, FUN = function(i) {
   if (!require(i, character.only = TRUE)) {
-    install.packages(i, dependencies = TRUE)
+    install.packages(i, dependencies = TRUE, lib = local_lib_path, repos="https://www.stats.bris.ac.uk/R/")
     library(i, character.only = TRUE)
   }
   }
 )
-get_packages
+
 #library(tidyr)
 #library(ggplot2) 
 #library(gridExtra)
