@@ -6,13 +6,16 @@
 #SBATCH -t 00:30:00
 #SBATCH -c 8
 #
-module load R/3.6.0-foss-2019a 
 
-mkdir plots
-mkdir .R_local_lib/
+module load R/3.6.0-foss-2019a; 
+
+mkdir plots;
+mkdir .R_local_lib/;
  
 
-loc=$PWD
-echo $loc
-Rscript mutation_plot_script.R $loc
+loc=$PWD;
+echo $loc;
+Rscript mutation_plot_script.R $loc;
+
+module purge;
 
