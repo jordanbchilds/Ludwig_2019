@@ -111,7 +111,7 @@ bulk_variant_pos80 <- data.frame(SRR_table_list_INTERESTING$SRR7245880$Pos)#[SRR
 bulk_variant_pos81 <- data.frame(SRR_table_list_INTERESTING$SRR7245881$Pos)#[SRR_table_list$SRR7245881$Type==2])
 bulk_variant_pos <- merge(bulk_variant_pos80, bulk_variant_pos81, by=1, all=T)
 colnames(bulk_variant_pos) <- "Bulk_Variants"
-write.csv(bulk_variant_pos, file = "bulk_variant_positions.csv", quote = F)
+write.csv(bulk_variant_pos, file = "plots/bulk_variant_positions.csv", quote = F)
 
    ####  all_variants_in_path
 #all_variants_in_path <- list()
@@ -150,7 +150,8 @@ for (p in paths){
     
   }
 file_string <- paste0("plots/",p[[1]],"_bulk_variants.csv")
-write.csv(bulk_variants_in_lineage,file = file_string)
+write.csv(bulk_variants_in_lineage,file = file_string, quote = F)
+print("table of bulk variants in lineage path saved in 'plots/'")
 }
 
   ########################   Mutation Plots   ############################
