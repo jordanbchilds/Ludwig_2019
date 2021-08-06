@@ -14,7 +14,7 @@ setwd(args[1])
 
 
   ## Load packages ##
-# Check if packages are installed, install if needed.
+# Check if packages are installed, install to .R_local_lib in working directory if needed.
 local_lib_path <- paste0(args[1],"/.R_local_lib/")
 print(local_lib_path)
 .libPaths(c(local_lib_path, .libPaths()))
@@ -100,28 +100,36 @@ print(str(SRR_table_list[["SRR7245880"]]))
 variant_stats <- data.frame(matrix(nrow = length(SRR_table_list), ncol = 8))
 colnames(variant_stats) <- c("SRR","No.Variants", "No.Unfiltered_Variants", "No.het", "No.hom","No.transition", "No.transversion", "No.missense")
 variant_stats$SRR <- SRR_names
-variant_stats$
+#variant_stats$
 
 #for (i in SRR_names){
 #  variant_stats$No.Variants[[i]] <- nrow(SRR_table_list[[i]])
 #}
 
+
+bulk_variant_pos80 <- data.frame(SRR_table_list_INTERESTING$SRR7245880$Pos)#[SRR_table_list$SRR7245880$Type==2])
+bulk_variant_pos81 <- data.frame(SRR_table_list_INTERESTING$SRR7245881$Pos)#[SRR_table_list$SRR7245881$Type==2])
+bulk_variant_pos <- merge(bulk_variant_pos80, bulk_variant_pos81, by=1, all=T)
+colnames(bulk_variant_pos) <- "Bulk_Variants"
+write.csv(bulk_variant_pos, file = "bulk_variant_positions.csv", quote = F)
+
    ####  all_variants_in_path
-all_variants_in_path
+#all_variants_in_path <- list()
 for (p in paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
     next
   }
-  plots_in_lineage <- list()
+  bulk_variants_in_lineage <- bulk_variant_pos
   n=0
-  
+
   for (SRR in p){
     # Skip Lineage path name (1st in character vector of paths[[p]] )
     n=n+1
     print(SRR)
     print(typeof(SRR))
     if (n==1){
+      
       next
     }
     # stop where the variants of interest positions are listed on the line (for 
@@ -130,12 +138,20 @@ for (p in paths){
       print("Reached VARIANTS_OF_INTEREST for this lineage")
       break
     }
+    for (i in bulk_variant_pos$Bulk_Variants) {
+      print(i)
+      if (i %in% SRR_table_list_INTERESTING[[SRR]]$Pos) {
+        print("i is in column!")
+        bulk_variants_in_lineage[[SRR]][bulk_variants_in_lineage$Bulk_Variants==i] <- i
+      }else{
+        bulk_variants_in_lineage[[SRR]][bulk_variants_in_lineage$Bulk_Variants==i] <- NA
+      }
+    }
     
-    #merge(SRR_table_list$SRR)
-
+  }
+file_string <- paste0("plots/",p[[1]],"_bulk_variants.csv")
+write.csv(bulk_variants_in_lineage,file = file_string)
 }
-}
-
 
   ########################   Mutation Plots   ############################
 
