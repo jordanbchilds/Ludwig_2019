@@ -75,7 +75,7 @@ do
     # bowtie2 parameters: -p 8 cores, forward and reverse read, ref, local alignment (soft-clipping allowed), very sensitive (-L 20: 20 bp substrings in multiseed, -i s,1,0.50: shorter intervals between seed substrings, -D 20 -R 3: see manual), -t: time to align in stout,  out? -X 2000???.
     # samtools view parameters:  first filter: - (input from stdin), -h (header), eg. -F 0 (do not output alignments with FLAG integer), eg. -q 10 (skip alignments with MAPQ quality <10), -u outputs uncompressed bam into pipe.
     bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -u | samtools sort --threads 8 - > bam/${rt}_sorted.bam ;
-    echo "bam/${rt}_sorted.bam finished. Indexing..";
+    echo "bam/${rt}_sorted.bam aligned. Indexing..";
     
     # index sorted bam files
     samtools index -@ 8 bam/${rt}_sorted.bam ;
@@ -87,13 +87,9 @@ do
 done
 
 
-# calculate coverage
-#samtools coverage -b multiQC/group_SRP149534_SRRs.txt -r MT
-
-
-
 locale;
-export LANG=C.UTF-8 ;                                                                                                   export LC_ALL= ;
+export LANG=C.UTF-8 ; 
+export LC_ALL= ;
 locale;
 
 
