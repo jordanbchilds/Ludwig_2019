@@ -18,8 +18,8 @@ ls -1 -d bam/* | grep -v "bai" > ls_bam_files.txt;
 
   ## SAMtools depth ##
 # Calculate depth for all positions (-a), comment line of column names (-H), base (-q) and mapping quality (-Q) greater than 20: (based on default settings for mutserve variant caller), region chrM (-r), remove depth limit (-d 0) 
-#echo "calculating depths of filtered reads"
-#samtools depth -f ls_bam_files.txt -a -H -q 20 -Q 20 -r chrM -d 0 -o coverages/depths_qfilt.txt
+echo "calculating depths of filtered reads"
+samtools depth -f ls_bam_files.txt -a -H -q 20 -Q 20 -r chrM -d 0 -o coverages/depths_qfilt.txt
 
 # no specified quality limits: defaults?
 echo "calculating depths of all reads"
@@ -37,24 +37,36 @@ echo "calculating mean coverage of all reads";
 samtools coverage -b ls_bam_files.txt -r chrM -o coverages/mean_coverage.txt;
 
 
-## loop for individual bam files
-#
-## read list of bam files into array
-#readarray -t bams < ls_bam_files.txt;
-#
-#for i in "${bams[@]}";
-#do
-## with filters
-#echo "${i}: coverage of filtered reads"
-#samtools coverage $i -q 20 -Q 20 -r chrM -o coverages/coverage_qfilt_${i}.txt;
-## without filters
-#echo "${i}: coverage of all reads"
-#samtools coverage $i -q 20 -Q 20 -r chrM -o coverages/coverage_qfilt_${i}.txt;
+# loop for individual bam files
 
-#samtools coverage $i -r chrM -o coverages/coverage_${i}.txt;
-#done
-#
-#
+# read list of bam files into array
+readarray -t bams < ls_bam_files.txt;
+
+echo "SRRfile	rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq" > coverages/all_coverages.txt;
+echo "SRRfile	#rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq" > coverages/all_coverages_qfilt.txt;
+ 
+
+for i in "${bams[@]}";
+do
+i_nodir=${i//bam\//}
+
+# with filters
+echo "${i_nodir}: coverage of filtered reads"
+samtools coverage $i -q 20 -Q 20 -r chrM -o coverages/coverage_qfilt_${i_nodir}.txt;
+echo "${i_nodir}	`grep chrM coverages/coverage_qfilt_${i_nodir}.txt;`" >> coverages/all_coverages_qfilt.txt
+rm coverages/coverage_qfilt_${i_nodir}.txt; 
+
+# without filters
+echo "${i_nodir}: coverage of all reads"
+samtools coverage $i -r chrM -o coverages/coverage_${i_nodir}.txt;
+echo "${i}	`grep chrM coverages/coverage_${i_nodir}.txt;`" >> coverages/all_coverages.txt
+rm coverages/coverage_${i_nodir}.txt;
+
+done
+
+
+
+
 
 rm ls_bam_files.txt;
 
@@ -89,4 +101,5 @@ rm ls_bam_files.txt;
 #done
 #
 #
+
 module purge;
