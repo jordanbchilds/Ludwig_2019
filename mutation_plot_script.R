@@ -3,10 +3,10 @@
   ## NOTE: this script should be called via the bash script "plot_mutations.sh" ##
 
 # set working directory
-args <- commandArgs(trailingOnly = T)
-print(args)
-setwd(args[1])
-#setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
+#args <- commandArgs(trailingOnly = T)
+#print(args)
+#setwd(args[1])
+setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
   
 
 
@@ -15,9 +15,9 @@ setwd(args[1])
 
   ## Load packages ##
 # Check if packages are installed, install to .R_local_lib in working directory if needed.
-local_lib_path <- paste0(args[1],"/.R_local_lib/")
-print(local_lib_path)
-.libPaths(c(local_lib_path, .libPaths()))
+#local_lib_path <- paste0(args[1],"/.R_local_lib/")
+#print(local_lib_path)
+#.libPaths(c(local_lib_path, .libPaths()))
 
 packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid")
 lapply(packages, FUN = function(i) {
@@ -62,7 +62,9 @@ coverage_plots <- list()
 for (i in SRR_names){
 #  print(mean(depths[[i]]))
   coverage_plots[[i]] <- ggplot(data = depths_qfilt, aes(Pos, depths_qfilt[[i]])) + 
-    geom_line()
+    geom_line() +
+    coord_trans(y="log2") +
+    scale_y_continuous(trans='log2')
 }
 
 #coverage_plots$SRR7245881
@@ -223,9 +225,10 @@ for (p in paths){
             axis.title.x = element_blank(),
             axis.title.y = element_text(size = 8),
             legend.position = "none",
-            plot.margin = margin(t=0.3, r=0.1, b=0.1, l=0.1, "cm")) +
-      geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13)
-
+            plot.margin = margin(t=0.1, r=0.1, b=0.1, l=0.1, "cm")) +
+      geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
+      scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
+      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2))
   }
 
 # combine all the plots in the lineage path: stack on top of each other.
@@ -239,7 +242,7 @@ for (p in paths){
   lab_lineage_grob <- arrangeGrob(lineage_plot, left = y.grob, bottom = x.grob)
   
 # save plot
-  file_string <- paste0("plots/",p[[1]],".png")
+  file_string <- paste0("plots/",p[[1]],"_nofilt.png")
   px_height <- 1.2*length(plots_in_lineage)+0.8
   ggsave(file=file_string, plot=lab_lineage_grob, width = 8, height = px_height, units = "in")
 }
@@ -329,8 +332,9 @@ for (p in paths){
             axis.title.y = element_text(size = 8),
             legend.position = "none",
             plot.margin = margin(t=0.3, r=0.1, b=0.1, l=0.1, "cm")) +
-      geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13)
-
+      geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
+      scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
+      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2))
   }
   
   # combine all the plots in the lineage path: stack on top of each other.
@@ -438,7 +442,9 @@ for (p in paths){
             axis.title.y = element_text(size = 8),
             legend.position = "none",
             plot.margin = margin(t=0.3, r=0.1, b=0.1, l=0.1, "cm")) +
-      geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13)
+      geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
+      scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
+      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2))
   }
   
   # combine all the plots in the lineage path: stack on top of each other.
