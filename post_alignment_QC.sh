@@ -18,9 +18,11 @@ ls -1 -d bam/* | grep -v "bai" > ls_bam_files.txt;
 
   ## SAMtools depth ##
 # Calculate depth for all positions (-a), comment line of column names (-H), base (-q) and mapping quality (-Q) greater than 20: (based on default settings for mutserve variant caller), region chrM (-r), remove depth limit (-d 0) 
+#echo "calculating depths of filtered reads"
 #samtools depth -f ls_bam_files.txt -a -H -q 20 -Q 20 -r chrM -d 0 -o coverages/depths_qfilt.txt
 
 # no specified quality limits: defaults?
+echo "calculating depths of all reads"
 samtools depth -f ls_bam_files.txt -a -H -r chrM -d 0 -o coverages/depths.txt;
 
 
@@ -29,22 +31,26 @@ samtools depth -f ls_bam_files.txt -a -H -r chrM -d 0 -o coverages/depths.txt;
 # calculate mean depth, SD, no reads aligned, mean base quality, mean mapping quality, proportion of bases with depth <1 (why 1??) and output tab separated file. 
 # list of bam files (-b), min base quality (-q), min mapping quality (-Q), mitochondrial chromosome (-r chrM).
 
-#echo "mean_coverage_qfilt";
+echo "calculating mean coverage of filtered reads";
 samtools coverage -b ls_bam_files.txt -q 20 -Q 20 -r chrM -o coverages/mean_coverage_qfilt.txt;
-#echo "mean_coverage";
+echo "calculating mean coverage of all reads";
 samtools coverage -b ls_bam_files.txt -r chrM -o coverages/mean_coverage.txt;
 
 
 ## loop for individual bam files
 #
 ## read list of bam files into array
-#readarray -t bams < ls_bam_files.txt
+#readarray -t bams < ls_bam_files.txt;
 #
 #for i in "${bams[@]}";
 #do
 ## with filters
+#echo "${i}: coverage of filtered reads"
 #samtools coverage $i -q 20 -Q 20 -r chrM -o coverages/coverage_qfilt_${i}.txt;
 ## without filters
+#echo "${i}: coverage of all reads"
+#samtools coverage $i -q 20 -Q 20 -r chrM -o coverages/coverage_qfilt_${i}.txt;
+
 #samtools coverage $i -r chrM -o coverages/coverage_${i}.txt;
 #done
 #
@@ -83,4 +89,4 @@ rm ls_bam_files.txt;
 #done
 #
 #
-#
+module purge;
