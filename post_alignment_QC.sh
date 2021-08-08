@@ -13,17 +13,16 @@ mkdir coverages/;
 
 
 # ls -1 prints each file on a new line
-ls -1 bam/ | grep -v "bai" > ls_bam_files.txt;
+ls -1 -d bam/* | grep -v "bai" > ls_bam_files.txt;
 
-cd bam/;
 
-#  ## SAMtools depth ##
-## Calculate depth for all positions (-a), comment line of column names (-H), base (-q) and mapping quality (-Q) greater than 20: (based on default settings for mutserve variant caller), region chrM (-r), remove depth limit (-d 0) 
-##samtools depth -f ../ls_bam_files.txt -a -H -q 20 -Q 20 -r chrM -d 0 -o ../coverages/depths_qfilt.txt
-#
-## no specified quality limits: defaults?
-##samtools depth -f ../ls_bam_files.txt -a -H -r chrM -d 0 -o ../coverages/depths.txt;
-#
+  ## SAMtools depth ##
+# Calculate depth for all positions (-a), comment line of column names (-H), base (-q) and mapping quality (-Q) greater than 20: (based on default settings for mutserve variant caller), region chrM (-r), remove depth limit (-d 0) 
+#samtools depth -f ls_bam_files.txt -a -H -q 20 -Q 20 -r chrM -d 0 -o coverages/depths_qfilt.txt
+
+# no specified quality limits: defaults?
+samtools depth -f ls_bam_files.txt -a -H -r chrM -d 0 -o coverages/depths.txt;
+
 
 
   ## SAMtools coverage ##
@@ -31,29 +30,27 @@ cd bam/;
 # list of bam files (-b), min base quality (-q), min mapping quality (-Q), mitochondrial chromosome (-r chrM).
 
 #echo "mean_coverage_qfilt";
-#samtools coverage -b ../ls_bam_files.txt -q 20 -Q 20 -r chrM -o ../coverages/mean_coverage.txt;
+samtools coverage -b ls_bam_files.txt -q 20 -Q 20 -r chrM -o coverages/mean_coverage_qfilt.txt;
 #echo "mean_coverage";
-samtools coverage -b ../ls_bam_files.txt -r chrM -o ../mean_coverage_qfilt.txt;
+samtools coverage -b ls_bam_files.txt -r chrM -o coverages/mean_coverage.txt;
 
 
 ## loop for individual bam files
 #
 ## read list of bam files into array
-#readarray -t bams < ../ls_bam_files.txt
+#readarray -t bams < ls_bam_files.txt
 #
 #for i in "${bams[@]}";
 #do
 ## with filters
-#samtools coverage $i -q 20 -Q 20 -r chrM -o ../coverages/coverage_qfilt_${i}.txt;
+#samtools coverage $i -q 20 -Q 20 -r chrM -o coverages/coverage_qfilt_${i}.txt;
 ## without filters
 #samtools coverage $i -r chrM -o coverages/coverage_${i}.txt;
 #done
 #
 #
 
-cd ../;
 rm ls_bam_files.txt;
-
 
 
 
