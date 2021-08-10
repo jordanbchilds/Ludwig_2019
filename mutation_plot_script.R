@@ -63,6 +63,7 @@ depths_qfilt_max <- lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)
 third_y_lim_maxcoverage <- max(as.data.frame(lapply(depths[,3:ncol(depths)], max)))
 third_y_lim_maxcoverage_qfilt <- max(as.data.frame(lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)))
 
+
 coverage_plots <- list()
 for (i in SRR_names){
   depths_qfilt_log2[[i]] <- log2(depths_qfilt[[i]])
@@ -85,6 +86,8 @@ all_coverages_qfilt <- read.csv("coverages/all_coverages_qfilt.txt", header = T,
 all_coverages_qfilt$SRRs <- SRR_names
 all_coverages <- read.csv("coverages/all_coverages.txt", header = T, sep = "\t")
 all_coverages$SRRs <- SRR_names
+
+all_coverages$calculated_mean <- lapply(depths_qfilt[,3:ncol(depths)], mean)
 
 mean_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(meandepth)) +
   geom_histogram()
@@ -115,7 +118,7 @@ sample_baseq_plot_qfilt <-  ggplot(data = all_coverages_qfilt, aes(SRRs, meanbas
 sample_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meanmapq)) +
   geom_col()
 
-sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, meandepth)) +
+sample_coverage_plot <- ggplot(data = depths_qfilt, aes(SRRs, meandepth)) +
   geom_col()
 sample_reads_plot <- ggplot(data = all_coverages, aes(SRRs, numreads)) +
   geom_col()
@@ -123,6 +126,7 @@ sample_baseq_plot <-  ggplot(data = all_coverages, aes(SRRs, meanbaseq)) +
   geom_col()
 sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
   geom_col()
+
 
 
 
