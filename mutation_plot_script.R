@@ -39,8 +39,8 @@ filenames <- list.files("vcf/", pattern="*.txt")
 SRR_names <-substr(filenames,1,10)
 
   ## Read coverage files ##
-depths <- read.table("depths.txt", sep = "\t", header = F, stringsAsFactors = T)
-depths_qfilt <- read.table("depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
+depths <- read.table("coverages/depths.txt", sep = "\t", header = F, stringsAsFactors = T)
+depths_qfilt <- read.table("coverages/depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
 colnames(depths_qfilt) <- c("chr", "Pos", SRR_names)
 colnames(depths) <- c("chr", "Pos", SRR_names)
 
@@ -50,27 +50,79 @@ paths <- list()
 paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 
+  ####################  Pre-alignment plots and tables #########################
 
-
-
+raw_stats <- read.csv("SraRunTable_SRP149534.csv", header = T)
 
 
 
   #####################  Coverage plots and stats  ###################### (TODO)
 ## x axis as sample and as pos.
+depths_max <- lapply(depths[,3:ncol(depths)], max)
+depths_qfilt_max <- lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)
+third_y_lim_maxcoverage <- max(as.data.frame(lapply(depths[,3:ncol(depths)], max)))
+third_y_lim_maxcoverage_qfilt <- max(as.data.frame(lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)))
+
 coverage_plots <- list()
 for (i in SRR_names){
-#  print(mean(depths[[i]]))
-  coverage_plots[[i]] <- ggplot(data = depths_qfilt, aes(Pos, depths_qfilt[[i]])) + 
-    geom_line() +
-    coord_trans(y="log2") +
+  depths_qfilt_log2[[i]] <- log2(depths_qfilt[[i]])
+
+  coverage_plots[[i]] <- ggplot() +
+    geom_line(data = depths_qfilt, aes(Pos, depths_qfilt[[i]])) +
+    #coord_trans(y="log2") +
     scale_y_continuous(trans='log2')
+  
 }
 
 #coverage_plots$SRR7245881
 
-#mean_coverage_plot<- ggplot(data = depths, aes(Pos, mean(depths)) + 
-#geom_line()
+
+
+
+  ## Post alignment reads, coverage, mapq, baseq histograms ##
+
+all_coverages_qfilt <- read.csv("coverages/all_coverages_qfilt.txt", header = T, sep = "\t")
+all_coverages_qfilt$SRRs <- SRR_names
+all_coverages <- read.csv("coverages/all_coverages.txt", header = T, sep = "\t")
+all_coverages$SRRs <- SRR_names
+
+mean_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(meandepth)) +
+  geom_histogram()
+mean_reads_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(numreads)) +
+  geom_histogram()
+mean_baseq_plot_qfilt <-  ggplot(data = all_coverages_qfilt, aes(meanbaseq)) +
+  geom_histogram()
+mean_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(meanmapq)) +
+  geom_histogram()
+
+mean_coverage_plot <- ggplot(data = all_coverages, aes(meandepth)) +
+  geom_histogram()
+mean_reads_plot <- ggplot(data = all_coverages, aes(numreads)) +
+  geom_histogram()
+mean_baseq_plot <-  ggplot(data = all_coverages, aes(meanbaseq)) +
+  geom_histogram()
+mean_mapq_plot <- ggplot(data = all_coverages, aes(meanmapq)) +
+  geom_histogram()
+
+
+
+sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meandepth)) +
+  geom_col()
+sample_reads_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, numreads)) +
+  geom_col()
+sample_baseq_plot_qfilt <-  ggplot(data = all_coverages_qfilt, aes(SRRs, meanbaseq)) +
+  geom_col()
+sample_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meanmapq)) +
+  geom_col()
+
+sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, meandepth)) +
+  geom_col()
+sample_reads_plot <- ggplot(data = all_coverages, aes(SRRs, numreads)) +
+  geom_col()
+sample_baseq_plot <-  ggplot(data = all_coverages, aes(SRRs, meanbaseq)) +
+  geom_col()
+sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
+  geom_col()
 
 
 
@@ -91,6 +143,7 @@ for(i in SRR_names){
   SRR_table_list_PASS[[i]] <- subset(SRR_table_list[[i]], Filter == "PASS")
   # subset for "interesting" variants
   SRR_table_list_INTERESTING[[i]] <- subset(SRR_table_list_PASS[[i]], Type == 2)
+  # no filter to see if variants are filtered differently in different samples
   SRR_table_list_INTERESTING_nofilt[[i]] <- subset(SRR_table_list[[i]], Type ==2)
   }
 print("Before merging structure of SRR_table_list")
@@ -156,6 +209,9 @@ write.csv(bulk_variants_in_lineage,file = file_string, quote = F)
 print("table of bulk variants in lineage path saved in 'plots/'")
 }
 
+
+
+
   ########################   Mutation Plots   ############################
 
 barplot_lims <- data.frame(0:16569, rep(1,16570))
@@ -167,19 +223,22 @@ for (i in SRR_names){
   SRR_table_list[[i]]  <- merge(SRR_table_list[[i]], barplot_lims, by.x = "Pos", by.y = "Position", all = T)
 }
 
-#print("length of SRR_table_list:")
-#print(length(SRR_table_list))
-#print("structure of SRR 80 in SRR_table_list[[SRR 80]]")
-#print(str(SRR_table_list[["SRR7245880"]]))
-#print(nrow(SRR_table_list[["SRR7245880"]]$Pos))
-#print(levels(SRR_table_list[["SRR7245880"]]$Filter))
 
+# function to return monotonic values for second y axis
+f <- function(y){
+  log_max <- log2(third_y_lim_maxcoverage_qfilt)
+  if (y<=(1/third_y_lim_maxcoverage_qfilt)){
+    mono_y <- 2^((y*log_max))
+  } else {
+  mono_y <- 2^(y*log_max)
+  }
+  return(mono_y)
+}
+#f(0.8)
 
 
 
   ## Combine figures by lineage ##
-
-
 
 # For each path specified (per line in lineage_paths.txt): 
 #   for each SRR in lineage path: 
@@ -214,7 +273,7 @@ for (p in paths){
 # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 1, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "green4",
+      scale_color_manual(values = c("PASS" = "light green",
                                     "STRAND_BIAS"="red",
                                     "BLACKLISTED"="black")) +
       geom_point(aes(colour = factor(Filter)), size = 0.8) +
@@ -228,7 +287,12 @@ for (p in paths){
             plot.margin = margin(t=0.1, r=0.1, b=0.1, l=0.1, "cm")) +
       geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
       scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
-      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2))
+      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2), sec.axis = sec_axis(~f(.), name = "log2 coverage", breaks = waiver(), labels = scales::comma)) +
+      
+      # coverage plot overlay
+      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15)
+    
+    
   }
 
 # combine all the plots in the lineage path: stack on top of each other.
@@ -309,18 +373,18 @@ for (p in paths){
     print(SRR)
     print(nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter))
     if (nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter)==3){
-      colours <- c("black", "green4", "red")
+      colours <- c("black", "light green", "red")
     }
     if (nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter)==2){
-      colours <- c("green4", "red")
+      colours <- c("light green", "red")
     }
     if (nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter)==1){
-      colours <- c("green4")
+      colours <- c("light green")
     }
     # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_INTERESTING_nofilt[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 1, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "green4",
+      scale_color_manual(values = c("PASS" = "light green",
                                     "STRAND_BIAS"="red",
                                 "BLACKLISTED"="black")) + 
       geom_point(aes(colour = factor(Filter)), size = 0.8) +
@@ -419,18 +483,18 @@ for (p in paths){
     print(SRR)
     print(nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter))
     if (nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter)==3){
-      colours <- c("black", "green4", "red")
+      colours <- c("black", "light green", "red")
     }
     if (nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter)==2){
-      colours <- c("green4", "red")
+      colours <- c("light green", "red")
     }
     if (nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter)==1){
-      colours <- c("green4")
+      colours <- c("light green")
     }
     # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_INTERESTING[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 1, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "green4",
+      scale_color_manual(values = c("PASS" = "light green",
                                     "STRAND_BIAS"="red",
                                     "BLACKLISTED"="black")) + 
       geom_point(aes(colour = factor(Filter)), size = 0.8) +
