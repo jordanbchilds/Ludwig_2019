@@ -50,8 +50,11 @@ paths <- list()
 paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 
+  ####################  Pre-alignment plots and tables #########################
 
-str(depths)
+raw_stats <- read.csv("SraRunTable_SRP149534.csv", header = T)
+
+
 
   #####################  Coverage plots and stats  ###################### (TODO)
 ## x axis as sample and as pos.
@@ -65,16 +68,61 @@ for (i in SRR_names){
   depths_qfilt_log2[[i]] <- log2(depths_qfilt[[i]])
 
   coverage_plots[[i]] <- ggplot() +
-    geom_line(data = depths_qfilt, aes(Pos, log2(depths_qfilt[[i]]))) #+
-    #coord_trans(y="log2") #+
+    geom_line(data = depths_qfilt, aes(Pos, depths_qfilt[[i]])) +
+    #coord_trans(y="log2") +
     scale_y_continuous(trans='log2')
   
 }
 
-coverage_plots$SRR7245881
+#coverage_plots$SRR7245881
 
-#mean_coverage_plot<- ggplot(data = depths, aes(Pos, mean(depths)) + 
-#geom_line()
+
+
+
+  ## Post alignment reads, coverage, mapq, baseq histograms ##
+
+all_coverages_qfilt <- read.csv("coverages/all_coverages_qfilt.txt", header = T, sep = "\t")
+all_coverages_qfilt$SRRs <- SRR_names
+all_coverages <- read.csv("coverages/all_coverages.txt", header = T, sep = "\t")
+all_coverages$SRRs <- SRR_names
+
+mean_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(meandepth)) +
+  geom_histogram()
+mean_reads_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(numreads)) +
+  geom_histogram()
+mean_baseq_plot_qfilt <-  ggplot(data = all_coverages_qfilt, aes(meanbaseq)) +
+  geom_histogram()
+mean_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(meanmapq)) +
+  geom_histogram()
+
+mean_coverage_plot <- ggplot(data = all_coverages, aes(meandepth)) +
+  geom_histogram()
+mean_reads_plot <- ggplot(data = all_coverages, aes(numreads)) +
+  geom_histogram()
+mean_baseq_plot <-  ggplot(data = all_coverages, aes(meanbaseq)) +
+  geom_histogram()
+mean_mapq_plot <- ggplot(data = all_coverages, aes(meanmapq)) +
+  geom_histogram()
+
+
+
+sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meandepth)) +
+  geom_col()
+sample_reads_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, numreads)) +
+  geom_col()
+sample_baseq_plot_qfilt <-  ggplot(data = all_coverages_qfilt, aes(SRRs, meanbaseq)) +
+  geom_col()
+sample_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meanmapq)) +
+  geom_col()
+
+sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, meandepth)) +
+  geom_col()
+sample_reads_plot <- ggplot(data = all_coverages, aes(SRRs, numreads)) +
+  geom_col()
+sample_baseq_plot <-  ggplot(data = all_coverages, aes(SRRs, meanbaseq)) +
+  geom_col()
+sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
+  geom_col()
 
 
 
