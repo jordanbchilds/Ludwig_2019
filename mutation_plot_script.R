@@ -243,7 +243,7 @@ for (p in paths){
       scale_y_continuous(breaks = seq(0, 1.1, by = 0.2), sec.axis = sec_axis(~(.^2)*third_y_lim_maxcoverage_qfilt, name = "log2 coverage")) +
       
       # coverage plot
-      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/log2(third_y_lim_maxcoverage_qfilt)))
+      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/log2(third_y_lim_maxcoverage_qfilt)), alpha=0.4, size = 1)
     
     
   }
