@@ -50,39 +50,28 @@ paths <- list()
 paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 
-depths_qfilt_log2 <- depths_qfilt
-
-depths_max <- lapply(depths[,3:ncol(depths)], max)
-depths_qfilt_max <- lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)
-third_y_lim_maxcoverage <- max(as.data.frame(lapply(depths[,3:ncol(depths)], max)))
-third_y_lim_maxcoverage_qfilt <- max(as.data.frame(lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)))
 
 str(depths)
 
   #####################  Coverage plots and stats  ###################### (TODO)
 ## x axis as sample and as pos.
+depths_max <- lapply(depths[,3:ncol(depths)], max)
+depths_qfilt_max <- lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)
+third_y_lim_maxcoverage <- max(as.data.frame(lapply(depths[,3:ncol(depths)], max)))
+third_y_lim_maxcoverage_qfilt <- max(as.data.frame(lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)))
+
 coverage_plots <- list()
 for (i in SRR_names){
   depths_qfilt_log2[[i]] <- log2(depths_qfilt[[i]])
 
   coverage_plots[[i]] <- ggplot() +
-    geom_line(data = depths_qfilt, aes(Pos, log2(depths_qfilt[[i]]))) +
-    #coord_trans(y="log2") +
+    geom_line(data = depths_qfilt, aes(Pos, log2(depths_qfilt[[i]]))) #+
+    #coord_trans(y="log2") #+
     scale_y_continuous(trans='log2')
   
 }
 
-
-
-
-v = c(100,10,5,2,1,0.5,0.1,0.05,0.01,0.001,0.0001)
-q=log(v+1)
-
-plot(q)
-plot(v)
-
-
-#coverage_plots$SRR7245881
+coverage_plots$SRR7245881
 
 #mean_coverage_plot<- ggplot(data = depths, aes(Pos, mean(depths)) + 
 #geom_line()
@@ -187,11 +176,21 @@ for (i in SRR_names){
 }
 
 
+# function to return monotonic values for second y axis
+f <- function(y){
+  log_max <- log2(third_y_lim_maxcoverage_qfilt)
+  if (y<=(1/third_y_lim_maxcoverage_qfilt)){
+    mono_y <- 2^((y*log_max))
+  } else {
+  mono_y <- 2^(y*log_max)
+  }
+  return(mono_y)
+}
+#f(0.8)
+
 
 
   ## Combine figures by lineage ##
-
-
 
 # For each path specified (per line in lineage_paths.txt): 
 #   for each SRR in lineage path: 
@@ -226,7 +225,7 @@ for (p in paths){
 # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 1, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "green4",
+      scale_color_manual(values = c("PASS" = "light green",
                                     "STRAND_BIAS"="red",
                                     "BLACKLISTED"="black")) +
       geom_point(aes(colour = factor(Filter)), size = 0.8) +
@@ -240,10 +239,10 @@ for (p in paths){
             plot.margin = margin(t=0.1, r=0.1, b=0.1, l=0.1, "cm")) +
       geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
       scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
-      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2), sec.axis = sec_axis(~(.^2)*third_y_lim_maxcoverage_qfilt, name = "log2 coverage")) +
+      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2), sec.axis = sec_axis(~f(.), name = "log2 coverage", breaks = waiver(), labels = scales::comma)) +
       
-      # coverage plot
-      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/log2(third_y_lim_maxcoverage_qfilt)), alpha=0.4, size = 1)
+      # coverage plot overlay
+      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15)
     
     
   }
@@ -326,18 +325,18 @@ for (p in paths){
     print(SRR)
     print(nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter))
     if (nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter)==3){
-      colours <- c("black", "green4", "red")
+      colours <- c("black", "light green", "red")
     }
     if (nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter)==2){
-      colours <- c("green4", "red")
+      colours <- c("light green", "red")
     }
     if (nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter)==1){
-      colours <- c("green4")
+      colours <- c("light green")
     }
     # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_INTERESTING_nofilt[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 1, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "green4",
+      scale_color_manual(values = c("PASS" = "light green",
                                     "STRAND_BIAS"="red",
                                 "BLACKLISTED"="black")) + 
       geom_point(aes(colour = factor(Filter)), size = 0.8) +
@@ -436,18 +435,18 @@ for (p in paths){
     print(SRR)
     print(nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter))
     if (nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter)==3){
-      colours <- c("black", "green4", "red")
+      colours <- c("black", "light green", "red")
     }
     if (nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter)==2){
-      colours <- c("green4", "red")
+      colours <- c("light green", "red")
     }
     if (nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter)==1){
-      colours <- c("green4")
+      colours <- c("light green")
     }
     # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_INTERESTING[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 1, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "green4",
+      scale_color_manual(values = c("PASS" = "light green",
                                     "STRAND_BIAS"="red",
                                     "BLACKLISTED"="black")) + 
       geom_point(aes(colour = factor(Filter)), size = 0.8) +
