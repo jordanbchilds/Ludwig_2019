@@ -13,10 +13,6 @@ plots/
 
 # output files
 
-coverage_mapq_20_baseq_20.txt
-coverages.txt
-depths.txt
-depths_mapq_20_baseq_20.txt
 failed_to_prefetch.txt
 fastQC_results/
 fastqgz_list.txt
