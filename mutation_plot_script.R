@@ -39,8 +39,8 @@ filenames <- list.files("vcf/", pattern="*.txt")
 SRR_names <-substr(filenames,1,10)
 
   ## Read coverage files ##
-depths <- read.table("depths.txt", sep = "\t", header = F, stringsAsFactors = T)
-depths_qfilt <- read.table("depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
+depths <- read.table("coverages/depths.txt", sep = "\t", header = F, stringsAsFactors = T)
+depths_qfilt <- read.table("coverages/depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
 colnames(depths_qfilt) <- c("chr", "Pos", SRR_names)
 colnames(depths) <- c("chr", "Pos", SRR_names)
 
@@ -50,22 +50,37 @@ paths <- list()
 paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 
+depths_qfilt_log2 <- depths_qfilt
 
+depths_max <- lapply(depths[,3:ncol(depths)], max)
+depths_qfilt_max <- lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)
+third_y_lim_maxcoverage <- max(as.data.frame(lapply(depths[,3:ncol(depths)], max)))
+third_y_lim_maxcoverage_qfilt <- max(as.data.frame(lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)))
 
-
-
-
+str(depths)
 
   #####################  Coverage plots and stats  ###################### (TODO)
 ## x axis as sample and as pos.
 coverage_plots <- list()
 for (i in SRR_names){
-#  print(mean(depths[[i]]))
-  coverage_plots[[i]] <- ggplot(data = depths_qfilt, aes(Pos, depths_qfilt[[i]])) + 
-    geom_line() +
-    coord_trans(y="log2") +
+  depths_qfilt_log2[[i]] <- log2(depths_qfilt[[i]])
+
+  coverage_plots[[i]] <- ggplot() +
+    geom_line(data = depths_qfilt, aes(Pos, log2(depths_qfilt[[i]]))) +
+    #coord_trans(y="log2") +
     scale_y_continuous(trans='log2')
+  
 }
+
+
+
+
+v = c(100,10,5,2,1,0.5,0.1,0.05,0.01,0.001,0.0001)
+q=log(v+1)
+
+plot(q)
+plot(v)
+
 
 #coverage_plots$SRR7245881
 
@@ -91,6 +106,7 @@ for(i in SRR_names){
   SRR_table_list_PASS[[i]] <- subset(SRR_table_list[[i]], Filter == "PASS")
   # subset for "interesting" variants
   SRR_table_list_INTERESTING[[i]] <- subset(SRR_table_list_PASS[[i]], Type == 2)
+  # no filter to see if variants are filtered differently in different samples
   SRR_table_list_INTERESTING_nofilt[[i]] <- subset(SRR_table_list[[i]], Type ==2)
   }
 print("Before merging structure of SRR_table_list")
@@ -156,6 +172,9 @@ write.csv(bulk_variants_in_lineage,file = file_string, quote = F)
 print("table of bulk variants in lineage path saved in 'plots/'")
 }
 
+
+
+
   ########################   Mutation Plots   ############################
 
 barplot_lims <- data.frame(0:16569, rep(1,16570))
@@ -166,13 +185,6 @@ for (i in SRR_names){
   print(i)
   SRR_table_list[[i]]  <- merge(SRR_table_list[[i]], barplot_lims, by.x = "Pos", by.y = "Position", all = T)
 }
-
-#print("length of SRR_table_list:")
-#print(length(SRR_table_list))
-#print("structure of SRR 80 in SRR_table_list[[SRR 80]]")
-#print(str(SRR_table_list[["SRR7245880"]]))
-#print(nrow(SRR_table_list[["SRR7245880"]]$Pos))
-#print(levels(SRR_table_list[["SRR7245880"]]$Filter))
 
 
 
@@ -228,7 +240,12 @@ for (p in paths){
             plot.margin = margin(t=0.1, r=0.1, b=0.1, l=0.1, "cm")) +
       geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
       scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
-      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2))
+      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2), sec.axis = sec_axis(~(.^2)*third_y_lim_maxcoverage_qfilt, name = "log2 coverage")) +
+      
+      # coverage plot
+      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/log2(third_y_lim_maxcoverage_qfilt)))
+    
+    
   }
 
 # combine all the plots in the lineage path: stack on top of each other.
