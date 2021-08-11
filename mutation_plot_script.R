@@ -63,13 +63,14 @@ depths_qfilt_max <- lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)
 third_y_lim_maxcoverage <- max(as.data.frame(lapply(depths[,3:ncol(depths)], max)))
 third_y_lim_maxcoverage_qfilt <- max(as.data.frame(lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)))
 
+
 coverage_plots <- list()
 for (i in SRR_names){
   depths_qfilt_log2[[i]] <- log2(depths_qfilt[[i]])
 
   coverage_plots[[i]] <- ggplot() +
     geom_line(data = depths_qfilt, aes(Pos, depths_qfilt[[i]])) +
-    #coord_trans(y="log2") +
+    coord_trans(y="log2") +
     scale_y_continuous(trans='log2')
   
 }
@@ -86,43 +87,107 @@ all_coverages_qfilt$SRRs <- SRR_names
 all_coverages <- read.csv("coverages/all_coverages.txt", header = T, sep = "\t")
 all_coverages$SRRs <- SRR_names
 
-mean_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(meandepth)) +
-  geom_histogram()
-mean_reads_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(numreads)) +
-  geom_histogram()
-mean_baseq_plot_qfilt <-  ggplot(data = all_coverages_qfilt, aes(meanbaseq)) +
-  geom_histogram()
-mean_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(meanmapq)) +
-  geom_histogram()
-
-mean_coverage_plot <- ggplot(data = all_coverages, aes(meandepth)) +
-  geom_histogram()
-mean_reads_plot <- ggplot(data = all_coverages, aes(numreads)) +
-  geom_histogram()
-mean_baseq_plot <-  ggplot(data = all_coverages, aes(meanbaseq)) +
-  geom_histogram()
-mean_mapq_plot <- ggplot(data = all_coverages, aes(meanmapq)) +
-  geom_histogram()
+all_coverages$calculated_mean <- as.numeric(lapply(depths[,3:ncol(depths)], mean))
+all_coverages$calculated_sd <- as.numeric(lapply(depths[,3:ncol(depths)], sd))
+all_coverages_qfilt$calculated_mean <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], mean))
+all_coverages_qfilt$calculated_sd <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], sd))
 
 
+# filtered read histograms: coverage, no.reads, base quality, mapping quality
+mean_coverage_hist_qfilt <- ggplot(data = all_coverages_qfilt, aes(meandepth)) +
+  geom_histogram(fill = "light blue", colour = "black") +
+  theme_bw()
+mean_reads_hist_qfilt <- ggplot(data = all_coverages_qfilt, aes(numreads)) +
+  geom_histogram(fill = "light blue", colour = "black") +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(labels = scales::comma) +
+  theme_bw()
+mean_baseq_hist_qfilt <-  ggplot(data = all_coverages_qfilt, aes(meanbaseq)) +
+  geom_histogram(fill = "light blue", colour = "black", bins = 7) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(labels = scales::comma, breaks = c(34.7,34.8,34.9,35)) +
+  theme_bw()
+mean_mapq_hist_qfilt <- ggplot(data = all_coverages_qfilt, aes(meanmapq)) +
+  geom_histogram(fill = "light blue", colour = "black") +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(labels = scales::comma, breaks = c(30,31,32,33,34,35,36,37,38,39,40)) +
+  theme_bw()
 
-sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meandepth)) +
-  geom_col()
+# unfiltered read histograms: coverage, no.reads, base quality, mapping quality
+mean_coverage_hist <- ggplot(data = all_coverages, aes(meandepth)) +
+  geom_histogram(fill = "orange", colour = "black") +
+  theme_bw()
+mean_reads_hist <- ggplot(data = all_coverages, aes(numreads)) +
+  geom_histogram(fill = "orange", colour = "black") +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(labels = scales::comma) +
+  theme_bw()
+mean_baseq_hist <-  ggplot(data = all_coverages, aes(meanbaseq)) +
+  geom_histogram(fill = "orange", colour = "black") +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(labels = scales::comma) +
+  theme_bw()
+mean_mapq_hist <- ggplot(data = all_coverages, aes(meanmapq)) +
+  geom_histogram(fill = "orange", colour = "black") +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(labels = scales::comma, breaks = c(16,18,20,22,24,26,28,30,32)) +
+  theme_bw()
+
+
+ # filtered read plots: coverage (x axis: SRR), no.reads, base quality, mapping quality
+sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, calculated_mean, calculated_sd)) +
+  geom_col(colour = "black", fill = "light blue") +
+  geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
+  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white"))
 sample_reads_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, numreads)) +
-  geom_col()
+  geom_col(colour = "black", fill = "light blue") +
+  scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white")) 
 sample_baseq_plot_qfilt <-  ggplot(data = all_coverages_qfilt, aes(SRRs, meanbaseq)) +
-  geom_col()
+  geom_col(colour = "black", fill = "light blue") +
+  scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white")) 
 sample_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meanmapq)) +
-  geom_col()
+  geom_col(colour = "black", fill = "light blue") +
+  scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white")) 
 
-sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, meandepth)) +
-  geom_col()
+# unfiltered read plots: coverage (x axis: SRR, and hist), no.reads, base quality, mapping quality
+sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, calculated_mean, calculated_sd)) +
+  geom_col(colour = "black", fill = "orange") +
+  geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
+  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white"))
 sample_reads_plot <- ggplot(data = all_coverages, aes(SRRs, numreads)) +
-  geom_col()
+  geom_col(colour = "black", fill = "orange") +
+  scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white")) 
 sample_baseq_plot <-  ggplot(data = all_coverages, aes(SRRs, meanbaseq)) +
-  geom_col()
+  geom_col(colour = "black", fill = "orange") +
+  scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white")) 
 sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
-  geom_col()
+  geom_col(colour = "black", fill = "orange") +
+  scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white"))
+
 
 
 
