@@ -6,6 +6,7 @@ pileup/*
 vcf/*
 sra/*
 multiQC/*
+!multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt
 multi_bamqc/*
 nuc/*
 fastQC_results/*
