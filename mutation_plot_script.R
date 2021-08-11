@@ -93,22 +93,23 @@ all_coverages_qfilt$calculated_mean <- as.numeric(lapply(depths_qfilt[,3:ncol(de
 all_coverages_qfilt$calculated_sd <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], sd))
 
 
-mean_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(meandepth)) +
+mean_coverage_hist_qfilt <- ggplot(data = all_coverages_qfilt, aes(meandepth)) +
   geom_histogram()
-mean_reads_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(numreads)) +
+mean_reads_hist_qfilt <- ggplot(data = all_coverages_qfilt, aes(numreads)) +
   geom_histogram()
-mean_baseq_plot_qfilt <-  ggplot(data = all_coverages_qfilt, aes(meanbaseq)) +
+mean_baseq_hist_qfilt <-  ggplot(data = all_coverages_qfilt, aes(meanbaseq)) +
   geom_histogram()
-mean_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(meanmapq)) +
+mean_mapq_hist_qfilt <- ggplot(data = all_coverages_qfilt, aes(meanmapq)) +
   geom_histogram()
 
-mean_coverage_plot <- ggplot(data = all_coverages, aes(meandepth)) +
+mean_coverage_hist <- ggplot(data = all_coverages, aes(meandepth)) +
+  geom_histogram() +
+  theme_bw()
+mean_reads_hist <- ggplot(data = all_coverages, aes(numreads)) +
   geom_histogram()
-mean_reads_plot <- ggplot(data = all_coverages, aes(numreads)) +
+mean_baseq_hist <-  ggplot(data = all_coverages, aes(meanbaseq)) +
   geom_histogram()
-mean_baseq_plot <-  ggplot(data = all_coverages, aes(meanbaseq)) +
-  geom_histogram()
-mean_mapq_plot <- ggplot(data = all_coverages, aes(meanmapq)) +
+mean_mapq_hist <- ggplot(data = all_coverages, aes(meanmapq)) +
   geom_histogram()
 
 
@@ -136,7 +137,12 @@ sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, calculated_mean, 
         panel.background = element_rect(fill = "white"))
 
 sample_reads_plot <- ggplot(data = all_coverages, aes(SRRs, numreads)) +
-  geom_col()
+  geom_col(colour = "black", fill = "light blue") +
+  scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white")) 
+  
 sample_baseq_plot <-  ggplot(data = all_coverages, aes(SRRs, meanbaseq)) +
   geom_col()
 sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
