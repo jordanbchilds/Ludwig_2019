@@ -13,7 +13,7 @@ module load MultiQC/1.7-foss-2018b-Python-3.6.6;
 
 
   ## run fastqc on each SRR*.fastq.gz file, forward and reverse read. (Edited to run specific SRR file).
-#find fastq/SRR7245916.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+#find fastq/SRR7245916*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
 #find fastq/SRR72458*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
 #find fastq/SRR724590*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
 #find fastq/SRR724591*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
@@ -73,7 +73,7 @@ do
     done
 
 # run multiqc
-multiqc tmp_multiqc/*_fastqc.zip -n group_${j}_multiQC_report -o multiQC/
+multiqc tmp_multiqc/*_fastqc.zip -f -n group_${j}_multiQC_report -o multiQC/
 
 rm -r tmp_multiqc/
 done
