@@ -53,6 +53,7 @@ paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
   ####################  Pre-alignment plots and tables #########################
 
 raw_stats <- read.csv("SraRunTable_SRP149534.csv", header = T)
+pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt") 
 
 
 
@@ -80,7 +81,12 @@ for (i in SRR_names){
 
 
 
-  ## Post alignment reads, coverage, mapq, baseq histograms ##
+
+
+
+
+
+    #### Post alignment quality ####
 
 all_coverages_qfilt <- read.csv("coverages/all_coverages_qfilt.txt", header = T, sep = "\t")
 all_coverages_qfilt$SRRs <- SRR_names
