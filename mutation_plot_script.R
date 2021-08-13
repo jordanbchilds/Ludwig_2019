@@ -30,9 +30,6 @@ lapply(packages, FUN = function(i) {
 
 
 
-
-
-
   ## Read SRR files ##
 filenames <- list.files("vcf/", pattern="*.txt")
 # Create list of data frame names without the ".txt" part 
@@ -52,8 +49,27 @@ paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
   ####################  Pre-alignment plots and tables #########################
 
-raw_stats <- read.csv("SraRunTable_SRP149534.csv", header = T)
-pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt") 
+raw_sample_info <- read.csv("SraRunTable_1.csv", header = T)
+pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt", header = T) 
+colnames(pre_multiqc) <- c("SRR_sample", "percent_dup", "percent_gc", "sequence_lengths", "percent_fails", "num_seqs")
+
+pre_dup_hist <- ggplot(data = pre_multiqc, aes(percent_dup)) +
+  geom_histogram(fill = "light blue", colour = "black", binwidth = 2) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  labs(x ="% duplicate reads") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+pre_num_seqs <- ggplot(data = pre_multiqc, aes(num_seqs)) +
+  geom_histogram(fill = "light blue", colour = "black", bins = 30) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(breaks = c(5000000,10000000,15000000,20000000,25000000), labels = scales::comma) +
+  labs(x ="Number of reads") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+file_string <- "plots/pre_alignment_num_seqs.png"
+ggsave(file=file_string, plot=pre_dup_hist)
+
 
 
 
@@ -67,7 +83,7 @@ third_y_lim_maxcoverage_qfilt <- max(as.data.frame(lapply(depths_qfilt[,3:ncol(d
 
 coverage_plots <- list()
 for (i in SRR_names){
-  depths_qfilt_log2[[i]] <- log2(depths_qfilt[[i]])
+  #depths_qfilt_log2[[i]] <- log2(depths_qfilt[[i]])
 
   coverage_plots[[i]] <- ggplot() +
     geom_line(data = depths_qfilt, aes(Pos, depths_qfilt[[i]])) +
@@ -75,15 +91,6 @@ for (i in SRR_names){
     scale_y_continuous(trans='log2')
   
 }
-
-#coverage_plots$SRR7245881
-
-
-
-
-
-
-
 
 
     #### Post alignment quality ####
@@ -240,6 +247,11 @@ colnames(bulk_variant_pos) <- "Bulk_Variants"
 write.csv(bulk_variant_pos, file = "plots/bulk_variant_positions.csv", quote = F)
 
    ####  all_variants_in_path
+# merge to list all variants in lineage path
+# replace postition with variant level.
+# if min variant level is < eg. 0.95 change filter to FIXED_IN_BULK.
+
+
 #all_variants_in_path <- list()
 for (p in paths){
   if (p[[1]] == "#"){
@@ -287,6 +299,26 @@ print("table of bulk variants in lineage path saved in 'plots/'")
 
 barplot_lims <- data.frame(0:16569, rep(1,16570))
 colnames(barplot_lims) <- c("Position", "ylimit")
+
+  # get SRRs for lineage_paths.txt from lineage tree (S1d_lineage_tree.png)
+Snumb_path <- list("bulk", "S0009", "S0026", "S0032", "S0044","S0055")  # add Snumbs here. S MUST BE CAPITALIZED. S000 and S0001 not recognised - use "bulk" instead.
+
+get_SRRs_from_Snumbs <- function(Snumb_path){  # See S1d_lineage_tree.png (labelled with S#### sample names). Get list of SRRs to place in lineage_paths.txt (Don't forget to choose and add a name in front of the path list).
+  Snumbs_all <- c("bulk","bulk","S0003","S0004","S0005","S0006","S0007","S0008","S0009","S0010","S0011","S0012","S0013","S0014","S0015","S0016","S0017","S0018","S0019","S0020","S0021","S0022","S0023","S0024","S0025","S0026","S0027","S0028","S0029","S0030","S0031","S0032","S0033","S0034","S0035","S0036","S0037","S0038","S0039","S0040","S0041","S0042","S0043","S0044","S0045","S0046","S0047","S0048","S0049","S0050","S0051","S0052","S0053","S0054","S0055","S0056","S0057","S0058","S0059","S0060","S0061","S0062","S0063","S0064","S0065","S0066","S0067","S0068","S0069")
+  SRR_path <- list()
+    #print(Snumb)
+    i <- match(Snumb_path, Snumbs_all)
+    print(typeof(i))
+    for (x in i){
+    print(x)
+      SRR_path <- paste(SRR_path, SRR_names[[x]])
+  }
+  
+  return(SRR_path)
+}
+
+SRR_path <- get_SRRs_from_Snumbs(Snumb_path)
+print(SRR_path)
 
 # add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
 for (i in SRR_names){
