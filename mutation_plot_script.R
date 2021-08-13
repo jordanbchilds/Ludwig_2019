@@ -258,7 +258,8 @@ for (p in paths){
     print("skipping comment line...")
     next
   }
-  bulk_variants_in_lineage <- bulk_variant_pos
+  all_variants_in_lineage <- data.frame(matrix(ncol = 1))
+  colnames(all_variants_in_lineage) <- "Pos"
   n=0
 
   for (SRR in p){
@@ -276,19 +277,15 @@ for (p in paths){
       print("Reached VARIANTS_OF_INTEREST for this lineage")
       break
     }
-    for (i in bulk_variant_pos$Bulk_Variants) {
-      print(i)
-      if (i %in% SRR_table_list_INTERESTING[[SRR]]$Pos) {
-        print("i is in column!")
-        bulk_variants_in_lineage[[SRR]][bulk_variants_in_lineage$Bulk_Variants==i] <- i
-      }else{
-        bulk_variants_in_lineage[[SRR]][bulk_variants_in_lineage$Bulk_Variants==i] <- NA
-      }
-    }
+    
+    SRR_pos_level <- data.frame(SRR_table_list[[SRR]]$Pos, SRR_table_list[[SRR]]$VariantLevel)
+    colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+    all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = T)
+    
     
   }
-file_string <- paste0("plots/",p[[1]],"_bulk_variants.csv")
-write.csv(bulk_variants_in_lineage,file = file_string, quote = F)
+file_string <- paste0("plots/",p[[1]],"_all_variants.csv")
+write.csv(all_variants_in_lineage,file = file_string, quote = F)
 print("table of bulk variants in lineage path saved in 'plots/'")
 }
 
