@@ -325,7 +325,7 @@ for (i in SRR_names){
 }
 
 
-# function to return monotonic values for second y axis
+# function to return monotonic values for second y axis transformation (coverage)
 f <- function(y){
   log_max <- log2(third_y_lim_maxcoverage_qfilt)
   if (y<=(1/third_y_lim_maxcoverage_qfilt)){
@@ -373,11 +373,11 @@ for (p in paths){
     print(SRR)
 # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list[[SRR]], aes(Pos, VariantLevel)) + 
-      geom_col(width = 1, aes(colour = factor(Filter))) + 
+      geom_col(width = 0.9, aes(colour = factor(Filter))) + 
       scale_color_manual(values = c("PASS" = "light blue",
                                     "STRAND_BIAS"="red",
                                     "BLACKLISTED"="black")) +
-      geom_point(aes(colour = factor(Filter)), size = 0.8) +
+      #geom_point(aes(colour = factor(Filter)), size = 0.8) +
       theme_minimal() + 
       ylab(SRR) +
       theme(axis.text.x = element_text(),
@@ -476,11 +476,11 @@ for (p in paths){
     print(SRR)
     # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_INTERESTING_nofilt[[SRR]], aes(Pos, VariantLevel)) + 
-      geom_col(width = 1, aes(colour = factor(Filter))) + 
+      geom_col(width = 0.9, aes(colour = factor(Filter))) + 
       scale_color_manual(values = c("PASS" = "light blue",
                                     "STRAND_BIAS"="red",
                                 "BLACKLISTED"="black")) + 
-      geom_point(aes(colour = factor(Filter)), size = 0.8) +
+      #geom_point(aes(colour = factor(Filter)), size = 0.8) +
       theme_minimal() + 
       ylab(SRR) +
       theme(axis.text.x = element_text(),
@@ -579,11 +579,11 @@ for (p in paths){
     print(SRR)
     # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_INTERESTING[[SRR]], aes(Pos, VariantLevel)) + 
-      geom_col(width = 1, aes(colour = factor(Filter))) + 
+      geom_col(width = 0.9, aes(colour = factor(Filter))) + 
       scale_color_manual(values = c("PASS" = "light blue",
                                     "STRAND_BIAS"="red",
                                     "BLACKLISTED"="black")) + 
-      geom_point(aes(colour = factor(Filter)), size = 0.8) +
+      #geom_point(aes(colour = factor(Filter)), size = 0.8) +
       theme_minimal() + 
       ylab(SRR) +
       theme(axis.text.x = element_text(),
