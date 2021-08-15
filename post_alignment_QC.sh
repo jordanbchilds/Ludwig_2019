@@ -19,12 +19,13 @@ ls -1 -d bam/* | grep -v "bai" > ls_bam_files.txt;
   ## SAMtools depth ##
 # Calculate depth for all positions (-a), comment line of column names (-H), base (-q) and mapping quality (-Q) greater than 20: (based on default settings for mutserve variant caller), region chrM (-r), remove depth limit (-d 0) 
 echo "calculating depths of filtered reads"
-samtools depth -f ls_bam_files.txt -a -H -q 20 -Q 20 -r chrM -d 0 -o coverages/depths_qfilt.txt
+samtools depth -f ls_bam_files.txt -a -H -q 20 -Q 18 -r chrM -d 0 -o coverages/depths_qfilt.txt
 
-# no specified quality limits: defaults?
-echo "calculating depths of all reads"
-samtools depth -f ls_bam_files.txt -a -H -r chrM -d 0 -o coverages/depths.txt;
-
+#
+## no specified quality limits: defaults?
+#echo "calculating depths of all reads"
+#samtools depth -f ls_bam_files.txt -a -H -r chrM -d 0 -o coverages/depths.txt;
+#
 
 
   ## SAMtools coverage ##
@@ -32,17 +33,17 @@ samtools depth -f ls_bam_files.txt -a -H -r chrM -d 0 -o coverages/depths.txt;
 # list of bam files (-b), min base quality (-q), min mapping quality (-Q), mitochondrial chromosome (-r chrM).
 
 echo "calculating mean coverage of filtered reads";
-samtools coverage -b ls_bam_files.txt -q 20 -Q 20 -r chrM -o coverages/mean_coverage_qfilt.txt;
-echo "calculating mean coverage of all reads";
-samtools coverage -b ls_bam_files.txt -r chrM -o coverages/mean_coverage.txt;
-
+samtools coverage -b ls_bam_files.txt -q 20 -Q 18 -r chrM -o coverages/mean_coverage_qfilt.txt;
+#echo "calculating mean coverage of all reads";
+#samtools coverage -b ls_bam_files.txt -r chrM -o coverages/mean_coverage.txt;
+#
 
 # loop for individual bam files
 
 # read list of bam files into array
 readarray -t bams < ls_bam_files.txt;
 
-echo "SRRfile	rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq" > coverages/all_coverages.txt;
+#echo "SRRfile	rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq" > coverages/all_coverages.txt;
 echo "SRRfile	#rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq" > coverages/all_coverages_qfilt.txt;
  
 
@@ -52,15 +53,15 @@ i_nodir=${i//bam\//}
 
 # with filters
 echo "${i_nodir}: coverage of filtered reads"
-samtools coverage $i -q 20 -Q 20 -r chrM -o coverages/coverage_qfilt_${i_nodir}.txt;
+samtools coverage $i -q 20 -Q 18 -r chrM -o coverages/coverage_qfilt_${i_nodir}.txt;
 echo "${i_nodir}	`grep chrM coverages/coverage_qfilt_${i_nodir}.txt;`" >> coverages/all_coverages_qfilt.txt
 rm coverages/coverage_qfilt_${i_nodir}.txt; 
 
-# without filters
-echo "${i_nodir}: coverage of all reads"
-samtools coverage $i -r chrM -o coverages/coverage_${i_nodir}.txt;
-echo "${i}	`grep chrM coverages/coverage_${i_nodir}.txt;`" >> coverages/all_coverages.txt
-rm coverages/coverage_${i_nodir}.txt;
+## without filters
+#echo "${i_nodir}: coverage of all reads"
+#samtools coverage $i -r chrM -o coverages/coverage_${i_nodir}.txt;
+#echo "${i}	`grep chrM coverages/coverage_${i_nodir}.txt;`" >> coverages/all_coverages.txt
+#rm coverages/coverage_${i_nodir}.txt;
 
 done
 
