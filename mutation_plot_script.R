@@ -24,17 +24,14 @@ lapply(packages, FUN = function(i) {
   if (!require(i, character.only = TRUE)) {
     install.packages(i, dependencies = TRUE, lib = local_lib_path, repos="https://www.stats.bris.ac.uk/R/")
     library(i, character.only = TRUE)
-  }
+    }
   }
 )
 
 
 
-
-
-
   ## Read SRR files ##
-filenames <- list.files("vcf/", pattern="*.txt")
+filenames <- list.files("vcf/", pattern="*_annotated.txt")
 # Create list of data frame names without the ".txt" part 
 SRR_names <-substr(filenames,1,10)
 
@@ -52,7 +49,27 @@ paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
   ####################  Pre-alignment plots and tables #########################
 
-raw_stats <- read.csv("SraRunTable_SRP149534.csv", header = T)
+raw_sample_info <- read.csv("SraRunTable_1.csv", header = T)
+pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt", header = T) 
+colnames(pre_multiqc) <- c("SRR_sample", "percent_dup", "percent_gc", "sequence_lengths", "percent_fails", "num_seqs")
+
+pre_dup_hist <- ggplot(data = pre_multiqc, aes(percent_dup)) +
+  geom_histogram(fill = "light blue", colour = "black", binwidth = 2) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  labs(x ="% duplicate reads") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+pre_num_seqs_hist <- ggplot(data = pre_multiqc, aes(num_seqs)) +
+  geom_histogram(fill = "light blue", colour = "black", bins = 30) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_x_continuous(breaks = c(5000000,10000000,15000000,20000000,25000000), labels = scales::comma) +
+  labs(x ="Number of reads") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+file_string <- "results/pre_alignment_num_seqs_hist.png"
+ggsave(file=file_string, plot=pre_num_seqs_hist)
+
 
 
 
@@ -66,7 +83,7 @@ third_y_lim_maxcoverage_qfilt <- max(as.data.frame(lapply(depths_qfilt[,3:ncol(d
 
 coverage_plots <- list()
 for (i in SRR_names){
-  depths_qfilt_log2[[i]] <- log2(depths_qfilt[[i]])
+  #depths_qfilt_log2[[i]] <- log2(depths_qfilt[[i]])
 
   coverage_plots[[i]] <- ggplot() +
     geom_line(data = depths_qfilt, aes(Pos, depths_qfilt[[i]])) +
@@ -75,12 +92,8 @@ for (i in SRR_names){
   
 }
 
-#coverage_plots$SRR7245881
 
-
-
-
-  ## Post alignment reads, coverage, mapq, baseq histograms ##
+    ###################### Post alignment quality ########################
 
 all_coverages_qfilt <- read.csv("coverages/all_coverages_qfilt.txt", header = T, sep = "\t")
 all_coverages_qfilt$SRRs <- SRR_names
@@ -161,7 +174,7 @@ sample_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meanmapq)
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white")) 
 
-# unfiltered read plots: coverage (x axis: SRR, and hist), no.reads, base quality, mapping quality
+# unfiltered read plots: coverage (x axis: SRR), no.reads, base quality, mapping quality
 sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, calculated_mean, calculated_sd)) +
   geom_col(colour = "black", fill = "orange") +
   geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
@@ -191,31 +204,32 @@ sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
 
 
 
-  # MAIN LISTS OF DATAFRAMES #
+  #######################  VARIANT DATAFRAMES  ####################
 
 SRR_table_list <- list()  # All 
 SRR_table_list_PASS <- list()  # Filtered
-SRR_table_list_INTERESTING <- list()  # Filtered and only heteroplasmic/low level
-SRR_table_list_INTERESTING_nofilt <- list()
+SRR_table_list_HET_OR_LOWLVL <- list()  # Filtered and only heteroplasmic/low level
+SRR_table_list_HET_OR_LOWLVL_nofilt <- list()
 
 #threshold <- 0.05
 # Load files into list of data.frames
 for(i in SRR_names){
   filepath <- file.path("vcf",paste(i,"_annotated.txt",sep=""))
   SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T)
-  
+  # remove variants where the reference = "N". multiallelic, but only major level plotted - stacked bars
+  SRR_table_list[[i]] <- SRR_table_list[[i]][!(SRR_table_list[[i]]$Ref=="N"),]
   # subset for variants which passed filter
   SRR_table_list_PASS[[i]] <- subset(SRR_table_list[[i]], Filter == "PASS")
-  # subset for "interesting" variants
-  SRR_table_list_INTERESTING[[i]] <- subset(SRR_table_list_PASS[[i]], Type == 2)
-  # no filter to see if variants are filtered differently in different samples
-  SRR_table_list_INTERESTING_nofilt[[i]] <- subset(SRR_table_list[[i]], Type ==2)
+  # subset for "HET_OR_LOWLVL" variants (Heteroplasmic or low-level variant)
+  SRR_table_list_HET_OR_LOWLVL[[i]] <- subset(SRR_table_list_PASS[[i]], Type == 2)
+  # no filter to see if variants are filtered differently in different samples across lineage paths
+  SRR_table_list_HET_OR_LOWLVL_nofilt[[i]] <- subset(SRR_table_list[[i]], Type ==2)
   }
 print("Before merging structure of SRR_table_list")
 print(str(SRR_table_list[["SRR7245880"]]))
 
 
-  ## Variant calling stats ##
+  #################### Variant calling stats ########################
 
 variant_stats <- data.frame(matrix(nrow = length(SRR_table_list), ncol = 8))
 colnames(variant_stats) <- c("SRR","No.Variants", "No.Unfiltered_Variants", "No.het", "No.hom","No.transition", "No.transversion", "No.missense")
@@ -227,20 +241,27 @@ variant_stats$SRR <- SRR_names
 #}
 
 
-bulk_variant_pos80 <- data.frame(SRR_table_list_INTERESTING$SRR7245880$Pos)#[SRR_table_list$SRR7245880$Type==2])
-bulk_variant_pos81 <- data.frame(SRR_table_list_INTERESTING$SRR7245881$Pos)#[SRR_table_list$SRR7245881$Type==2])
+bulk_variant_pos80 <- data.frame(SRR_table_list_HET_OR_LOWLVL$SRR7245880$Pos)#[SRR_table_list$SRR7245880$Type==2])
+bulk_variant_pos81 <- data.frame(SRR_table_list_HET_OR_LOWLVL$SRR7245881$Pos)#[SRR_table_list$SRR7245881$Type==2])
 bulk_variant_pos <- merge(bulk_variant_pos80, bulk_variant_pos81, by=1, all=T)
 colnames(bulk_variant_pos) <- "Bulk_Variants"
-write.csv(bulk_variant_pos, file = "plots/bulk_variant_positions.csv", quote = F)
+write.csv(bulk_variant_pos, file = "results/bulk_variant_positions.csv", quote = F)
 
    ####  all_variants_in_path
-#all_variants_in_path <- list()
+# merge to list all variants in lineage path
+# replace postition with variant level.
+# if min variant level is < eg. 0.95 change filter to FIXED_IN_BULK.
+
+
+# Produce table of the variant levels in each sample of all variants found in the lineage path
+
 for (p in paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
     next
   }
-  bulk_variants_in_lineage <- bulk_variant_pos
+  all_variants_in_lineage <- data.frame(matrix(ncol = 1))
+  colnames(all_variants_in_lineage) <- "Pos"
   n=0
 
   for (SRR in p){
@@ -258,21 +279,35 @@ for (p in paths){
       print("Reached VARIANTS_OF_INTEREST for this lineage")
       break
     }
-    for (i in bulk_variant_pos$Bulk_Variants) {
-      print(i)
-      if (i %in% SRR_table_list_INTERESTING[[SRR]]$Pos) {
-        print("i is in column!")
-        bulk_variants_in_lineage[[SRR]][bulk_variants_in_lineage$Bulk_Variants==i] <- i
-      }else{
-        bulk_variants_in_lineage[[SRR]][bulk_variants_in_lineage$Bulk_Variants==i] <- NA
-      }
-    }
+    
+    SRR_pos_level <- data.frame(SRR_table_list[[SRR]]$Pos, SRR_table_list[[SRR]]$VariantLevel)
+    print(colnames(SRR_pos_level))
+    colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+    all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = T)
     
   }
-file_string <- paste0("plots/",p[[1]],"_bulk_variants.csv")
-write.csv(bulk_variants_in_lineage,file = file_string, quote = F)
-print("table of bulk variants in lineage path saved in 'plots/'")
+file_string <- paste0("results/",p[[1]],"_all_variants.csv")
+write.csv(all_variants_in_lineage,file = file_string, quote = F)
+print("table of bulk variants in lineage path saved in 'results/'")
 }
+
+
+
+# manual remove of multiallelic pos 3107 from SRR_880 (bulk1) first as repeated rows break merge of datasets
+
+Ludwig_variants <- read.csv("LUDWIG_TF1_clones_ATAC_alleleFrequencies.csv", header = T)
+colnames(Ludwig_variants)[1] <- "Ludwig_variant_positions"
+
+all_variants <-  data.frame(matrix(ncol = 1))
+colnames(all_variants) <- "Pos"
+
+
+for (SRR in SRR_names) {
+  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
+  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+  all_variants <- merge(all_variants, SRR_pos_level, by = "Pos", all = T)
+}
+
 
 
 
@@ -282,6 +317,25 @@ print("table of bulk variants in lineage path saved in 'plots/'")
 barplot_lims <- data.frame(0:16569, rep(1,16570))
 colnames(barplot_lims) <- c("Position", "ylimit")
 
+  # get SRRs for lineage_paths.txt from lineage tree (S1d_lineage_tree.png)
+Snumb_path <- list("bulk", "S0008", "S0030", "S0031", "S0052", "S0060")  # add Snumbs here. S MUST BE CAPITALIZED. S000 and S0001 not recognised - use "bulk" instead.
+
+get_SRRs_from_Snumbs <- function(Snumb_path){  # See S1d_lineage_tree.png (labelled with S#### sample names). Get list of SRRs to place in lineage_paths.txt (Don't forget to choose and add a name in front of the path list).
+  Snumbs_all <- c("bulk","bulk","S0003","S0004","S0005","S0006","S0007","S0008","S0009","S0010","S0011","S0012","S0013","S0014","S0015","S0016","S0017","S0018","S0019","S0020","S0021","S0022","S0023","S0024","S0025","S0026","S0027","S0028","S0029","S0030","S0031","S0032","S0033","S0034","S0035","S0036","S0037","S0038","S0039","S0040","S0041","S0042","S0043","S0044","S0045","S0046","S0047","S0048","S0049","S0050","S0051","S0052","S0053","S0054","S0055","S0056","S0057","S0058","S0059","S0060","S0061","S0062","S0063","S0064","S0065","S0066","S0067","S0068","S0069")
+  SRR_path <- list()
+    i <- match(Snumb_path, Snumbs_all)
+    print(typeof(i))
+    for (x in i){
+    print(x)
+      SRR_path <- paste(SRR_path, SRR_names[x])
+  }
+  
+  return(SRR_path)
+}
+
+SRR_path <- get_SRRs_from_Snumbs(Snumb_path)
+print(SRR_path)
+
 # add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
 for (i in SRR_names){
   print(i)
@@ -289,7 +343,7 @@ for (i in SRR_names){
 }
 
 
-# function to return monotonic values for second y axis
+# function to return monotonic values for second y axis transformation (coverage)
 f <- function(y){
   log_max <- log2(third_y_lim_maxcoverage_qfilt)
   if (y<=(1/third_y_lim_maxcoverage_qfilt)){
@@ -337,11 +391,11 @@ for (p in paths){
     print(SRR)
 # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list[[SRR]], aes(Pos, VariantLevel)) + 
-      geom_col(width = 1, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "light green",
+      geom_col(width = 0.9, aes(colour = factor(Filter))) + 
+      scale_color_manual(values = c("PASS" = "light blue",
                                     "STRAND_BIAS"="red",
                                     "BLACKLISTED"="black")) +
-      geom_point(aes(colour = factor(Filter)), size = 0.8) +
+      #geom_point(aes(colour = factor(Filter)), size = 0.8) +
       theme_minimal() + 
       ylab(SRR) +
       theme(axis.text.x = element_text(),
@@ -349,13 +403,15 @@ for (p in paths){
             axis.title.x = element_blank(),
             axis.title.y = element_text(size = 8),
             legend.position = "none",
-            plot.margin = margin(t=0.1, r=0.1, b=0.1, l=0.1, "cm")) +
-      geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
+            plot.margin = margin(t=0.1, r=0.1, b=0.1, l=0.1, "cm"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+      geom_text_repel(aes(label = Pos), size = 1.5, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
       scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
       scale_y_continuous(breaks = seq(0, 1.1, by = 0.2), sec.axis = sec_axis(~f(.), name = "log2 coverage", breaks = waiver(), labels = scales::comma)) +
-      
+      geom_hline(yintercept=0, size = 0.2) +
       # coverage plot overlay
-      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15)
+      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15) +
+      coord_cartesian(ylim = c(0, 1))
     
     
   }
@@ -371,7 +427,7 @@ for (p in paths){
   lab_lineage_grob <- arrangeGrob(lineage_plot, left = y.grob, bottom = x.grob)
   
 # save plot
-  file_string <- paste0("plots/",p[[1]],"_nofilt.png")
+  file_string <- paste0("results/",p[[1]],"_nofilt.png")
   px_height <- 1.2*length(plots_in_lineage)+0.8
   ggsave(file=file_string, plot=lab_lineage_grob, width = 8, height = px_height, units = "in")
 }
@@ -380,24 +436,23 @@ for (p in paths){
 
 
 
+   ###  Repeat for SRR_table_list_HET_OR_LOWLVL_nofilt  ###
 
-
-   ###  Repeat for SRR_table_list_INTERESTING_nofilt  ###
 # More easy to select specific position to plot mutation load profiles using only heteroplasmic/low-level variants.
 # Unfiltered as some variants seem to switch filter status between generations
 
 # add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
 for (i in SRR_names){
   print(i)
-  SRR_table_list_INTERESTING_nofilt[[i]]  <- merge(x = SRR_table_list_INTERESTING_nofilt[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
+  SRR_table_list_HET_OR_LOWLVL_nofilt[[i]]  <- merge(x = SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
 }
 
-#print("length of SRR_table_list_INTERESTING_nofilt:")
-#print(length(SRR_table_list_INTERESTING_nofilt))
-#print("structure of SRR 80 in SRR_table_list_INTERESTING_nofilt[[SRR 80]]")
-#print(str(SRR_table_list_INTERESTING_nofilt[["SRR7245880"]]))
-#print(nrow(SRR_table_list_INTERESTING_nofilt[["SRR7245880"]]$Pos))
-#print(levels(SRR_table_list_INTERESTING_nofilt[["SRR7245880"]]$Filter))
+#print("length of SRR_table_list_HET_OR_LOWLVL_nofilt:")
+#print(length(SRR_table_list_HET_OR_LOWLVL_nofilt))
+#print("structure of SRR 80 in SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR 80]]")
+#print(str(SRR_table_list_HET_OR_LOWLVL_nofilt[["SRR7245880"]]))
+#print(nrow(SRR_table_list_HET_OR_LOWLVL_nofilt[["SRR7245880"]]$Pos))
+#print(levels(SRR_table_list_HET_OR_LOWLVL_nofilt[["SRR7245880"]]$Filter))
 
 
 
@@ -436,23 +491,13 @@ for (p in paths){
     # Colour according to filter: PASS, STRAND_BIAS, or BLACKLISTED, as not all 
     # plots contain blacklisted variants.
     print(SRR)
-    print(nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter))
-    if (nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter)==3){
-      colours <- c("black", "light green", "red")
-    }
-    if (nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter)==2){
-      colours <- c("light green", "red")
-    }
-    if (nlevels(SRR_table_list_INTERESTING_nofilt[[SRR]]$Filter)==1){
-      colours <- c("light green")
-    }
     # Create individual plot:    
-    plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_INTERESTING_nofilt[[SRR]], aes(Pos, VariantLevel)) + 
-      geom_col(width = 1, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "light green",
+    plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]], aes(Pos, VariantLevel)) + 
+      geom_col(width = 0.9, aes(colour = factor(Filter))) + 
+      scale_color_manual(values = c("PASS" = "light blue",
                                     "STRAND_BIAS"="red",
                                 "BLACKLISTED"="black")) + 
-      geom_point(aes(colour = factor(Filter)), size = 0.8) +
+      #geom_point(aes(colour = factor(Filter)), size = 0.8) +
       theme_minimal() + 
       ylab(SRR) +
       theme(axis.text.x = element_text(),
@@ -460,10 +505,14 @@ for (p in paths){
             axis.title.x = element_blank(),
             axis.title.y = element_text(size = 8),
             legend.position = "none",
-            plot.margin = margin(t=0.3, r=0.1, b=0.1, l=0.1, "cm")) +
-      geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
+            plot.margin = margin(t=0.3, r=0.1, b=0.1, l=0.1, "cm"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+      geom_text_repel(aes(label = Pos), size = 1.5, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
       scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
-      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2))
+      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2)) +
+      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15) + # coverage track
+      geom_hline(yintercept=0, size = 0.2) +
+      coord_cartesian(ylim = c(0, 1))
   }
   
   # combine all the plots in the lineage path: stack on top of each other.
@@ -477,13 +526,13 @@ for (p in paths){
   lab_lineage_grob <- arrangeGrob(lineage_plot, left = y.grob, bottom = x.grob)
   
   # save plot
-  file_string <- paste0("plots/",p[[1]],"_INTERESTING_nofilt.png")
+  file_string <- paste0("results/",p[[1]],"_HET_OR_LOWLVL_nofilt.png")
   px_height <- 500*length(plots_in_lineage)+370
   ggsave(file=file_string, plot=lab_lineage_grob, width = 3600, height = px_height, units = "px")
 }
 
 
-remove(SRR_table_list_INTERESTING_nofilt)
+remove(SRR_table_list_HET_OR_LOWLVL_nofilt)
 
 
 
@@ -492,22 +541,22 @@ remove(SRR_table_list_INTERESTING_nofilt)
 
 
 
-###  Repeat for SRR_table_list_INTERESTING  ###
+###  Repeat for SRR_table_list_HET_OR_LOWLVL  ###
 # More easy to select specific position to plot mutation load profiles using only heteroplasmic/low-level variants.
 # Filtered
 
 # add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
 for (i in SRR_names){
   print(i)
-  SRR_table_list_INTERESTING[[i]]  <- merge(x = SRR_table_list_INTERESTING[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
+  SRR_table_list_HET_OR_LOWLVL[[i]]  <- merge(x = SRR_table_list_HET_OR_LOWLVL[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
 }
 
-#print("length of SRR_table_list_INTERESTING:")
-#print(length(SRR_table_list_INTERESTING))
-#print("structure of SRR 80 in SRR_table_list_INTERESTING[[SRR 80]]")
-#print(str(SRR_table_list_INTERESTING[["SRR7245880"]]))
-#print(nrow(SRR_table_list_INTERESTING[["SRR7245880"]]$Pos))
-#print(levels(SRR_table_list_INTERESTING[["SRR7245880"]]$Filter))
+#print("length of SRR_table_list_HET_OR_LOWLVL:")
+#print(length(SRR_table_list_HET_OR_LOWLVL))
+#print("structure of SRR 80 in SRR_table_list_HET_OR_LOWLVL[[SRR 80]]")
+#print(str(SRR_table_list_HET_OR_LOWLVL[["SRR7245880"]]))
+#print(nrow(SRR_table_list_HET_OR_LOWLVL[["SRR7245880"]]$Pos))
+#print(levels(SRR_table_list_HET_OR_LOWLVL[["SRR7245880"]]$Filter))
 
 
 
@@ -546,23 +595,13 @@ for (p in paths){
     # Colour according to filter: PASS, STRAND_BIAS, or BLACKLISTED, as not all 
     # plots contain blacklisted variants.
     print(SRR)
-    print(nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter))
-    if (nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter)==3){
-      colours <- c("black", "light green", "red")
-    }
-    if (nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter)==2){
-      colours <- c("light green", "red")
-    }
-    if (nlevels(SRR_table_list_INTERESTING[[SRR]]$Filter)==1){
-      colours <- c("light green")
-    }
     # Create individual plot:    
-    plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_INTERESTING[[SRR]], aes(Pos, VariantLevel)) + 
-      geom_col(width = 1, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "light green",
+    plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_HET_OR_LOWLVL[[SRR]], aes(Pos, VariantLevel)) + 
+      geom_col(width = 0.9, aes(colour = factor(Filter))) + 
+      scale_color_manual(values = c("PASS" = "light blue",
                                     "STRAND_BIAS"="red",
                                     "BLACKLISTED"="black")) + 
-      geom_point(aes(colour = factor(Filter)), size = 0.8) +
+      #geom_point(aes(colour = factor(Filter)), size = 0.8) +
       theme_minimal() + 
       ylab(SRR) +
       theme(axis.text.x = element_text(),
@@ -570,10 +609,16 @@ for (p in paths){
             axis.title.x = element_blank(),
             axis.title.y = element_text(size = 8),
             legend.position = "none",
-            plot.margin = margin(t=0.3, r=0.1, b=0.1, l=0.1, "cm")) +
-      geom_text_repel(aes(label = Pos), size = 2, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
+            plot.margin = margin(t=0.3, r=0.1, b=0.1, l=0.1, "cm"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+      geom_text_repel(aes(label = Pos), size = 1.5, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
       scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
-      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2))
+      scale_y_continuous(breaks = seq(0, 1.1, by = 0.2)) +
+      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15) + # coverage across genome
+      geom_hline(yintercept=0, size = 0.2) +
+      coord_cartesian(ylim = c(0, 1))
+      
+    
   }
   
   # combine all the plots in the lineage path: stack on top of each other.
@@ -587,7 +632,7 @@ for (p in paths){
   lab_lineage_grob <- arrangeGrob(lineage_plot, left = y.grob, bottom = x.grob)
   
   # save plot
-  file_string <- paste0("plots/",p[[1]],"_INTERESTING.png")
+  file_string <- paste0("results/",p[[1]],"_HET_OR_LOWLVL.png")
   px_height <- 500*length(plots_in_lineage)+370
   ggsave(file=file_string, plot=lab_lineage_grob, width = 3600, height = px_height, units = "px")
 }
@@ -668,10 +713,10 @@ for (p in paths){
       mut_plot <- ggplot(data = mut_load_change, aes(x=Generation,y=VariantLevel)) +
         geom_line() +
         theme_minimal() +
-        theme(panel.background = element_rect(fill = "white",
+        theme(plot.background = element_rect(fill = "white",
                                 colour = "white"))
 # save plot
-      file_string <- paste0("plots/",p[[1]],"_pos_",pos_of_interest, ".png")
+      file_string <- paste0("results/",p[[1]],"_pos_",pos_of_interest, ".png")
       ggsave(file=file_string, plot=mut_plot)
       n=0
       print("n reset")
