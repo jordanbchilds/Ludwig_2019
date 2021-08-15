@@ -9,7 +9,7 @@
 
 module load R/3.6.0-foss-2019a; 
 
-mkdir plots;
+mkdir results/;
 mkdir .R_local_lib/;
  
 
