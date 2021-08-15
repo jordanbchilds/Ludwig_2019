@@ -181,3 +181,4 @@ seqnames.txt
 test/sra-tools/*
 test/slurm-*.out
 
+alignment_stdout.txt
