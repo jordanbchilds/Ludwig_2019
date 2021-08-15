@@ -7,7 +7,10 @@
 #
 
     ## load modules
-module load Java/11.0.2
+module load Java/11.0.2; 
+module load BCFtools/1.10.2-foss-2019b;
+
+mkdir vcf/
 
   ## check if mutserve is installed
 if [ -f "mutserve/mutserve" ]; then 
@@ -35,7 +38,10 @@ do
     
     # default settings: min heteroplasmy level=0.01, mapping quality=20, base quality=20, alignment quality=30
     echo "Calling variants for ${rt}...";
-    ./mutserve/mutserve call bam/${rt}_sorted.bam --threads 8 --reference mutserve/rCRS.fasta --output vcf/${rt}.vcf ;
+    ./mutserve/mutserve call bam/${rt}_sorted.bam --threads 8 --mapQ 18 --reference mutserve/rCRS.fasta --output vcf/${rt}.vcf ;
+    
+    echo "left aligning with bcftools";
+    bcftools norm vcf/${rt}.vcf -f mutserve/rCRS.fasta --multiallelics +snps -o vcf/${rt}_normalised.vcf -O v
     
     echo "Annotating mutserve .txt output";
     ./mutserve/mutserve annotate --input vcf/${rt}.txt --annotation mutserve/rCRS_annotation_2020-08-20.txt --output vcf/${rt}_annotated.txt
