@@ -293,11 +293,13 @@ print("table of bulk variants in lineage path saved in 'results/'")
 
 
 
-# manual remove of multiallelic pos 3107 from SRR_880 (bulk1) first as repeated rows break merge of datasets
-
+   ### Compare positions of our variants with Ludwig's positions ###
+# read in Ludwigs variants, and variant level in each sample
 Ludwig_variants <- read.csv("LUDWIG_TF1_clones_ATAC_alleleFrequencies.csv", header = T)
 colnames(Ludwig_variants)[1] <- "Ludwig_variant_positions"
+Ludwig_variants$tobecombined_Pos <- Ludwig_variants$Ludwig_variant_positions
 
+# make data fram of positions of all our variants
 all_variants <-  data.frame(matrix(ncol = 1))
 colnames(all_variants) <- "Pos"
 
@@ -307,10 +309,37 @@ for (SRR in SRR_names) {
   colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
   all_variants <- merge(all_variants, SRR_pos_level, by = "Pos", all = T)
 }
+all_variants$OurPos <- all_variants$Pos
+all_variants_and_Ludwigs <- merge(all_variants, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
+all_pos_and_Ludwigs <- data.frame(all_variants_and_Ludwigs$Pos, all_variants_and_Ludwigs$OurPos, all_variants_and_Ludwigs$Ludwig_variant_positions)
+
+
+all_variants_HET_OR_LOWLVL <-  data.frame(matrix(ncol = 1))
+colnames(all_variants_HET_OR_LOWLVL) <- "Pos"
+
+for (SRR in SRR_names) {
+  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL[[SRR]]$VariantLevel)
+  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+  all_variants_HET_OR_LOWLVL <- merge(all_variants_HET_OR_LOWLVL, SRR_pos_level, by = "Pos", all = T)
+}
+all_variants_HET_OR_LOWLVL$OurPos <- all_variants_HET_OR_LOWLVL$Pos
+all_variants_HET_OR_LOWLVL_and_Ludwigs <- merge(all_variants_HET_OR_LOWLVL, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
+all_pos_HET_OR_LOWLVL_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLVL_and_Ludwigs$Pos, all_variants_HET_OR_LOWLVL_and_Ludwigs$OurPos, all_variants_HET_OR_LOWLVL_and_Ludwigs$Ludwig_variant_positions)
 
 
 
+all_variants_HET_OR_LOWLVL_nofilt <-  data.frame(matrix(ncol = 1))
+colnames(all_variants_HET_OR_LOWLVL_nofilt) <- "Pos"
 
+
+for (SRR in SRR_names) {
+  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
+  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+  all_variants_HET_OR_LOWLVL_nofilt <- merge(all_variants_HET_OR_LOWLVL_nofilt, SRR_pos_level, by = "Pos", all = T)
+}
+all_variants_HET_OR_LOWLVL_nofilt$OurPos <- all_variants_HET_OR_LOWLVL_nofilt$Pos
+all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs <- merge(all_variants_HET_OR_LOWLVL_nofilt, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
+all_pos_HET_OR_LOWLVL_nofilt_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Pos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$OurPos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Ludwig_variant_positions)
 
   ########################   Mutation Plots   ############################
 
