@@ -94,16 +94,16 @@ rm dump_list.txt;
 #
 ## command to cp text from slurm outfile to alignment stats
 
-cp slurm-${SLURM_JOB_ID}.out alignment_stdout.txt
-echo 'SRR Overall_alignment_rate' > alignment_summary_TEST.txt
+#cp slurm-${SLURM_JOB_ID}.out alignment_stdout.txt
+echo 'SRR Overall_alignment_rate Number_of_reads' > alignment_summary.txt
 
 for rt in "${rts[@]}"
 do
 
  echo ${rt};
- overall=`grep -A 20 "$rt" alignment_summary.txt | grep "overall" | cut -d "%" -f 1`
- noreads=`grep -A 20 "$rt" alignment_summary.txt | grep "`
- echo "$rt $overall" >> alignment_summary_TEST.txt
+ overall=`grep -A 20 "$rt" alignment_stdout.txt | grep "overall" | cut -d "%" -f 1`
+ noreads=`grep -A 20 "$rt" alignment_stdout.txt | grep "reads;" | cut -d ";" -f 1`
+ echo "$rt $overall $noreads" >> alignment_summary.txt
 
 done
 
