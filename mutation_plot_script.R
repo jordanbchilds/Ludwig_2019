@@ -439,7 +439,7 @@ for (p in paths){
             plot.margin = margin(t=0.1, r=0.1, b=0.1, l=0.1, "cm"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_blank(), axis.line = element_line(colour = "black")) +
       geom_text_repel(aes(label = Pos), size = 1.5, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
-      scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
+      scale_x_continuous(breaks = seq(0, 16569, by = 1000)) +
       scale_y_continuous(breaks = seq(0, 1.1, by = 0.2), sec.axis = sec_axis(~f(.), name = "log2 coverage", breaks = waiver(), labels = scales::comma)) +
       geom_hline(yintercept=0, size = 0.2) +
       # coverage plot overlay
@@ -541,7 +541,7 @@ for (p in paths){
             plot.margin = margin(t=0.3, r=0.1, b=0.1, l=0.1, "cm"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_blank(), axis.line = element_line(colour = "black")) +
       geom_text_repel(aes(label = Pos), size = 1.5, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
-      scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
+      scale_x_continuous(breaks = seq(0, 16569, by = 1000)) +
       scale_y_continuous(breaks = seq(0, 1.1, by = 0.2)) +
       geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15) + # coverage track
       geom_hline(yintercept=0, size = 0.2) +
@@ -645,7 +645,7 @@ for (p in paths){
             plot.margin = margin(t=0.3, r=0.1, b=0.1, l=0.1, "cm"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_blank(), axis.line = element_line(colour = "black")) +
       geom_text_repel(aes(label = Pos), size = 1.5, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
-      scale_x_continuous(breaks = seq(0, 16569, by = 2000)) +
+      scale_x_continuous(breaks = seq(0, 16569, by = 1000)) +
       scale_y_continuous(breaks = seq(0, 1.1, by = 0.2)) +
       geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15) + # coverage across genome
       geom_hline(yintercept=0, size = 0.2) +
@@ -686,7 +686,7 @@ for (p in paths){
 
 # For each specified path, move over and record SRRs until VARIANTS_OF_INTEREST 
 # are listed. Then for each VARIANT_OF_INTEREST position, plot line graph of 
-# how variant's mutation load changes inacross each SRR in the lineage path.
+# how variant's mutation load changes across the lineage path.
 
 for (p in paths){
   if (p[[1]] == "#"){
@@ -706,7 +706,7 @@ for (p in paths){
     if (index==1){
       next
     }
-# Add SRR to list, until the positions of variants of interest are listed
+# From lineage_paths.txt: add SRR to list, until the positions of variants of interest are listed
 # instead. This is indicated by "VARIANTS_OF_INTEREST" instead of SRR name, 
 # and followed by the positions of variants of interest.
 # eg. 
@@ -743,17 +743,19 @@ for (p in paths){
       }
 # make new plot for new variant position
       mut_load_change[is.na(mut_load_change)] <- 0
+      plot_title <- paste0(p[[1]],": ", pos_of_interest)
       mut_plot <- ggplot(data = mut_load_change, aes(x=Generation,y=VariantLevel)) +
         geom_line() +
         theme_minimal() +
         theme(plot.background = element_rect(fill = "white",
-                                colour = "white"))
+                                colour = "white")) +
+        ggtitle(plot_title)
 # save plot
       file_string <- paste0("results/",p[[1]],"_pos_",pos_of_interest, ".png")
       ggsave(file=file_string, plot=mut_plot)
       n=0
       print("n reset")
-      } else {  # for if VARIANTS_OF_INTEREST hasn't been reached.
+      } else {  # if VARIANTS_OF_INTEREST hasn't been reached (at.positions=F)
       next
     }
 
