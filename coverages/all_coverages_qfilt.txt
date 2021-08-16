@@ -1,4 +1,4 @@
-#rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq
+SRRfile	#rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq
 SRR7245880_sorted.bam	chrM	1	16569	4871372	16564	99.9698	18280.1	34.9	32.7
 SRR7245881_sorted.bam	chrM	1	16569	4230895	16566	99.9819	15941.4	34.9	32.8
 SRR7245882_sorted.bam	chrM	1	16569	5020902	16567	99.9879	18927.8	34.9	32.8
