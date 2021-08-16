@@ -54,14 +54,14 @@ pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_g
 colnames(pre_multiqc) <- c("SRR_sample", "percent_dup", "percent_gc", "sequence_lengths", "percent_fails", "num_seqs")
 
 pre_dup_hist <- ggplot(data = pre_multiqc, aes(percent_dup)) +
-  geom_histogram(fill = "light blue", colour = "black", binwidth = 2) +
+  geom_histogram(fill = "dodgerblue3", colour = "black", binwidth = 2) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   labs(x ="% duplicate reads") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 pre_num_seqs_hist <- ggplot(data = pre_multiqc, aes(num_seqs)) +
-  geom_histogram(fill = "light blue", colour = "black", bins = 30) +
+  geom_histogram(fill = "dodgerblue3", colour = "black", bins = 30) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   scale_x_continuous(breaks = c(5000000,10000000,15000000,20000000,25000000), labels = scales::comma) +
   labs(x ="Number of reads") +
@@ -108,20 +108,20 @@ all_coverages_qfilt$calculated_sd <- as.numeric(lapply(depths_qfilt[,3:ncol(dept
 
 # filtered read histograms: coverage, no.reads, base quality, mapping quality
 mean_coverage_hist_qfilt <- ggplot(data = all_coverages_qfilt, aes(meandepth)) +
-  geom_histogram(fill = "light blue", colour = "black") +
+  geom_histogram(fill = "dodgerblue3", colour = "black") +
   theme_bw()
 mean_reads_hist_qfilt <- ggplot(data = all_coverages_qfilt, aes(numreads)) +
-  geom_histogram(fill = "light blue", colour = "black") +
+  geom_histogram(fill = "dodgerblue3", colour = "black") +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   scale_x_continuous(labels = scales::comma) +
   theme_bw()
 mean_baseq_hist_qfilt <-  ggplot(data = all_coverages_qfilt, aes(meanbaseq)) +
-  geom_histogram(fill = "light blue", colour = "black", bins = 7) +
+  geom_histogram(fill = "dodgerblue3", colour = "black", bins = 7) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   scale_x_continuous(labels = scales::comma, breaks = c(34.7,34.8,34.9,35)) +
   theme_bw()
 mean_mapq_hist_qfilt <- ggplot(data = all_coverages_qfilt, aes(meanmapq)) +
-  geom_histogram(fill = "light blue", colour = "black") +
+  geom_histogram(fill = "dodgerblue3", colour = "black") +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   scale_x_continuous(labels = scales::comma, breaks = c(30,31,32,33,34,35,36,37,38,39,40)) +
   theme_bw()
@@ -149,26 +149,26 @@ mean_mapq_hist <- ggplot(data = all_coverages, aes(meanmapq)) +
 
  # filtered read plots: coverage (x axis: SRR), no.reads, base quality, mapping quality
 sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, calculated_mean, calculated_sd)) +
-  geom_col(colour = "black", fill = "light blue") +
+  geom_col(colour = "black", fill = "dodgerblue3") +
   geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
   scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white"))
 sample_reads_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, numreads)) +
-  geom_col(colour = "black", fill = "light blue") +
+  geom_col(colour = "black", fill = "dodgerblue3") +
   scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white")) 
 sample_baseq_plot_qfilt <-  ggplot(data = all_coverages_qfilt, aes(SRRs, meanbaseq)) +
-  geom_col(colour = "black", fill = "light blue") +
+  geom_col(colour = "black", fill = "dodgerblue3") +
   scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white")) 
 sample_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meanmapq)) +
-  geom_col(colour = "black", fill = "light blue") +
+  geom_col(colour = "black", fill = "dodgerblue3") +
   scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
         axis.ticks.x = element_line(),
@@ -425,7 +425,7 @@ for (p in paths){
 # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 0.9, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "light blue",
+      scale_color_manual(values = c("PASS" = "dodgerblue3",
                                     "STRAND_BIAS"="red",
                                     "BLACKLISTED"="black")) +
       #geom_point(aes(colour = factor(Filter)), size = 0.8) +
@@ -527,7 +527,7 @@ for (p in paths){
     # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 0.9, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "light blue",
+      scale_color_manual(values = c("PASS" = "dodgerblue3",
                                     "STRAND_BIAS"="red",
                                 "BLACKLISTED"="black")) + 
       #geom_point(aes(colour = factor(Filter)), size = 0.8) +
@@ -631,7 +631,7 @@ for (p in paths){
     # Create individual plot:    
     plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_HET_OR_LOWLVL[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 0.9, aes(colour = factor(Filter))) + 
-      scale_color_manual(values = c("PASS" = "light blue",
+      scale_color_manual(values = c("PASS" = "dodgerblue3",
                                     "STRAND_BIAS"="red",
                                     "BLACKLISTED"="black")) + 
       #geom_point(aes(colour = factor(Filter)), size = 0.8) +
@@ -692,6 +692,24 @@ for (p in paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
     next
+  } 
+  if (substr(p[[1]], 0, 3)=="B11"){
+    lin_col <- "palevioletred1"
+  } 
+  if (substr(p[[1]], 0, 2)=="B5"){
+    lin_col <- "burlywood4"
+  } 
+  if (substr(p[[1]], 0, 2)=="F4"){
+    lin_col <- "darkgrey"
+  } 
+  if (substr(p[[1]], 0, 2)=="D2"){
+    lin_col <- "yellow1"
+  } 
+  if (substr(p[[1]], 0, 2)=="B3"){
+    lin_col <- "orange"
+  } 
+  if (substr(p[[1]], 0, 3)=="G11"){
+    lin_col <- "mediumorchid1"
   }
   SRRs_in_path <- list()
   index=0
@@ -738,7 +756,6 @@ for (p in paths){
         mut_load_change$SRR[[n]] <- SRR_name
         mut_load_change$Generation[n] <- n-1
         mut_load_change$VariantLevel[n] <- SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]
-        
 
       }
 # make new plot for new variant position
@@ -746,16 +763,21 @@ for (p in paths){
       plot_title <- paste0(p[[1]],": ", pos_of_interest)
       mut_plot <- ggplot(data = mut_load_change, aes(x=Generation,y=VariantLevel)) +
         geom_line() +
+        geom_point(aes(colour = lin_col), size = 3) +
         theme_minimal() +
         theme(plot.background = element_rect(fill = "white",
-                                colour = "white")) +
+                                colour = "white"),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+               axis.line = element_line(colour = "black"), legend.position = "none") +
         ggtitle(plot_title)
+      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.background = element_blank(), axis.line = element_line(colour = "black"))
 # save plot
       file_string <- paste0("results/",p[[1]],"_pos_",pos_of_interest, ".png")
       ggsave(file=file_string, plot=mut_plot)
       n=0
       print("n reset")
-      } else {  # if VARIANTS_OF_INTEREST hasn't been reached (at.positions=F)
+      } 
+    else {  # if VARIANTS_OF_INTEREST hasn't been reached (at.positions=F)
       next
     }
 
