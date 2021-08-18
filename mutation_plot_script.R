@@ -302,7 +302,8 @@ print("table of bulk variants in lineage path saved in 'results/'")
 
 
 
-   ### Compare positions of our variants with Ludwig's positions ###
+   ### Comparaison with Ludwig's variants ###
+# Ludwig's research aligned to the Hg19 mitochondrial genome, which has indels compared to rCRS. Positions off by 0,-2,-1,-2 in different parts of the chromosome. See converted positions below.
 # read in Ludwigs variants, and variant level in each sample
 Ludwig_variants <- read.csv("LUDWIG_TF1_clones_ATAC_alleleFrequencies.csv", header = T)
 colnames(Ludwig_variants)[1] <- "Ludwig_variant_positions"
@@ -349,9 +350,13 @@ all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs <- merge(all_variants_HET_OR_LOWLV
 all_pos_HET_OR_LOWLVL_nofilt_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Pos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$OurPos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Ludwig_variant_positions)
 
 
+
+
+
 # List of Ludwig converted variant positions
 rCRS_Ludwig_pos <- c("182","309","822","847","1410","1493","1795","1970","2108","2816","3173","3910","4037","4413","4214","4446","4512","5007","5563","5862","6075","6962","7074","7789","8002","8206","8921","10371","11184","11403","11711","12061","12253","12789","12838","13288","13412","13708","14436","15088","15488","15640","15797","16250")
-# Extract rCRS Ludwig variant positions in our data
+
+# Extract rCRS Ludwig variants in our data
 HET_OR_LOWLVL_nofilt_Ludwig_variants <-  data.frame(rCRS_Ludwig_pos)
 HET_OR_LOWLVL_nofilt_Ludwig_variants$rCRS_Ludwig_pos <- rCRS_Ludwig_pos
 for (SRR in SRR_names){
@@ -367,14 +372,22 @@ for (SRR in SRR_names){
  ############## Heatmap Ludwig variant positions #######################
 
 HET_OR_LOWLVL_nofilt_Ludwig_variants[is.na(HET_OR_LOWLVL_nofilt_Ludwig_variants)] <- as.numeric(0)
-htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants <- as.matrix(HET_OR_LOWLVL_nofilt_Ludwig_variants[,-1])
+htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants <- HET_OR_LOWLVL_nofilt_Ludwig_variants[,-1]
 rownames(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants) <- HET_OR_LOWLVL_nofilt_Ludwig_variants$rCRS_Ludwig_pos
+colnames(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants) <- SRR_names
 htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants <- sqrt(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants)
-mycols <- colorRamp2(breaks = c(0.05,0.4), 
-                     colors = c("white", "red"))
 
-col = list(lineage = c(lin = c()))
-Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Ludwig Variants", col = mycols)
+het_lvl_cols <- colorRamp2(breaks = c(0.05,0.4), 
+                     colors = c("white", "red"))
+lineage_cols <- list(lineage = c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="yellow", "F4"="grey", "B5"="burlywood4", "B11"="palevioletred2", "A9"="lightseagreen", "D3"="palegreen1", "C7"="lightgoldenrod", "C4"="pink2","C10"="cyan", "B9"="plum1","G10"="steelblue2", "D6"="springgreen4","C9"="red", "mix"="darkgreen"))
+
+ha <- HeatmapAnnotation(lineage = SRR_lineage_generation$lineages, col = lineage_cols)
+Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Ludwig Variants", col = het_lvl_cols, na_col = "white", top_annotation = ha) #+
+  Heatmap()
+# save plot 
+
+df <- mtcars
+
 
 
 
