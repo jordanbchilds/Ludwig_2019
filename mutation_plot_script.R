@@ -19,7 +19,7 @@ setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
 #print(local_lib_path)
 #.libPaths(c(local_lib_path, .libPaths()))
 
-packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid")
+packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize")
 lapply(packages, FUN = function(i) {
   if (!require(i, character.only = TRUE)) {
     install.packages(i, dependencies = TRUE, lib = local_lib_path, repos="https://www.stats.bris.ac.uk/R/")
@@ -28,6 +28,9 @@ lapply(packages, FUN = function(i) {
   }
 )
 
+
+BiocManager::install("ComplexHeatmap")
+library("ComplexHeatmap")
 
 
   ## Read SRR files ##
@@ -46,6 +49,12 @@ colnames(depths) <- c("chr", "Pos", SRR_names)
 paths <- list()
 paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
+
+
+# Name lineage for each sample (for plot colours)
+lineages <- c("bulk", "bulk", "A9","B11","C7","D3","F4","G11","B3","B5","B9","C4","C10","D2","C9","D6","G10","B11","B11","B5","B5","F4","F4","A9","A9","B3","B3","D2","D2","G11","G11","B3","B3","D2","D2","G11","G11","B11","B11","B5","B5","F4","F4","B3","B3","B3","B3","D2","D2","G11","G11","G11","G11","B3","B3","B3","B3","G11","G11","G11","G11","G11","G11","G11","G11","G11","G11","mix","mix")
+generation <- c("0","0","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","2","2","2","2","2","2","2","2","2","2","2","2","2","2","3","3","3","3","3","3","3","3","3","3","3","3","4","4","4","4","4","4","4","4","4","4","5","5","5","5","5","5","5","5","6","6","7","7","8","8","","")
+SRR_lineage_generation <- data.frame(SRR_names,lineages,generation)
 
   ####################  Pre-alignment plots and tables #########################
 
@@ -216,7 +225,7 @@ SRR_table_list_HET_OR_LOWLVL_nofilt <- list()
 for(i in SRR_names){
   filepath <- file.path("vcf",paste(i,"_annotated.txt",sep=""))
   SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T)
-  # remove variants where the reference = "N". multiallelic, but only major level plotted - stacked bars
+  # remove variants where the reference = "N". multiallelic, but only major level plotted - stacked bars - deletion at 3107
   SRR_table_list[[i]] <- SRR_table_list[[i]][!(SRR_table_list[[i]]$Ref=="N"),]
   # subset for variants which passed filter
   SRR_table_list_PASS[[i]] <- subset(SRR_table_list[[i]], Filter == "PASS")
@@ -299,21 +308,21 @@ Ludwig_variants <- read.csv("LUDWIG_TF1_clones_ATAC_alleleFrequencies.csv", head
 colnames(Ludwig_variants)[1] <- "Ludwig_variant_positions"
 Ludwig_variants$tobecombined_Pos <- Ludwig_variants$Ludwig_variant_positions
 
-# make data fram of positions of all our variants
+# make data frame of positions of all our variants
 all_variants <-  data.frame(matrix(ncol = 1))
 colnames(all_variants) <- "Pos"
-
 
 for (SRR in SRR_names) {
   SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
   colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
   all_variants <- merge(all_variants, SRR_pos_level, by = "Pos", all = T)
 }
+# Combine with Ludwigs data (all unconverted variant positions: Hg19-rCRS)
 all_variants$OurPos <- all_variants$Pos
 all_variants_and_Ludwigs <- merge(all_variants, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
 all_pos_and_Ludwigs <- data.frame(all_variants_and_Ludwigs$Pos, all_variants_and_Ludwigs$OurPos, all_variants_and_Ludwigs$Ludwig_variant_positions)
 
-
+# Repeat for differently filtered data
 all_variants_HET_OR_LOWLVL <-  data.frame(matrix(ncol = 1))
 colnames(all_variants_HET_OR_LOWLVL) <- "Pos"
 
@@ -327,10 +336,8 @@ all_variants_HET_OR_LOWLVL_and_Ludwigs <- merge(all_variants_HET_OR_LOWLVL, Ludw
 all_pos_HET_OR_LOWLVL_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLVL_and_Ludwigs$Pos, all_variants_HET_OR_LOWLVL_and_Ludwigs$OurPos, all_variants_HET_OR_LOWLVL_and_Ludwigs$Ludwig_variant_positions)
 
 
-
 all_variants_HET_OR_LOWLVL_nofilt <-  data.frame(matrix(ncol = 1))
 colnames(all_variants_HET_OR_LOWLVL_nofilt) <- "Pos"
-
 
 for (SRR in SRR_names) {
   SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
@@ -342,9 +349,37 @@ all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs <- merge(all_variants_HET_OR_LOWLV
 all_pos_HET_OR_LOWLVL_nofilt_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Pos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$OurPos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Ludwig_variant_positions)
 
 
+# List of Ludwig converted variant positions
+rCRS_Ludwig_pos <- c("182","309","822","847","1410","1493","1795","1970","2108","2816","3173","3910","4037","4413","4214","4446","4512","5007","5563","5862","6075","6962","7074","7789","8002","8206","8921","10371","11184","11403","11711","12061","12253","12789","12838","13288","13412","13708","14436","15088","15488","15640","15797","16250")
+# Extract rCRS Ludwig variant positions in our data
+HET_OR_LOWLVL_nofilt_Ludwig_variants <-  data.frame(rCRS_Ludwig_pos)
+HET_OR_LOWLVL_nofilt_Ludwig_variants$rCRS_Ludwig_pos <- rCRS_Ludwig_pos
+for (SRR in SRR_names){
+  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos,SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
+  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+  HET_OR_LOWLVL_nofilt_Ludwig_variants <- merge(HET_OR_LOWLVL_nofilt_Ludwig_variants, SRR_pos_level, by.x="rCRS_Ludwig_pos", by.y = "Pos", all.x=T)
+}
 
 
-  ########################   Mutation Plots   ############################
+
+
+
+ ############## Heatmap Ludwig variant positions #######################
+
+HET_OR_LOWLVL_nofilt_Ludwig_variants[is.na(HET_OR_LOWLVL_nofilt_Ludwig_variants)] <- as.numeric(0)
+htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants <- as.matrix(HET_OR_LOWLVL_nofilt_Ludwig_variants[,-1])
+rownames(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants) <- HET_OR_LOWLVL_nofilt_Ludwig_variants$rCRS_Ludwig_pos
+htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants <- sqrt(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants)
+mycols <- colorRamp2(breaks = c(0.05,0.4), 
+                     colors = c("white", "red"))
+
+col = list(lineage = c(lin = c()))
+Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Ludwig Variants", col = mycols)
+
+
+
+
+########################   Mutation Plots   ############################
 
 
 barplot_lims <- data.frame(0:16569, rep(1,16570))
@@ -669,6 +704,10 @@ for (p in paths){
   px_height <- 500*length(plots_in_lineage)+370
   ggsave(file=file_string, plot=lab_lineage_grob, width = 3600, height = px_height, units = "px")
 }
+
+
+
+
 
 
 
