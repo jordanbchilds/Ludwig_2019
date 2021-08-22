@@ -5,13 +5,16 @@ Re-analysis of data from [Ludwig et al. (2019)](https://doi.org/10.1016/j.cell.2
 # Workflow
 Stages of the pipeline are split into _ bash scripts. This is to allow different stages to be evaluated and ajusted if necessary before proceeding. For example: the quality of the data should be checked before alignment.
 
-Run bash scripts for the following stages using `sbatch SCRIPT_NAME.sh`
+Run scripts for the following stages using `sbatch SCRIPT_NAME.sh`
 
-1. Prefetch .sra files from the sequence read archive, and convert to fastq format.
-2. 
-3. 
+1. Prefetch .sra files from the sequence read archive, and convert to fastq format. (Prefetch\_files.sh)
+2. Assess prealignment quality (QC.sh)
+3. Align reads to reference genome
+4. Assess alignment quality
+5. Variant call
+6. Visulalise and explore variants
 
-**Prefetch_files.sh** is a BASH shell script. Calls **parse.py** to get metadata (creates SRR_Acc_List.txt with all the SRR names: one name per sample, for all the samples Ludwig et al., 2019). Uses SRR names in SRR_Acc_List.txt to download SRR files from the sequence read archive. Checks to make sure each SRR has been downloaded and is complete. If not, attempts to redownload. Saves .sra files to sra/sra/SRR*.sra
+**Prefetch\_files.sh** is a BASH shell script. Calls **parse.py** to get metadata (creates SRR_Acc_List.txt with all the SRR names: one name per sample, for all the samples Ludwig et al., 2019). Uses SRR names in SRR_Acc_List.txt to download SRR files from the sequence read archive. Checks to make sure each SRR has been downloaded and is complete. If not, attempts to redownload. Saves .sra files to sra/sra/SRR*.sra
 
 **parse.py** is a custom python script called by analyse.sh which gets the connection between GSM IDs (e.g. from metadata [here](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE115218) and SRX IDs, which are needed to download the actual raw data.
 
