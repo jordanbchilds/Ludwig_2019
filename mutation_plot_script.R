@@ -29,7 +29,7 @@ lapply(packages, FUN = function(i) {
 )
 
 
-BiocManager::install("ComplexHeatmap")
+#BiocManager::install("ComplexHeatmap")
 library("ComplexHeatmap")
 
 
@@ -51,7 +51,7 @@ paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 
 
-# Name lineage for each sample (for plot colours)
+# Name, lineage and generation for each sample (for plotting colours and annotations)
 lineages <- c("bulk", "bulk", "A9","B11","C7","D3","F4","G11","B3","B5","B9","C4","C10","D2","C9","D6","G10","B11","B11","B5","B5","F4","F4","A9","A9","B3","B3","D2","D2","G11","G11","B3","B3","D2","D2","G11","G11","B11","B11","B5","B5","F4","F4","B3","B3","B3","B3","D2","D2","G11","G11","G11","G11","B3","B3","B3","B3","G11","G11","G11","G11","G11","G11","G11","G11","G11","G11","mix","mix")
 generation <- c("0","0","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","2","2","2","2","2","2","2","2","2","2","2","2","2","2","3","3","3","3","3","3","3","3","3","3","3","3","4","4","4","4","4","4","4","4","4","4","5","5","5","5","5","5","5","5","6","6","7","7","8","8","","")
 SRR_lineage_generation <- data.frame(SRR_names,lineages,generation)
@@ -301,6 +301,43 @@ print("table of bulk variants in lineage path saved in 'results/'")
 }
 
 
+# Repeat for only heteroplasmic or low level variants, unfiltered
+for (p in paths){
+  if (p[[1]] == "#"){
+    print("skipping comment line...")
+    next
+  }
+  all_variants_in_lineage <- data.frame(matrix(ncol = 1))
+  colnames(all_variants_in_lineage) <- "Pos"
+  n=0
+  
+  for (SRR in p){
+    # Skip Lineage path name (1st in character vector of paths[[p]] )
+    n=n+1
+    print(SRR)
+    print(typeof(SRR))
+    if (n==1){
+      
+      next
+    }
+    # stop where the variants of interest positions are listed on the line (for 
+    # mutation load plots below)
+    if (SRR == "VARIANTS_OF_INTEREST") {
+      print("Reached VARIANTS_OF_INTEREST for this lineage")
+      break
+    }
+    
+    SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
+    print(colnames(SRR_pos_level))
+    colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+    all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = T)
+    
+  }
+  file_string <- paste0("results/",p[[1]],"_HET_nofilt_variants.csv")
+  write.csv(all_variants_in_lineage,file = file_string, quote = F)
+  print("table of bulk variants in lineage path saved in 'results/'")
+}
+
 
    ### Comparaison with Ludwig's variants ###
 # Ludwig's research aligned to the Hg19 mitochondrial genome, which has indels compared to rCRS. Positions off by 0,-2,-1,-2 in different parts of the chromosome. See converted positions below.
@@ -369,7 +406,7 @@ for (SRR in SRR_names){
 
 
 
- ############## Heatmap Ludwig variant positions #######################
+ ############## Heatmap of Ludwig's variant positions #######################
 
 HET_OR_LOWLVL_nofilt_Ludwig_variants[is.na(HET_OR_LOWLVL_nofilt_Ludwig_variants)] <- as.numeric(0)
 htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants <- HET_OR_LOWLVL_nofilt_Ludwig_variants[,-1]
@@ -382,11 +419,9 @@ het_lvl_cols <- colorRamp2(breaks = c(0.05,0.4),
 lineage_cols <- list(lineage = c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="yellow", "F4"="grey", "B5"="burlywood4", "B11"="palevioletred2", "A9"="lightseagreen", "D3"="palegreen1", "C7"="lightgoldenrod", "C4"="pink2","C10"="cyan", "B9"="plum1","G10"="steelblue2", "D6"="springgreen4","C9"="red", "mix"="darkgreen"))
 
 ha <- HeatmapAnnotation(lineage = SRR_lineage_generation$lineages, col = lineage_cols)
-Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Ludwig Variants", col = het_lvl_cols, na_col = "white", top_annotation = ha) #+
-  Heatmap()
-# save plot 
+Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Ludwig Variants", col = het_lvl_cols, na_col = "white", top_annotation = ha)
+# save plot Ludwig heatma[]
 
-df <- mtcars
 
 
 
