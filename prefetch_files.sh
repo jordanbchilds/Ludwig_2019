@@ -47,8 +47,6 @@ python3 parse.py $gse;
 
 
     ## Prefetch .sra files ##
-# Need to delete once have .fastq files.
-#vdb-dump --info
 
 echo "Prefetching all SRRs in ${gse}_sra.txt ...";
 prefetch --option-file "${gse}_sra.txt";
@@ -82,13 +80,42 @@ done
 
 
 
+# Export sratools bin to shell PATH variable
+export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
 
-    ## Download reference human genome ##
+gse='GSE115218';
 
-#wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz ; 
-#gunzip GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
-#rm GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
-#grep '^>' GCA_000001405.28_GRCh38.p13_genomic.fna > seqnames.txt;
+# read bulk ATAC-seq from TF1 cells into array
+readarray -t rts < multiQC/group_SRP149534_SRRs.txt;
+
+
+
+    ## Convert prefetched .sra files to fasta format ##
+
+# loop to find if .sra file has been dumped (converted to fastq.gz) and if not add file to list
+
+for i in "${rts[@]}";
+do
+if test -f "fastq/${i}_1.fastq.gz";
+then
+  echo "${i}_1.fastq.gz file exists";
+else
+  echo ${i} >> dump_list.txt
+  echo "${i}.sra added to dump_list.txt";
+fi
+done
+
+cat dump_list.txt | parallel --jobs 8 "fastq-dump --split-files --gzip --outdir fastq/ sra/sra/{}.sra";
+rm dump_list.txt;
+
+# Delete large sra files after dumping
+#rm -rf sra;
+
+ ## Download reference genome ##
+cd nuc/;
+wget http://hgdownload.cse.ucsc.edu/goldenpath/hg38/bigZips/hg38.fa.gz;
+gunzip hg38.fa.gz;
+cd ..;
 
 
 module purge;
