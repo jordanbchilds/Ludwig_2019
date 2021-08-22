@@ -20,11 +20,7 @@ export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
 
 # make directories
 #mkdir fastq;
-#mkdir bam;
 #mkdir pileup;
-#mkdir frames;
-#mkdir frames_examine;
-#mkdir reports;
 #mkdir nuc;
 #mkdir mito;
 #mkdir sra;
@@ -40,23 +36,23 @@ export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
 # https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE115218
 # https://doi.org/10.1016/j.cell.2019.01.022
 
-#gse='GSE115218';
+gse='GSE115218';
 # parse.py gets list of SRA sequence names from GSE series of "Human lineage tracing enabled by mitochondrial mutations and single cell genomics"
 
 # install GEOparse python3 module. pip3 install _ won't install if module is already installed.
-#pip3 install GEOparse;
+pip3 install GEOparse;
 
 # run parse.py
-#python3 parse.py $gse;
+python3 parse.py $gse;
 
 
     ## Prefetch .sra files ##
 # Need to delete once have .fastq files.
 #vdb-dump --info
 
-#prefetch --option-file ${gse}\_sra.txt;
-# fasterq-dump????
-
+echo "Prefetching all SRRs in ${gse}_sra.txt ...";
+prefetch --option-file "${gse}_sra.txt";
+echo "Done";
 
     ## Validate	sra files ##
 
