@@ -12,15 +12,9 @@ module load parallel/20200522-GCCcore-10.2.0;
 module load MultiQC/1.7-foss-2018b-Python-3.6.6;
 
 
-  ## run fastqc on each SRR*.fastq.gz file, forward and reverse read. (Edited to run specific SRR file).
+  ## run fastqc for specific SRR*.fastq.gz files, forward and reverse read. (Edited to run specific SRR file).
 #find fastq/SRR7245916*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
 #find fastq/SRR72458*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
-#find fastq/SRR724590*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
-#find fastq/SRR724591*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
-#find fastq/SRR724592*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
-#find fastq/SRR724593*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
-#find fastq/SRR724594*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
-#
 
 
 
@@ -67,7 +61,10 @@ do
   # mv each SRR*_fastqc.zip file into tmp_multiqc; run multiqc on all in group
   for i in ${group_SRRs[@]}
     do
-    #echo ${i}
+    echo ${i}
+    find fastq/${i}_1_.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+    find fastq/${i}_2_.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+    
     cp fastQC_results/${i}_1_fastqc.zip tmp_multiqc/${i}_1_fastqc.zip 
     cp fastQC_results/${i}_2_fastqc.zip tmp_multiqc/${i}_2_fastqc.zip 
     done
