@@ -31,16 +31,15 @@ Run scripts for the following stages by submitting batch jobs to SLURM partition
 
 **post\_alignment\_QC.sh** is a BASH shell script that 
 
-**split_genome.py** is a custom python script called by analyse.sh which separates individual sequences (e.g. chromosomes & mtDNA sequence) into a nuclear reference (nuc.fna) and a mitochondrial reference sequence (mito.fna).
-
-**ExamplePath.txt** is a text file containing the IDs of samples which make up one route through eight passages of clonal TF1 cultures, highhlighted in yellow asterisks in this adapted version of Figure 1C:
+**ExamplePath.txt** is a text file containing the IDs of samples which make up one route through eight passages of clonal TF1 cultures, highlighted in yellow asterisks in this adapted version of Figure 1C:
 
 [<img src="reports/LudwigFigs.png">](https://doi.org/10.1016/j.cell.2019.01.022)
 
-**findmutations.py** is a custom python script which takes alignment files and converts these into read coverage along the genome as well as mutation load estimates at each nucleobase.  This script also generates .pdf reports plotting coverage and mutation load for each sample.
+**plot\_mutations\_script.R** is an R script which outputs tables and plots to summarise and visualise heteroplasmic point mutations, to explore how allele frequencies change through different cell lineages. It also produces plots for different stages of pipeline, including pre-alignment quality plots, post-alignment. Finally it provides comparisons with the 44 high confidence alleles detected by Ludwig et al., 2019. 
+It takes annotated mutserve variant files, coverage and read depth files, sample metadata, and Ludwig et al., allele frequency data, and lineage path information specified in **lineages\_paths.txt**.
 
-<img src="reports/bulk_mutation_load.png">
+For example, here is an exploratory plot of unfiltered, heteroplasmic or low-level variants for the samples in one possible path through the F4 lineage.
+<img src="results/F4_LUDWIG_longest_upper_HET_OR_LOWLVL_nofilt.png">
 
-It also generates plots of mutation load profiles across all eight samples for all 16,569 locations on the genome.
-
-<img src="reports/01492.png">
+Using exploratory plots like the example above and the tables of heteroplasmic variant frequencies, individual point mutations which may show stochastic changes in allele frequency can be found, and their mutation load profiles for a lineage plotted, (specified in **lineage\_paths.txt**).
+<img src="results/F4_LUDWIG_longest_upper_pos_8206.png">
