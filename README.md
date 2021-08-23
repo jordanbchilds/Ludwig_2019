@@ -33,7 +33,7 @@ Run scripts for the following stages by submitting batch jobs to SLURM partition
 
 **ExamplePath.txt** is a text file containing the IDs of samples which make up one route through eight passages of clonal TF1 cultures, highlighted in yellow asterisks in this adapted version of Figure 1C:
 
-[<img src="reports/LudwigFigs.png">](https://doi.org/10.1016/j.cell.2019.01.022)
+[<img src="LudwigFigs.png">](https://doi.org/10.1016/j.cell.2019.01.022)
 
 **plot\_mutations\_script.R** is an R script which outputs tables and plots to summarise and visualise heteroplasmic point mutations, to explore how allele frequencies change through different cell lineages. It also produces plots for different stages of pipeline, including pre-alignment quality plots, post-alignment. Finally it provides comparisons with the 44 high confidence alleles detected by Ludwig et al., 2019. 
 It takes annotated mutserve variant files, coverage and read depth files, sample metadata, and Ludwig et al., allele frequency data, and lineage path information specified in **lineages\_paths.txt**.
