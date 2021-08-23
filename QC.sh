@@ -62,8 +62,8 @@ do
   for i in ${group_SRRs[@]}
     do
     echo ${i}
-    find fastq/${i}_1_.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
-    find fastq/${i}_2_.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+    find fastq/${i}_1.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+    find fastq/${i}_2.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
     
     cp fastQC_results/${i}_1_fastqc.zip tmp_multiqc/${i}_1_fastqc.zip 
     cp fastQC_results/${i}_2_fastqc.zip tmp_multiqc/${i}_2_fastqc.zip 
