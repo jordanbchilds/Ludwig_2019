@@ -26,7 +26,7 @@ module load SAMtools/1.12-GCC-10.2.0;
 #
 #  ## Variant call
 ## read bulk ATAC-seq from TF1 cells into array
-#readarray -t rts < multiQC/group_SRP149534_SRRs.txt;
+readarray -t rts < multiQC/group_SRP149534_SRRs.txt;
 #
 #for rt in "${rts[@]}"
 #do
@@ -39,7 +39,7 @@ module load SAMtools/1.12-GCC-10.2.0;
 #    
 #    # default settings: min heteroplasmy level=0.01, mapping quality=20, base quality=20, alignment quality=30
 #    echo "Calling variants for ${rt}...";
-#    ./mutserve/mutserve call bam/${rt}_sorted.bam --threads 8 --mapQ 18 --reference mutserve/rCRS.fasta --output vcf/${rt}.vcf ;
+#    ./mutserve/mutserve call bam/${rt}_sorted.bam --threads 8 --mapQ 18 --level 0.001 --reference mutserve/rCRS.fasta --output vcf/${rt}.vcf ;
 #    
 #    echo "left aligning with bcftools";
 #    bcftools norm vcf/${rt}.vcf -f mutserve/rCRS.fasta --multiallelics +snps -o vcf/${rt}_normalised.vcf -O v
@@ -57,7 +57,7 @@ module load SAMtools/1.12-GCC-10.2.0;
 mkdir bcftools_out/;
 
 # index reference
-samtools faidx nuc/GCA_000001405.28_GRCh38.p13_genomic.fna
+#samtools faidx nuc/hg38.fa;
 
 for rt in "${rts[@]}"
 do
@@ -69,8 +69,8 @@ do
   else 
     
     echo "Creating mpileup for ${rt}...";
-    samtools view bam/${rt}_sorted.bam --min-MQ 18 --min-BQ 20 -h -u | bcftools mpileup - --no-BAQ --max-depth 9999999 --fasta-ref nuc/GCA_000001405.28_GRCh38.p13_genomic.fna --min-MQ 18 --min-BQ 20 --annotate FORMAT/AD FORMAT/ADF FORMAT/ADR FORMAT/SP INFO/AD INFO/ADF INFO/ADR --threads 8 -Ov --output bcftools_out/${rt}_mpileup.vcf
-    
+    samtools view bam/${rt}_sorted.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref rCRS.fasta -q 18 -Q 20 --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,INFO/AD,INFO/ADF,INFO/ADR --threads 8 -Ov --output bcftools_out/${rt}_mpileup.vcf
+   # bcftools call? 
   fi
 done
 
