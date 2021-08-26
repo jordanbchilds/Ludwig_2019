@@ -56,6 +56,9 @@ lineages <- c("bulk", "bulk", "A9","B11","C7","D3","F4","G11","B3","B5","B9","C4
 generation <- c("0","0","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","2","2","2","2","2","2","2","2","2","2","2","2","2","2","3","3","3","3","3","3","3","3","3","3","3","3","4","4","4","4","4","4","4","4","4","4","5","5","5","5","5","5","5","5","6","6","7","7","8","8","","")
 SRR_lineage_generation <- data.frame(SRR_names,lineages,generation)
 
+
+
+
   ####################  Pre-alignment plots and tables #########################
 
 raw_sample_info <- read.csv("SraRunTable_1.csv", header = T)
@@ -65,8 +68,9 @@ colnames(pre_multiqc) <- c("SRR_sample", "percent_dup", "percent_gc", "sequence_
 median.default(pre_multiqc$num_seqs)
 min(pre_multiqc$num_seqs)
 max(pre_multiqc$num_seqs)
-mean(pre_multiqc$percent_dup)
-sd(pre_multiqc$percent_dup)
+median(pre_multiqc$percent_dup)
+min(pre_multiqc$percent_dup)
+max(pre_multiqc$percent_dup)
 mean(pre_multiqc$percent_gc)
 sd(pre_multiqc$percent_gc)
 
@@ -75,7 +79,7 @@ sd(pre_multiqc$percent_gc)
 pre_dup_hist <- ggplot(data = pre_multiqc, aes(percent_dup)) +
   geom_histogram(fill = "dodgerblue3", colour = "black", binwidth = 2) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
-  labs(x ="% duplicate reads") +
+  labs(x ="% duplicate reads in clone") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=17))
 file_string <- "results/pre_alignment_dup_seqs_hist.png"
@@ -85,14 +89,15 @@ pre_num_seqs_hist <- ggplot(data = pre_multiqc, aes(num_seqs)) +
   geom_histogram(fill = "dodgerblue3", colour = "black", bins = 30) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   scale_x_continuous(breaks = c(5000000,10000000,15000000,20000000,25000000), labels = c("5M","10M","15M","20M","25M")) +
-  labs(x ="Number of reads") +
+  labs(x ="Number of reads in clone") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=17))
 file_string <- "results/pre_alignment_num_seqs_hist.png"
 ggsave(file=file_string, plot=pre_num_seqs_hist, width = 8, height = 4, units = "in")
 
-ggarrange(plots = c(pre_num_seqs_hist, pre_dup_hist), nrow = 2, align = "hv")
-
+pre_plots <- list(pre_num_seqs_hist,pre_dup_hist)
+pre_plots <- ggarrange(plots = pre_plots, nrow = 2, align = "hv")
+ggsave(file="results/pre_plots.png", plot = pre_plots)
 
 
   #####################  Coverage plots and stats  ###################### (TODO)
