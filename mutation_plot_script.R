@@ -62,23 +62,36 @@ raw_sample_info <- read.csv("SraRunTable_1.csv", header = T)
 pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt", header = T) 
 colnames(pre_multiqc) <- c("SRR_sample", "percent_dup", "percent_gc", "sequence_lengths", "percent_fails", "num_seqs")
 
+median.default(pre_multiqc$num_seqs)
+min(pre_multiqc$num_seqs)
+max(pre_multiqc$num_seqs)
+mean(pre_multiqc$percent_dup)
+sd(pre_multiqc$percent_dup)
+mean(pre_multiqc$percent_gc)
+sd(pre_multiqc$percent_gc)
+
+# see post for meanbaseq
+
 pre_dup_hist <- ggplot(data = pre_multiqc, aes(percent_dup)) +
   geom_histogram(fill = "dodgerblue3", colour = "black", binwidth = 2) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   labs(x ="% duplicate reads") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=17))
+file_string <- "results/pre_alignment_dup_seqs_hist.png"
+ggsave(file=file_string, plot=pre_dup_hist, width = 8, height = 4, units = "in")
 
 pre_num_seqs_hist <- ggplot(data = pre_multiqc, aes(num_seqs)) +
   geom_histogram(fill = "dodgerblue3", colour = "black", bins = 30) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
-  scale_x_continuous(breaks = c(5000000,10000000,15000000,20000000,25000000), labels = scales::comma) +
+  scale_x_continuous(breaks = c(5000000,10000000,15000000,20000000,25000000), labels = c("5M","10M","15M","20M","25M")) +
   labs(x ="Number of reads") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=17))
 file_string <- "results/pre_alignment_num_seqs_hist.png"
-ggsave(file=file_string, plot=pre_num_seqs_hist)
+ggsave(file=file_string, plot=pre_num_seqs_hist, width = 8, height = 4, units = "in")
 
+ggarrange(plots = c(pre_num_seqs_hist, pre_dup_hist), nrow = 2, align = "hv")
 
 
 
@@ -420,7 +433,7 @@ lineage_cols <- list(lineage = c("bulk"="royalblue4", "G11"="magenta3", "B3"="or
 
 ha <- HeatmapAnnotation(lineage = SRR_lineage_generation$lineages, col = lineage_cols)
 Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Ludwig Variants", col = het_lvl_cols, na_col = "white", top_annotation = ha)
-# save plot Ludwig heatma[]
+# save plot Ludwig heatmap
 
 
 
@@ -847,6 +860,7 @@ for (p in paths){
       }
 # make new plot for new variant position
       mut_load_change[is.na(mut_load_change)] <- 0
+      
       plot_title <- paste0(p[[1]],": ", pos_of_interest)
       mut_plot <- ggplot(data = mut_load_change, aes(x=Generation,y=VariantLevel)) +
         geom_line() +
