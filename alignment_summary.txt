@@ -1,4 +1,4 @@
-SRR Overall_alignment_rate Number_of_reads
+SRR Overall_alignment_rate 
 SRR7245880 98.35
 SRR7245881 98.46
 SRR7245882 98.32
