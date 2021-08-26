@@ -67,7 +67,7 @@ locale;
 
 # command to cp text from slurm outfile to alignment stats
 cp slurm-${SLURM_JOB_ID}.out alignment_stdout.txt
-echo 'SRR Overall_alignment_rate Number_of_reads' > alignment_summary.txt
+echo 'SRR Overall_alignment_rate' > alignment_summary.txt
 
 for rt in "${rts[@]}"
 do
