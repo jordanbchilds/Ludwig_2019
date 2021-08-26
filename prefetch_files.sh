@@ -46,6 +46,30 @@ pip3 install GEOparse;
 python3 parse.py $gse;
 
 
+
+
+  ## check if sratools is installed
+if [ -f "mutserve/mutserve" ]; then 
+  echo "mutserve already installed";
+else
+  mkdir mutserve/;
+  cd mutserve/;
+  source ../mutserve_installer.sh;
+  echo "mutserve installed";
+  cd ../;
+fi
+
+
+
+
+
+
+
+
+
+
+
+
     ## Prefetch .sra files ##
 
 echo "Prefetching all SRRs in ${gse}_sra.txt ...";
