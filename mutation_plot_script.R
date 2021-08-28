@@ -19,7 +19,7 @@ setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
 #print(local_lib_path)
 #.libPaths(c(local_lib_path, .libPaths()))
 
-packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize")
+packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize", "reshape2")
 lapply(packages, FUN = function(i) {
   if (!require(i, character.only = TRUE)) {
     install.packages(i, dependencies = TRUE, lib = local_lib_path, repos="https://www.stats.bris.ac.uk/R/")
@@ -81,7 +81,7 @@ pre_dup_hist <- ggplot(data = pre_multiqc, aes(percent_dup)) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   labs(x ="% duplicate reads in clone") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=17))
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13))
 file_string <- "results/pre_alignment_dup_seqs_hist.png"
 ggsave(file=file_string, plot=pre_dup_hist, width = 8, height = 4, units = "in")
 
@@ -91,13 +91,13 @@ pre_num_seqs_hist <- ggplot(data = pre_multiqc, aes(num_seqs)) +
   scale_x_continuous(breaks = c(5000000,10000000,15000000,20000000,25000000), labels = c("5M","10M","15M","20M","25M")) +
   labs(x ="Number of reads in clone") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=17))
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13))
 file_string <- "results/pre_alignment_num_seqs_hist.png"
 ggsave(file=file_string, plot=pre_num_seqs_hist, width = 8, height = 4, units = "in")
 
 pre_plots <- list(pre_num_seqs_hist,pre_dup_hist)
 pre_plots <- ggarrange(plots = pre_plots, nrow = 2, align = "hv")
-ggsave(file="results/pre_plots.png", plot = pre_plots)
+ggsave(file="results/pre_plots.png", plot = pre_plots, width = 8, height = 8, units = "in")
 
 
   #####################  Coverage plots and stats  ###################### (TODO)
@@ -122,15 +122,51 @@ for (i in SRR_names){
 
     ###################### Post alignment quality ########################
 
+percent_alignment <- read.table("alignment_summary.txt", header = T)
+mean(percent_alignment$Overall_alignment_rate)
+min(percent_alignment$Overall_alignment_rate)
+
+
 all_coverages_qfilt <- read.csv("coverages/all_coverages_qfilt.txt", header = T, sep = "\t")
 all_coverages_qfilt$SRRs <- SRR_names
 all_coverages <- read.csv("coverages/all_coverages.txt", header = T, sep = "\t")
 all_coverages$SRRs <- SRR_names
+df_SRR_names <- data.frame(SRR_names)
+all_coverages$read_lengths <- merge(data.frame(SRR_names), raw_sample_info, all.x = T, by.x = "SRR_names", by.y = "Run")[,3]
 
 all_coverages$calculated_mean <- as.numeric(lapply(depths[,3:ncol(depths)], mean))
 all_coverages$calculated_sd <- as.numeric(lapply(depths[,3:ncol(depths)], sd))
 all_coverages_qfilt$calculated_mean <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], mean))
 all_coverages_qfilt$calculated_sd <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], sd))
+all_coverages_qfilt$min <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], min))
+all_coverages_qfilt$max <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], max))
+
+# create dataframe for boxplot of per sample coverages
+all_depths_qfilt <- list()
+SRR_rep_names <- list()
+for (SRR in SRR_names) {
+  tmp <- as.list(depths_qfilt[[SRR]])
+  all_depths_qfilt <- c(all_depths_qfilt,tmp)
+  SRR_rep_names <- c(SRR_rep_names, rep(SRR, nrow(depths_qfilt)))
+}
+depths_qfilt_bplot_data <- data.frame(matrix(nrow = 1143261, ncol = 2))
+depths_qfilt_bplot_data$X1 <- SRR_rep_names
+depths_qfilt_bplot_data$X2 <- as.numeric(all_depths_qfilt)
+
+depths_qfilt_bplot_data <- melt(depths_qfilt[,-1], id.vars = c("Pos"))
+depths_qfilt_bplot_data["read_depths" <=1] <- 1
+colnames(depths_qfilt_bplot_data) <- c("Pos", "SRRs", "read_depths")
+
+
+pos_coverage_all_plot <- ggplot(depths_qfilt_bplot_data) +
+  geom_line(aes(Pos,log2(read_depths), colour = SRRs))  +
+  scale_y_continuous(trans='log2')
+  
+pos_coverage_all_plot
+
+
+
+
 
 
 # filtered read histograms: coverage, no.reads, base quality, mapping quality
@@ -174,10 +210,17 @@ mean_mapq_hist <- ggplot(data = all_coverages, aes(meanmapq)) +
   theme_bw()
 
 
+
  # filtered read plots: coverage (x axis: SRR), no.reads, base quality, mapping quality
 sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, calculated_mean, calculated_sd)) +
   geom_col(colour = "black", fill = "dodgerblue3") +
   geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
+  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white"))
+sample_coverage_boxplot_qfilt <- ggplot(data = depths_qfilt_bplot_data, aes(SRRs, read_depths)) +
+  geom_boxplot() +
   scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
         axis.ticks.x = element_line(),
@@ -222,11 +265,36 @@ sample_baseq_plot <-  ggplot(data = all_coverages, aes(SRRs, meanbaseq)) +
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white")) 
 sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
-  geom_col(colour = "black", fill = "orange") +
+  geom_col(aes(fill = factor(read_lengths))) +
+  scale_fill_manual(values = c("150"="skyblue3","76"="plum3"), name = "Read length", labels = c("2x75bp", "2x35bp")) +
   scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
         axis.ticks.x = element_line(),
-        panel.background = element_rect(fill = "white"))
+        panel.background = element_rect(fill = "white"), legend.position=c(.8, .2))
+
+
+
+mean_coverage_hist
+mean_baseq_hist
+mean_mapq_hist
+mean_reads_hist
+
+sample_coverage_plot
+sample_baseq_plot
+sample_mapq_plot
+sample_reads_plot
+
+
+mean_coverage_hist_qfilt
+mean_baseq_hist_qfilt
+mean_mapq_hist_qfilt
+mean_reads_hist_qfilt
+
+sample_coverage_plot_qfilt
+sample_baseq_plot_qfilt
+sample_mapq_plot_qfilt
+sample_reads_plot_qfilt
+
 
 
 
@@ -357,12 +425,13 @@ for (p in paths){
 }
 
 
-   ### Comparaison with Ludwig's variants ###
+   ###############  Comparison with Ludwig's variants  #################
 # Ludwig's research aligned to the Hg19 mitochondrial genome, which has indels compared to rCRS. Positions off by 0,-2,-1,-2 in different parts of the chromosome. See converted positions below.
 # read in Ludwigs variants, and variant level in each sample
 Ludwig_variants <- read.csv("LUDWIG_TF1_clones_ATAC_alleleFrequencies.csv", header = T)
-colnames(Ludwig_variants)[1] <- "Ludwig_variant_positions"
+colnames(Ludwig_variants) <- c("Ludwig_variant_positions", SRR_names)
 Ludwig_variants$tobecombined_Pos <- Ludwig_variants$Ludwig_variant_positions
+
 
 # make data frame of positions of all our variants
 all_variants <-  data.frame(matrix(ncol = 1))
@@ -406,22 +475,101 @@ all_pos_HET_OR_LOWLVL_nofilt_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLV
 
 
 
-
-
 # List of Ludwig converted variant positions
+Ludwig_pos <-  c("182","309","824","849","1412","1495","1797","1972","2110","2818","3174","3911","4038","4114","4215","4447","4513","5008","5564","5863","6076","6963","7075","7790","8003","8207","8922","10372","11185","11404","11712","12062","12254","12790","12839","13289","13413","13709","14437","15089","15489","15641","15798","16252")
 rCRS_Ludwig_pos <- c("182","309","822","847","1410","1493","1795","1970","2108","2816","3173","3910","4037","4413","4214","4446","4512","5007","5563","5862","6075","6962","7074","7789","8002","8206","8921","10371","11184","11403","11711","12061","12253","12789","12838","13288","13412","13708","14436","15088","15488","15640","15797","16250")
+Ludwig_positions <- data.frame(Ludwig_pos,rCRS_Ludwig_pos)
+
+# add column of converted positions to Ludwig_variants
+Ludwig_variants <- merge(Ludwig_positions, Ludwig_variants, by.x = "Ludwig_pos", by.y = "Ludwig_variant_positions")
+
 
 # Extract rCRS Ludwig variants in our data
 HET_OR_LOWLVL_nofilt_Ludwig_variants <-  data.frame(rCRS_Ludwig_pos)
 HET_OR_LOWLVL_nofilt_Ludwig_variants$rCRS_Ludwig_pos <- rCRS_Ludwig_pos
 for (SRR in SRR_names){
   SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos,SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
-  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+  colnames(SRR_pos_level) <- c("Pos", SRR)
   HET_OR_LOWLVL_nofilt_Ludwig_variants <- merge(HET_OR_LOWLVL_nofilt_Ludwig_variants, SRR_pos_level, by.x="rCRS_Ludwig_pos", by.y = "Pos", all.x=T)
 }
 
 
+  ## Overall correlation ##
+# prepare data
+melted_our_Ludwig_variants <- melt(HET_OR_LOWLVL_nofilt_Ludwig_variants)
+Ludwig_variants <- Ludwig_variants[,-72]
+melted_Ludwig_variants <- melt(Ludwig_variants[,-1])
+colnames(melted_our_Ludwig_variants) <- c("rCRS_Ludwig_pos", "SRR_names", "our_variant_level")
+colnames(melted_Ludwig_variants) <- c("rCRS_Ludwig_pos", "SRR_names", "Ludwigs_variant_level")
+melted_our_Ludwig_variants[is.na(melted_our_Ludwig_variants)] = 0
+melted_correlation_data <- merge(melted_Ludwig_variants, melted_our_Ludwig_variants, by = c("rCRS_Ludwig_pos", "SRR_names"))
+melted_correlation_data$Ludwigs_variant_level <- sqrt(melted_correlation_data$Ludwigs_variant_level)
+melted_correlation_data$our_variant_level <- sqrt(melted_correlation_data$our_variant_level)
 
+
+corr_plot_all <- ggplot(melted_correlation_data, aes(Ludwigs_variant_level, our_variant_level)) +
+  geom_point(aes(colour=factor(rCRS_Ludwig_pos))) +
+  geom_smooth(method = "lm", se = TRUE, color = 'black', aes(alpha = 0.5)) +
+  expand_limits(x = 0.8)
+
+#shapiro.test(melted_correlation_data$Ludwigs_variant_level)
+
+#cor.test(melted_correlation_data$Ludwigs_variant_level, melted_correlation_data$our_variant_level, method = 'pearson')
+cor.test(melted_correlation_data$Ludwigs_variant_level, melted_correlation_data$our_variant_level, method = 'spearman')
+
+spear_pos <- data.frame(matrix(nrow = 44,ncol = 3))
+colnames(spear_pos) <- c("Pos", "Rho", "p-value")
+#rownames(spear_pos) <- rCRS_Ludwig_pos
+spear_pos$Pos <- rCRS_Ludwig_pos
+spear_res <- list()
+n=0
+for (i in rCRS_Ludwig_pos) {
+  print(i)
+  n=n+1
+  spear_data <- melted_correlation_data[melted_correlation_data$rCRS_Ludwig_pos==i,]
+  spear_res[[i]] <- cor.test(spear_data$Ludwigs_variant_level, spear_data$our_variant_level, method = 'spearman')
+  spear_res[[i]] <- c(spear_res[[i]]$estimate,spear_res[[i]]$p.value)
+  #spear_pos$p-value[[i]] <- spear_res$p.value
+}
+
+
+# Correlation within lineages
+
+
+for (p in paths){
+  if (p[[1]] == "#"){
+    print("skipping comment line...")
+    next
+  }
+  all_variants_in_lineage <- data.frame(matrix(ncol = 1))
+  colnames(all_variants_in_lineage) <- "Pos"
+  n=0
+  
+  for (SRR in p){
+    # Skip Lineage path name (1st in character vector of paths[[p]] )
+    n=n+1
+    print(SRR)
+    print(typeof(SRR))
+    if (n==1){
+      next
+    }
+    # stop where the variants of interest positions are listed on the line (for 
+    # mutation load plots below)
+    if (SRR == "VARIANTS_OF_INTEREST") {
+      print("Reached VARIANTS_OF_INTEREST for this lineage")
+      break
+    }
+    # get SRRs of lineage
+    SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
+    print(colnames(SRR_pos_level))
+    colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+    all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = T)
+    
+  }
+  file_string <- paste0("results/",p[[1]],"_HET_nofilt_variants.csv")
+  write.csv(all_variants_in_lineage,file = file_string, quote = F)
+  print("table of bulk variants in lineage path saved in 'results/'")
+}
 
 
  ############## Heatmap of Ludwig's variant positions #######################
@@ -439,6 +587,8 @@ lineage_cols <- list(lineage = c("bulk"="royalblue4", "G11"="magenta3", "B3"="or
 ha <- HeatmapAnnotation(lineage = SRR_lineage_generation$lineages, col = lineage_cols)
 Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Ludwig Variants", col = het_lvl_cols, na_col = "white", top_annotation = ha)
 # save plot Ludwig heatmap
+
+
 
 
 
