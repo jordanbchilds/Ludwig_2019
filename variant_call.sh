@@ -69,8 +69,9 @@ do
   else 
     
     echo "Creating mpileup for ${rt}...";
-    samtools view bam/${rt}_sorted.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref mutserve/rCRS.fasta -q 18 -Q 20 --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,INFO/AD,INFO/ADF,INFO/ADR --threads 8 -Ov --output bcftools_out/${rt}_mpileup.vcf
-   # bcftools call? 
+    #samtools view bam/${rt}_sorted.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref mutserve/rCRS.fasta -q 18 -Q 20 --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,INFO/AD,INFO/ADF,INFO/ADR --threads 8 -Ov --output bcftools_out/${rt}_mpileup.vcf;
+    echo "Calling point mutations (bcftools call) for ${rt}...";
+   bcftools call ${rt}_mpileup.vcf --keep-alts --skip-variants indels --regions chrM -Ov --ploidy 1 --output bcftools_out/${rt}_calls.vcf;
   fi
 done
 
