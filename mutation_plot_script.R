@@ -54,7 +54,8 @@ paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 # Name, lineage and generation for each sample (for plotting colours and annotations)
 lineages <- c("bulk", "bulk", "A9","B11","C7","D3","F4","G11","B3","B5","B9","C4","C10","D2","C9","D6","G10","B11","B11","B5","B5","F4","F4","A9","A9","B3","B3","D2","D2","G11","G11","B3","B3","D2","D2","G11","G11","B11","B11","B5","B5","F4","F4","B3","B3","B3","B3","D2","D2","G11","G11","G11","G11","B3","B3","B3","B3","G11","G11","G11","G11","G11","G11","G11","G11","G11","G11","mix","mix")
 generation <- c("0","0","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","2","2","2","2","2","2","2","2","2","2","2","2","2","2","3","3","3","3","3","3","3","3","3","3","3","3","4","4","4","4","4","4","4","4","4","4","5","5","5","5","5","5","5","5","6","6","7","7","8","8","","")
-SRR_lineage_generation <- data.frame(SRR_names,lineages,generation)
+generation_axis_labs <- c("bulk","bulk","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G2","G2","G2","G2","G2","G2","G2","G2","G2","G2","G2","G2","G2","G2","G3","G3","G3","G3","G3","G3","G3","G3","G3","G3","G3","G3","G4","G4","G4","G4","G4","G4","G4","G4","G4","G4","G5","G5","G5","G5","G5","G5","G5","G5","G6","G6","G7","G7","G8","G8","mix","mix")
+SRR_lineage_generation <- data.frame(SRR_names,lineages,generation,generation_axis_labs)
 
 
 
@@ -157,6 +158,13 @@ depths_qfilt_bplot_data <- melt(depths_qfilt[,-1], id.vars = c("Pos"))
 depths_qfilt_bplot_data["read_depths" <=1] <- 1
 colnames(depths_qfilt_bplot_data) <- c("Pos", "SRRs", "read_depths")
 
+
+fold_coverage <- (mean(pre_multiqc$sequence_lengths)/16569)*mean(pre_multiqc$num_seqs)
+mean(all_coverages$meandepth)
+
+
+
+# coverage plot for all bases, all samples
 
 pos_coverage_all_plot <- ggplot(depths_qfilt_bplot_data) +
   geom_line(aes(Pos,log2(read_depths), colour = SRRs))  +
@@ -388,6 +396,7 @@ print("table of bulk variants in lineage path saved in 'results/'")
 
 
 # Repeat for only heteroplasmic or low level variants, unfiltered
+all_variants_in_lineages <- list()
 for (p in paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
@@ -422,10 +431,12 @@ for (p in paths){
   file_string <- paste0("results/",p[[1]],"_HET_nofilt_variants.csv")
   write.csv(all_variants_in_lineage,file = file_string, quote = F)
   print("table of bulk variants in lineage path saved in 'results/'")
+  all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage
 }
 
 
    ###############  Comparison with Ludwig's variants  #################
+
 # Ludwig's research aligned to the Hg19 mitochondrial genome, which has indels compared to rCRS. Positions off by 0,-2,-1,-2 in different parts of the chromosome. See converted positions below.
 # read in Ludwigs variants, and variant level in each sample
 Ludwig_variants <- read.csv("LUDWIG_TF1_clones_ATAC_alleleFrequencies.csv", header = T)
@@ -487,10 +498,17 @@ Ludwig_variants <- merge(Ludwig_positions, Ludwig_variants, by.x = "Ludwig_pos",
 # Extract rCRS Ludwig variants in our data
 HET_OR_LOWLVL_nofilt_Ludwig_variants <-  data.frame(rCRS_Ludwig_pos)
 HET_OR_LOWLVL_nofilt_Ludwig_variants$rCRS_Ludwig_pos <- rCRS_Ludwig_pos
+our_Ludwig_variants_nofilt <-  data.frame(rCRS_Ludwig_pos)
+our_Ludwig_variants_nofilt$rCRS_Ludwig_pos <- rCRS_Ludwig_pos
 for (SRR in SRR_names){
   SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos,SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
   colnames(SRR_pos_level) <- c("Pos", SRR)
   HET_OR_LOWLVL_nofilt_Ludwig_variants <- merge(HET_OR_LOWLVL_nofilt_Ludwig_variants, SRR_pos_level, by.x="rCRS_Ludwig_pos", by.y = "Pos", all.x=T)
+  
+  SRR_pos_level <- data.frame(SRR_table_list[[SRR]]$Pos,SRR_table_list[[SRR]]$VariantLevel)
+  colnames(SRR_pos_level) <- c("Pos", SRR)
+  our_Ludwig_variants_nofilt <- merge(our_Ludwig_variants_nofilt, SRR_pos_level, by.x="rCRS_Ludwig_pos", by.y = "Pos", all.x=T)
+  
 }
 
 
@@ -572,6 +590,7 @@ for (p in paths){
 }
 
 
+
  ############## Heatmap of Ludwig's variant positions #######################
 
 HET_OR_LOWLVL_nofilt_Ludwig_variants[is.na(HET_OR_LOWLVL_nofilt_Ludwig_variants)] <- as.numeric(0)
@@ -591,17 +610,13 @@ Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Ludwig Variants", col
 
 
 
-
-
-
-
 ########################   Mutation Plots   ############################
 
 
 barplot_lims <- data.frame(0:16569, rep(1,16570))
 colnames(barplot_lims) <- c("Position", "ylimit")
 
-  # get SRRs for lineage_paths.txt from lineage tree (S1d_lineage_tree.png)
+  # get SRRs for lineage_paths.txt from S00__ number labels on lineage tree (S1d_lineage_tree.png)
 Snumb_path <- list("bulk", "S0014", "S0028", "S0034", "S0049")  # add Snumbs here. S MUST BE CAPITALIZED. S000 and S0001 not recognised - use "bulk" instead.
 
 get_SRRs_from_Snumbs <- function(Snumb_path){  # See S1d_lineage_tree.png (labelled with S#### sample names). Get list of SRRs to place in lineage_paths.txt (Don't forget to choose and add a name in front of the path list).
@@ -943,27 +958,30 @@ for (p in paths){
 # are listed. Then for each VARIANT_OF_INTEREST position, plot line graph of 
 # how variant's mutation load changes across the lineage path.
 
+#generation_axis_labs <- c("bulk","bulk","G1","G2","G3","G4","G5","G6","G7","G8")
+
 for (p in paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
     next
   } 
+  print(substr(p[[1]],0,3))
   if (substr(p[[1]], 0, 3)=="B11"){
     lin_col <- "palevioletred1"
   } 
-  if (substr(p[[1]], 0, 2)=="B5"){
+  else if (substr(p[[1]], 0, 2)=="B5"){
     lin_col <- "burlywood4"
   } 
-  if (substr(p[[1]], 0, 2)=="F4"){
+  else if (substr(p[[1]], 0, 2)=="F4"){
     lin_col <- "darkgrey"
   } 
-  if (substr(p[[1]], 0, 2)=="D2"){
+  else if (substr(p[[1]], 0, 2)=="D2"){
     lin_col <- "yellow1"
   } 
-  if (substr(p[[1]], 0, 2)=="B3"){
+  else if (substr(p[[1]], 0, 2)=="B3"){
     lin_col <- "orange"
   } 
-  if (substr(p[[1]], 0, 3)=="G11"){
+  else if (substr(p[[1]], 0, 3)=="G11"){
     lin_col <- "mediumorchid1"
   }
   SRRs_in_path <- list()
@@ -1002,32 +1020,33 @@ for (p in paths){
       print(paste0("Plotting position: ", pos_of_interest, ", for lineage path: ", p[[1]]))
 
 # make new data frame for new variant position
-      mut_load_change <- data.frame(matrix(nrow = length(SRRs_in_path), ncol = 3))
-      colnames(mut_load_change) <- c("SRR", "Generation", "VariantLevel")
+      mut_load_change <- data.frame(matrix(nrow = length(SRRs_in_path), ncol = 4))
+      colnames(mut_load_change) <- c("SRR", "Generation", "VariantLevel", "Generation_labs")
       print(paste("SRRs_in_path: ", SRRs_in_path))
       for (SRR_name in SRRs_in_path){
         n=n+1
         print(SRR_name)
-        mut_load_change$SRR[[n]] <- SRR_name
+        mut_load_change$SRR[n] <- SRR_name
         mut_load_change$Generation[n] <- n-1
+        mut_load_change$Generation_labs[n] <- paste(SRR_lineage_generation$generation_axis_labs[SRR_lineage_generation$SRR_names==SRR_name])
         mut_load_change$VariantLevel[n] <- SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]
-
       }
 # make new plot for new variant position
       mut_load_change[is.na(mut_load_change)] <- 0
-      
       plot_title <- paste0(p[[1]],": ", pos_of_interest)
       mut_plot <- ggplot(data = mut_load_change, aes(x=Generation,y=VariantLevel)) +
-        geom_line() +
-        geom_point(aes(colour = lin_col), size = 3) +
+        geom_line(aes(colour = lin_col)) +
+        #geom_point(aes(colour = lin_col), size = 3) +
         theme_minimal() +
         theme(plot.background = element_rect(fill = "white",
                                 colour = "white"),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                axis.line = element_line(colour = "black"), legend.position = "none") +
-        ggtitle(plot_title)
-      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-            panel.background = element_blank(), axis.line = element_line(colour = "black"))
-# save plot
+        ggtitle(plot_title) +
+        scale_x_continuous(breaks = mut_load_change$Generation, labels = mut_load_change$Generation_labs) +
+        expand_limits(y = 0)
+      
+      
+      # save plot
       file_string <- paste0("results/",p[[1]],"_pos_",pos_of_interest, ".png")
       ggsave(file=file_string, plot=mut_plot)
       n=0
@@ -1039,3 +1058,28 @@ for (p in paths){
 
   }
 }
+
+
+
+
+
+####################### Replicate correlation plot #######################
+
+# combine AF of replicates
+bulk_replicates_all_nofilt <- data.frame(SRR_table_list$SRR7245880$VariantLevel, SRR_table_list$SRR7245881$VariantLevel)
+colnames(bulk_replicates_all_nofilt) <- c("Bulk_SRR7245880", "Bulk_SRR7245881")
+bulk_replicates_all_nofilt[is.na(bulk_replicates_all_nofilt)] <- 0
+
+# plot sqrt AF
+bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881))) +
+  geom_point()
+
+
+
+bulk_replicates_Ludwigs_nofilt <- data.frame(our_Ludwig_variants_nofilt$SRR7245880, our_Ludwig_variants_nofilt$SRR7245881)
+colnames(bulk_replicates_Ludwigs_nofilt) <- c("Bulk_SRR7245880", "Bulk_SRR7245881")
+bulk_replicates_Ludwigs_nofilt[is.na(bulk_replicates_Ludwigs_nofilt)] <- 0
+
+bulk_rep_Ludwigs_corr_plot <- ggplot(bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881))) +
+  geom_point()
+
