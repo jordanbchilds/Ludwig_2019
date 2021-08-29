@@ -34,7 +34,7 @@ library("ComplexHeatmap")
 
 
   ## Read SRR files ##
-filenames <- list.files("vcf/", pattern="*_annotated.txt")
+filenames <- list.files("vcf_0_cutoff/", pattern="*_annotated.txt")
 # Create list of data frame names without the ".txt" part 
 SRR_names <-substr(filenames,1,10)
 
@@ -57,7 +57,8 @@ generation <- c("0","0","1","1","1","1","1","1","1","1","1","1","1","1","1","1",
 generation_axis_labs <- c("bulk","bulk","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G1","G2","G2","G2","G2","G2","G2","G2","G2","G2","G2","G2","G2","G2","G2","G3","G3","G3","G3","G3","G3","G3","G3","G3","G3","G3","G3","G4","G4","G4","G4","G4","G4","G4","G4","G4","G4","G5","G5","G5","G5","G5","G5","G5","G5","G6","G6","G7","G7","G8","G8","mix","mix")
 SRR_lineage_generation <- data.frame(SRR_names,lineages,generation,generation_axis_labs)
 
-
+lineage_cols <- c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="yellow", "F4"="grey", "B5"="burlywood4", "B11"="palevioletred2", "A9"="lightseagreen", "D3"="palegreen1", "C7"="lightgoldenrod", "C4"="pink2","C10"="cyan", "B9"="plum1","G10"="steelblue2", "D6"="springgreen4","C9"="red", "mix"="darkgreen")
+merge
 
 
   ####################  Pre-alignment plots and tables #########################
@@ -82,7 +83,7 @@ pre_dup_hist <- ggplot(data = pre_multiqc, aes(percent_dup)) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   labs(x ="% duplicate reads in clone") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13))
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) 
 file_string <- "results/pre_alignment_dup_seqs_hist.png"
 ggsave(file=file_string, plot=pre_dup_hist, width = 8, height = 4, units = "in")
 
@@ -92,7 +93,8 @@ pre_num_seqs_hist <- ggplot(data = pre_multiqc, aes(num_seqs)) +
   scale_x_continuous(breaks = c(5000000,10000000,15000000,20000000,25000000), labels = c("5M","10M","15M","20M","25M")) +
   labs(x ="Number of reads in clone") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13))
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) #+
+  #annotate(geom = "text", x = 2000000, y = 16, label = "A")
 file_string <- "results/pre_alignment_num_seqs_hist.png"
 ggsave(file=file_string, plot=pre_num_seqs_hist, width = 8, height = 4, units = "in")
 
@@ -328,8 +330,6 @@ for(i in SRR_names){
   # no filter to see if variants are filtered differently in different samples across lineage paths
   SRR_table_list_HET_OR_LOWLVL_nofilt[[i]] <- subset(SRR_table_list[[i]], Type ==2)
   }
-print("Before merging structure of SRR_table_list")
-print(str(SRR_table_list[["SRR7245880"]]))
 
 
   #################### Variant calling stats ########################
@@ -965,25 +965,6 @@ for (p in paths){
     print("skipping comment line...")
     next
   } 
-  print(substr(p[[1]],0,3))
-  if (substr(p[[1]], 0, 3)=="B11"){
-    lin_col <- "palevioletred1"
-  } 
-  else if (substr(p[[1]], 0, 2)=="B5"){
-    lin_col <- "burlywood4"
-  } 
-  else if (substr(p[[1]], 0, 2)=="F4"){
-    lin_col <- "darkgrey"
-  } 
-  else if (substr(p[[1]], 0, 2)=="D2"){
-    lin_col <- "yellow1"
-  } 
-  else if (substr(p[[1]], 0, 2)=="B3"){
-    lin_col <- "orange"
-  } 
-  else if (substr(p[[1]], 0, 3)=="G11"){
-    lin_col <- "mediumorchid1"
-  }
   SRRs_in_path <- list()
   index=0
   at.positions = F
@@ -1031,11 +1012,14 @@ for (p in paths){
         mut_load_change$Generation_labs[n] <- paste(SRR_lineage_generation$generation_axis_labs[SRR_lineage_generation$SRR_names==SRR_name])
         mut_load_change$VariantLevel[n] <- SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]
       }
+      last_SRR <- SRRs_in_path[length(SRRs_in_path)]
+      lin <- as.character(SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==last_SRR])
+      lin_col <- as.character(lineage_cols$lineage[lin])
 # make new plot for new variant position
       mut_load_change[is.na(mut_load_change)] <- 0
       plot_title <- paste0(p[[1]],": ", pos_of_interest)
       mut_plot <- ggplot(data = mut_load_change, aes(x=Generation,y=VariantLevel)) +
-        geom_line(aes(colour = lin_col)) +
+        geom_line(color = lin_col) +
         #geom_point(aes(colour = lin_col), size = 3) +
         theme_minimal() +
         theme(plot.background = element_rect(fill = "white",
@@ -1066,13 +1050,13 @@ for (p in paths){
 ####################### Replicate correlation plot #######################
 
 # combine AF of replicates
-bulk_replicates_all_nofilt <- data.frame(SRR_table_list$SRR7245880$VariantLevel, SRR_table_list$SRR7245881$VariantLevel)
-colnames(bulk_replicates_all_nofilt) <- c("Bulk_SRR7245880", "Bulk_SRR7245881")
+bulk_replicates_all_nofilt <- all_variants_in_lineages$Bulks
+colnames(bulk_replicates_all_nofilt) <- c("Pos", "SRR7245880", "SRR7245881")
 bulk_replicates_all_nofilt[is.na(bulk_replicates_all_nofilt)] <- 0
 
 # plot sqrt AF
 bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881))) +
-  geom_point()
+  geom_point(aes(colour = factor))
 
 
 
