@@ -176,8 +176,9 @@ pos_coverage_all_plot <- ggplot(depths_qfilt_bplot_data) +
   scale_y_continuous(trans='log2',breaks = c(1,2,4,8,16), labels = yax) +
   scale_x_continuous(breaks = c(0,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000))+
   #coord_trans(y="log2") +
+  geom_hline(yintercept = log2(200), colour = "red")+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") #+
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none")
 
   
 pos_coverage_all_plot
@@ -233,14 +234,8 @@ mean_mapq_hist <- ggplot(data = all_coverages, aes(meanmapq)) +
 sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, calculated_mean, calculated_sd)) +
   geom_col(colour = "black", fill = "dodgerblue3") +
   geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
-  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
+  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) 
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
-        axis.ticks.x = element_line(),
-        panel.background = element_rect(fill = "white"))
-sample_coverage_boxplot_qfilt <- ggplot(data = depths_qfilt_bplot_data, aes(SRRs, read_depths)) +
-  geom_boxplot() +
-  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
-  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0, size = 11),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white"))
 sample_reads_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, numreads)) +
@@ -267,7 +262,7 @@ sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, calculated_mean, 
   geom_col(colour = "black", fill = "orange") +
   geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
   scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
-  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0, size = 13),
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0, size = 10),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white"))
 sample_reads_plot <- ggplot(data = all_coverages, aes(SRRs, numreads)) +
@@ -286,9 +281,18 @@ sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
   geom_col(aes(fill = factor(read_lengths))) +
   scale_fill_manual(values = c("150"="skyblue3","76"="plum3"), name = "Read length", labels = c("2x75bp", "2x35bp")) +
   scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
-  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0, size = 11),
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0, size = 10),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white"), legend.position=c(.8, .2))
+
+sample_coverage_boxplot_qfilt <- ggplot(data = depths_qfilt_bplot_data, aes(SRRs, read_depths)) +
+  geom_boxplot() +
+  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
+  geom_hline(yintercept=200, size = 0.2, colour = "red") +
+  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0, size = 10),
+        axis.ticks.x = element_line(),
+        panel.background = element_rect(fill = "white")) +
+  expand_limits(y = 0)
 
 
 
@@ -539,13 +543,15 @@ melted_correlation_data$our_variant_level <- sqrt(melted_correlation_data$our_va
 
 corr_plot_all <- ggplot(melted_correlation_data, aes(Ludwigs_variant_level, our_variant_level)) +
   geom_point(aes(colour=factor(rCRS_Ludwig_pos))) +
-  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,1)) +
-  scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,1)) +
+  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #geom_smooth(method = "lm", se = TRUE, color = 'black', aes(alpha = 0.5)) +
   theme(text = element_text(size = 13), legend.key.size = unit(0.2, "cm"), legend.title = element_text(size=14), #change legend title font size
         legend.text = element_text(size=10), legend.position = "none") +
-
-  labs(x = "Heteroplasmy (Ludwig et al, 2019)", y = "Heteroplasmy", colour = "Variants")
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") +
+  labs(x = "Heteroplasmy (Ludwig et al, 2019)", y = "Heteroplasmy", colour = "Variants")+
+  expand_limits(x=1,y=1)
 ggsave(file="results/correlation_with_Luwig_by_pos.png", plot=corr_plot_all, width = 4, height = 4, units = "in")
 
 
@@ -624,12 +630,21 @@ het_lvl_cols <- colorRamp2(breaks = c(0.05,0.4),
 lineage_cols <- list(Lineage = c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="yellow", "F4"="grey", "B5"="burlywood4", "B11"="palevioletred2", "A9"="lightseagreen", "D3"="palegreen1", "C7"="lightgoldenrod", "C4"="pink2","C10"="cyan", "B9"="plum1","G10"="steelblue2", "D6"="springgreen4","C9"="red", "mix"="darkgreen"))
 
 ha <- HeatmapAnnotation(Lineage = SRR_lineage_generation$lineages, col = lineage_cols)
-heatmap_ludwig_variants <- Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Heteroplasmy", col = het_lvl_cols, na_col = "white", top_annotation = ha, row_title_gp = gpar(fontsize = 18), row_names_gp = gpar(fontsize = 18),column_names_gp = gpar(fontsize = 18))
+heatmap_ludwig_variants <- Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Heteroplasmy", col = het_lvl_cols, na_col = "white", top_annotation = ha)#, row_title_gp = gpar(fontsize = 13), row_names_gp = gpar(fontsize = 13),column_names_gp = gpar(fontsize = 18))
 png(filename="results/heatmap_Ludwig_variants.png", width = 1024*1.5, height = 1024, units = "px")
 heatmap_ludwig_variants
 dev.off()
 
+##########################  PCA  ##########################################
 
+all_variants[is.na(all_variants)] <- 0
+all_variants <- all_variants[-71]
+t_all_variants <- data.frame(transpose(all_variants[-1]))
+rownames(t_all_variants) <- colnames(all_variants[-1])
+pca_all <- prcomp(t_all_variants)
+pca_df <- data.frame(pca_all$x)
+pca_plot <- ggplot(data = pca_df, aes(PC1, PC2)) +
+  geom_point()
 
 ########################   Mutation Plots   ############################
 
@@ -1084,9 +1099,11 @@ bulk_replicates_Ludwigs_nofilt[is.na(bulk_replicates_Ludwigs_nofilt)] <- 0
 
 # plot sqrt AF
 bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(sqrt(SRR7245880),sqrt(SRR7245881))) +
-  geom_point()+
+  geom_point() +
   geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
   labs(x ="Heteroplasmy (SRR7245880)", y ="Heteroplasmy (SRR7245881)") +
+  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") #+
 ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
@@ -1098,7 +1115,7 @@ ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_no
 comparison_plots <- list(bulk_rep_corr_plot_all_nofilt,corr_plot_all)
 comparison_plots <- ggarrange(plots = comparison_plots, ncol = 2, align = "hv")
 ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, height = 4, units = "in")
-comparison_plots_and_heatmap <- plot_grid(
-  heatmap_ludwig_variants, comparison_plots,
-  labels = "AUTO", ncol = 1
-)
+#comparison_plots_and_heatmap <- plot_grid(
+#  heatmap_ludwig_variants, comparison_plots,
+#  labels = "AUTO", ncol = 1
+#)
