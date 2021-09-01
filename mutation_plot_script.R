@@ -19,7 +19,7 @@ setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
 #print(local_lib_path)
 #.libPaths(c(local_lib_path, .libPaths()))
 
-packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize", "reshape2","cowplot")
+packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize", "reshape2","cowplot", "data.table")
 lapply(packages, FUN = function(i) {
   if (!require(i, character.only = TRUE)) {
     install.packages(i, dependencies = TRUE, lib = local_lib_path, repos="https://www.stats.bris.ac.uk/R/")
@@ -34,7 +34,7 @@ library("ComplexHeatmap")
 
 
   ## Read SRR files ##
-filenames <- list.files("vcf_0_cutoff/", pattern="*_annotated.txt")
+filenames <- list.files("vcf_map20/", pattern="*_annotated.txt")
 # Create list of data frame names without the ".txt" part 
 SRR_names <-substr(filenames,1,10)
 
@@ -58,7 +58,7 @@ generation_axis_labs <- c("bulk","bulk","G1","G1","G1","G1","G1","G1","G1","G1",
 SRR_lineage_generation <- data.frame(SRR_names,lineages,generation,generation_axis_labs)
 
 lineage_cols <- c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="yellow", "F4"="grey", "B5"="burlywood4", "B11"="palevioletred2", "A9"="lightseagreen", "D3"="palegreen1", "C7"="lightgoldenrod", "C4"="pink2","C10"="cyan", "B9"="plum1","G10"="steelblue2", "D6"="springgreen4","C9"="red", "mix"="darkgreen")
-merge
+#merge
 
 
   ####################  Pre-alignment plots and tables #########################
@@ -253,7 +253,7 @@ sample_baseq_plot_qfilt <-  ggplot(data = all_coverages_qfilt, aes(SRRs, meanbas
 sample_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meanmapq)) +
   geom_col(colour = "black", fill = "dodgerblue3") +
   scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
-  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
+  theme(axis.text.x = element_text(angle = 90, vjust=1.05, hjust = 1.0),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white")) 
 
@@ -281,7 +281,7 @@ sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
   geom_col(aes(fill = factor(read_lengths))) +
   scale_fill_manual(values = c("150"="skyblue3","76"="plum3"), name = "Read length", labels = c("2x75bp", "2x35bp")) +
   scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
-  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0, size = 10),
+  theme(axis.text.x = element_text(angle = 90, vjust=1.05, hjust = 1.0, size = 10),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white"), legend.position=c(.8, .2))
 
@@ -289,7 +289,7 @@ sample_coverage_boxplot_qfilt <- ggplot(data = depths_qfilt_bplot_data, aes(SRRs
   geom_boxplot() +
   scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
   geom_hline(yintercept=200, size = 0.2, colour = "red") +
-  theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0, size = 10),
+  theme(axis.text.x = element_text(angle = 90, vjust=1.05, hjust = 1.0, size = 10),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white")) +
   expand_limits(y = 0)
@@ -336,7 +336,7 @@ SRR_table_list_HET_OR_LOWLVL_nofilt <- list()
 for(i in SRR_names){
   filepath <- file.path("vcf",paste(i,"_annotated.txt",sep=""))
   SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T)
-  # remove variants where the reference = "N". multiallelic, but only major level plotted - stacked bars - deletion at 3107
+  # remove variants where the reference = "N". (deletion eg. at 3107)
   SRR_table_list[[i]] <- SRR_table_list[[i]][!(SRR_table_list[[i]]$Ref=="N"),]
   # subset for variants which passed filter
   SRR_table_list_PASS[[i]] <- subset(SRR_table_list[[i]], Filter == "PASS")
@@ -558,26 +558,52 @@ ggsave(file="results/correlation_with_Luwig_by_pos.png", plot=corr_plot_all, wid
 
 #shapiro.test(melted_correlation_data$Ludwigs_variant_level)
 
-#cor.test(melted_correlation_data$Ludwigs_variant_level, melted_correlation_data$our_variant_level, method = 'pearson')
+cor.test(melted_correlation_data$Ludwigs_variant_level, melted_correlation_data$our_variant_level, method = 'pearson')
 cor.test(melted_correlation_data$Ludwigs_variant_level, melted_correlation_data$our_variant_level, method = 'spearman')
 
-spear_pos <- data.frame(matrix(nrow = 44,ncol = 3))
-colnames(spear_pos) <- c("Pos", "Rho", "p-value")
-#rownames(spear_pos) <- rCRS_Ludwig_pos
-spear_pos$Pos <- rCRS_Ludwig_pos
-spear_res <- list()
-n=0
+
+  ## Spearman's rank correlation per position ##
+
+Ludwig_spearman_by_pos <- data.frame(rCRS_Ludwig_pos)
+spear_res_tmp <- data.frame(rCRS_Ludwig_pos)
+estimates <- list()
+pvalues <- list()
 for (i in rCRS_Ludwig_pos) {
   print(i)
   n=n+1
   spear_data <- melted_correlation_data[melted_correlation_data$rCRS_Ludwig_pos==i,]
-  spear_res[[i]] <- cor.test(spear_data$Ludwigs_variant_level, spear_data$our_variant_level, method = 'spearman')
-  spear_res[[i]] <- c(spear_res[[i]]$estimate,spear_res[[i]]$p.value)
-  #spear_pos$p-value[[i]] <- spear_res$p.value
+  spear_res_tmp<- cor.test(spear_data$Ludwigs_variant_level, spear_data$our_variant_level, method = 'spearman')
+  estimates <- c(estimates, spear_res_tmp$estimate)
+  pvalues <- c(pvalues,spear_res_tmp$p.value)
 }
+Ludwig_spearman_by_pos$rho <- estimates
+Ludwig_spearman_by_pos$p.values <- pvalues
+
+Ludwig_spearman_by_pos <- apply(Ludwig_spearman_by_pos,2,as.character)
+file_string <- paste0("results/Correlation_spearman_perPos.csv")
+write.csv(Ludwig_spearman_by_pos,file = file_string, quote = F)
 
 
-# Correlation within lineages
+  ## Pearson's correlation per position ##
+
+Ludwig_pearson_by_pos <- data.frame(rCRS_Ludwig_pos)
+pearson_res_tmp <- data.frame(rCRS_Ludwig_pos)
+estimates <- list()
+pvalues <- list()
+for (i in rCRS_Ludwig_pos) {
+  print(i)
+  n=n+1
+  pearson_data <- melted_correlation_data[melted_correlation_data$rCRS_Ludwig_pos==i,]
+  pearson_res_tmp<- cor.test(pearson_data$Ludwigs_variant_level, pearson_data$our_variant_level, method = 'pearson')
+  estimates <- c(estimates, pearson_res_tmp$estimate)
+  pvalues <- c(pvalues,pearson_res_tmp$p.value)
+}
+Ludwig_pearson_by_pos$rho <- estimates
+Ludwig_pearson_by_pos$p.values <- pvalues
+
+Ludwig_pearson_by_pos <- apply(Ludwig_pearson_by_pos,2,as.character)
+file_string <- paste0("results/Correlation_pearson_perPos.csv")
+write.csv(Ludwig_pearson_by_pos,file = file_string, quote = F)
 
 
 for (p in paths){
@@ -1112,7 +1138,7 @@ ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_no
 
 
 #Fig 3?
-comparison_plots <- list(bulk_rep_corr_plot_all_nofilt,corr_plot_all)
+comparison_plots <- list(corr_plot_all, bulk_rep_corr_plot_all_nofilt)
 comparison_plots <- ggarrange(plots = comparison_plots, ncol = 2, align = "hv")
 ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, height = 4, units = "in")
 #comparison_plots_and_heatmap <- plot_grid(
