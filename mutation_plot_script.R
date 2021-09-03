@@ -19,7 +19,7 @@ setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
 #print(local_lib_path)
 #.libPaths(c(local_lib_path, .libPaths()))
 
-packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize", "reshape2","cowplot", "data.table")
+packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize", "reshape2","cowplot", "data.table", "dplyr")
 lapply(packages, FUN = function(i) {
   if (!require(i, character.only = TRUE)) {
     install.packages(i, dependencies = TRUE, lib = local_lib_path, repos="https://www.stats.bris.ac.uk/R/")
@@ -330,33 +330,28 @@ SRR_table_list <- list()  # All
 SRR_table_list_PASS <- list()  # Filtered
 SRR_table_list_HET_OR_LOWLVL <- list()  # Filtered and only heteroplasmic/low level
 SRR_table_list_HET_OR_LOWLVL_nofilt <- list()
+SRR_table_list_HET_OR_LOWLVL_validated <- list()
 
 #threshold <- 0.05
 # Load files into list of data.frames
 for(i in SRR_names){
   filepath <- file.path("vcf",paste(i,"_annotated.txt",sep=""))
   SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T)
-  # remove variants where the reference = "N". (deletion eg. at 3107)
-  SRR_table_list[[i]] <- SRR_table_list[[i]][!(SRR_table_list[[i]]$Ref=="N"),]
+  # remove positions (deletion eg. at 3107)
+  SRR_table_list[[i]] <- SRR_table_list[[i]][!(SRR_table_list[[i]]$Pos==3107),]
   # subset for variants which passed filter
   SRR_table_list_PASS[[i]] <- subset(SRR_table_list[[i]], Filter == "PASS")
   # subset for "HET_OR_LOWLVL" variants (Heteroplasmic or low-level variant)
   SRR_table_list_HET_OR_LOWLVL[[i]] <- subset(SRR_table_list_PASS[[i]], Type == 2)
-  # no filter to see if variants are filtered differently in different samples across lineage paths
+  # no strand bias filter to see if variants are filtered differently in different samples across lineage paths
   SRR_table_list_HET_OR_LOWLVL_nofilt[[i]] <- subset(SRR_table_list[[i]], Type ==2)
+  # Lineage_validated created below 
   }
 
-
+302:315
   #################### Variant calling stats ########################
 
-variant_stats <- data.frame(matrix(nrow = length(SRR_table_list), ncol = 8))
-colnames(variant_stats) <- c("SRR","No.Variants", "No.Unfiltered_Variants", "No.het", "No.hom","No.transition", "No.transversion", "No.missense")
-variant_stats$SRR <- SRR_names
-#variant_stats$
 
-#for (i in SRR_names){
-#  variant_stats$No.Variants[[i]] <- nrow(SRR_table_list[[i]])
-#}
 
 
 bulk_variant_pos80 <- data.frame(SRR_table_list_HET_OR_LOWLVL$SRR7245880$Pos)#[SRR_table_list$SRR7245880$Type==2])
@@ -411,8 +406,16 @@ print("table of bulk variants in lineage path saved in 'results/'")
 
 
 # Repeat for only heteroplasmic or low level variants, unfiltered
+
+validation_paths <- list()
+validation_paths <- as.list(strsplit(readLines("validation_groups.txt"), " "))
+
+
 all_variants_in_lineages <- list()
-for (p in paths){
+validated_per_lineage <- list()
+all_lineages_validated <- data.frame()
+all_lineages_validated$Pos <- 310
+for (p in validation_paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
     next
@@ -443,11 +446,52 @@ for (p in paths){
     all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = T)
     
   }
+  # only keep variants which have an allele frequency > 0.01. 
+  lineage_validated <- all_variants_in_lineage %>% filter_at(-1, any_vars(.>0.01))
+  validated_per_lineage[[ p[[1]] ]] <- lineage_validated
+  
+  all_lineages_validated <- merge(all_lineages_validated, lineage_validated, all = T)
+  
+
+  file_string <- paste0("results/",p[[1]],"lineage_validated_mutations.csv")
+  write.csv(lineage_validated,file = file_string, quote = F)
+  print("table of bulk variants in lineage path saved in 'results/'")
+
+  
   file_string <- paste0("results/",p[[1]],"_HET_nofilt_variants.csv")
   write.csv(all_variants_in_lineage,file = file_string, quote = F)
   print("table of bulk variants in lineage path saved in 'results/'")
   all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage
 }
+
+
+all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos),]
+file_string <- paste0("results/all_variants_lineage_validated.csv")
+write.csv(all_variants_in_lineage,file = file_string, quote = F)
+
+all_lineages_validated_pos <- data.frame(all_lineages_validated$Pos)
+colnames(all_lineages_validated_pos) <- "Pos"
+# lineage validated, 
+for(i in SRR_names) {
+  SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- merge(all_lineages_validated_pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], all.x =T, by.x = "Pos", by.y = "Pos")
+  SRR_table_list_HET_OR_LOWLVL_validated[[i]] %>% drop_na(ID)
+  }
+
+
+SRR_table_list_HET_OR_LOWLVL_validated[[i]][!is.na(SRR_table_list_HET_OR_LOWLVL_validated[[i]]$ID),]
+
+
+variant_stats <- data.frame(matrix(nrow = length(SRR_table_list), ncol = 8))
+colnames(variant_stats) <- c("SRR","No.Variants", "No.Unfiltered_Variants", "No.het", "No.hom","No.transition", "No.transversion", "No.missense")
+variant_stats$SRR <- SRR_names
+#variant_stats$
+
+#for (i in SRR_names){
+#  variant_stats$No.Variants[[i]] <- nrow(SRR_table_list[[i]])
+#}
+
+
+
 
 
    ###############  Comparison with Ludwig's variants  #################
@@ -606,41 +650,6 @@ file_string <- paste0("results/Correlation_pearson_perPos.csv")
 write.csv(Ludwig_pearson_by_pos,file = file_string, quote = F)
 
 
-for (p in paths){
-  if (p[[1]] == "#"){
-    print("skipping comment line...")
-    next
-  }
-  all_variants_in_lineage <- data.frame(matrix(ncol = 1))
-  colnames(all_variants_in_lineage) <- "Pos"
-  n=0
-  
-  for (SRR in p){
-    # Skip Lineage path name (1st in character vector of paths[[p]] )
-    n=n+1
-    print(SRR)
-    print(typeof(SRR))
-    if (n==1){
-      next
-    }
-    # stop where the variants of interest positions are listed on the line (for 
-    # mutation load plots below)
-    if (SRR == "VARIANTS_OF_INTEREST") {
-      print("Reached VARIANTS_OF_INTEREST for this lineage")
-      break
-    }
-    # get SRRs of lineage
-    SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
-    print(colnames(SRR_pos_level))
-    colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
-    all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = T)
-    
-  }
-  file_string <- paste0("results/",p[[1]],"_HET_nofilt_variants.csv")
-  write.csv(all_variants_in_lineage,file = file_string, quote = F)
-  print("table of bulk variants in lineage path saved in 'results/'")
-}
-
 
 
  ############## Heatmap of Ludwig's variant positions #######################
@@ -656,7 +665,7 @@ het_lvl_cols <- colorRamp2(breaks = c(0.05,0.4),
 lineage_cols <- list(Lineage = c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="yellow", "F4"="grey", "B5"="burlywood4", "B11"="palevioletred2", "A9"="lightseagreen", "D3"="palegreen1", "C7"="lightgoldenrod", "C4"="pink2","C10"="cyan", "B9"="plum1","G10"="steelblue2", "D6"="springgreen4","C9"="red", "mix"="darkgreen"))
 
 ha <- HeatmapAnnotation(Lineage = SRR_lineage_generation$lineages, col = lineage_cols)
-heatmap_ludwig_variants <- Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "Heteroplasmy", col = het_lvl_cols, na_col = "white", top_annotation = ha)#, row_title_gp = gpar(fontsize = 13), row_names_gp = gpar(fontsize = 13),column_names_gp = gpar(fontsize = 18))
+heatmap_ludwig_variants <- Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "sqrt(allele frequency)", col = het_lvl_cols, na_col = "white", top_annotation = ha, row_names_gp = gpar(fontsize = 9),column_names_gp = gpar(fontsize = 9))
 png(filename="results/heatmap_Ludwig_variants.png", width = 1024*1.5, height = 1024, units = "px")
 heatmap_ludwig_variants
 dev.off()
@@ -1077,12 +1086,12 @@ for (p in paths){
       }
       last_SRR <- SRRs_in_path[length(SRRs_in_path)]
       lin <- as.character(SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==last_SRR])
-      lin_col <- as.character(lineage_cols$lineage[lin])
+      lin_col <- lineage_cols$Lineage[[lin]]
 # make new plot for new variant position
       mut_load_change[is.na(mut_load_change)] <- 0
       plot_title <- paste0(p[[1]],": ", pos_of_interest)
       mut_plot <- ggplot(data = mut_load_change, aes(x=Generation,y=VariantLevel)) +
-        geom_line(color = lin_col) +
+        geom_line(colour = lin_col) +
         geom_text_repel(aes(label = Coverage, size = 13)) +
         geom_point(colour = lin_col) +
         theme_minimal() +
