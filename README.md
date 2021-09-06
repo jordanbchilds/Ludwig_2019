@@ -39,7 +39,7 @@ Run scripts for the following stages by submitting batch jobs to SLURM partition
 It takes annotated mutserve variant files, coverage and read depth files, sample metadata, and Ludwig et al., allele frequency data, and lineage path information specified in **lineages\_paths.txt**.
 
 For example, here is an exploratory plot of unfiltered, heteroplasmic or low-level variants for the samples in one possible path through the F4 lineage.
-<img src="results/F4_LUDWIG_longest_upper_HET_OR_LOWLVL_nofilt.png">
+<img src="results/G11_longest_upper_HET_OR_LOWLVL_nofilt.png">
 
 Using exploratory plots like the example above and the tables of heteroplasmic variant frequencies, individual point mutations which may show stochastic changes in allele frequency can be found, and their mutation load profiles for a lineage plotted, (specified in **lineage\_paths.txt**).
-<img src="results/F4_LUDWIG_longest_upper_pos_8206.png">
+<img src="results/G11_longest_upper_pos_822.png">
