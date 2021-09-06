@@ -176,15 +176,12 @@ pos_coverage_all_plot <- ggplot(depths_qfilt_bplot_data) +
   scale_y_continuous(trans='log2',breaks = c(1,2,4,8,16), labels = yax) +
   scale_x_continuous(breaks = c(0,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000))+
   #coord_trans(y="log2") +
-  geom_hline(yintercept = log2(200), colour = "red")+
+  geom_hline(yintercept = log2(300), colour = "red", size = 1,linetype="dotted")+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none")
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none")+
+  labs(x= "Mitochondrial genome position", y = "log2(Read depth")
 
-  
-pos_coverage_all_plot
-
-
-
+ggsave(file="results/genome_coverage_plot.png", plot=pos_coverage_all_plot, width = 8, height = 4, units = "in")
 
 
 
@@ -283,16 +280,18 @@ sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
   scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
   theme(axis.text.x = element_text(angle = 90, vjust=1.05, hjust = 1.0, size = 10),
         axis.ticks.x = element_line(),
-        panel.background = element_rect(fill = "white"), legend.position=c(.8, .2))
+        panel.background = element_rect(fill = "white"), legend.position=c(.8, .2)) +
+  labs(x = "Clone", y = "Mean mapping quality")
 
 sample_coverage_boxplot_qfilt <- ggplot(data = depths_qfilt_bplot_data, aes(SRRs, read_depths)) +
   geom_boxplot() +
   scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
-  geom_hline(yintercept=200, size = 0.2, colour = "red") +
+  geom_hline(yintercept=200, size = 0.2, colour = "red", linetype = "dotted") +
   theme(axis.text.x = element_text(angle = 90, vjust=1.05, hjust = 1.0, size = 10),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white")) +
-  expand_limits(y = 0)
+  expand_limits(y = 0) +
+  labs(x = "Clone", y="Read depth")
 
 
 
@@ -317,9 +316,9 @@ sample_baseq_plot_qfilt
 sample_mapq_plot_qfilt
 sample_reads_plot_qfilt
 
-fig2_plots <- list(sample_coverage_boxplot_qfilt,sample_mapq_plot)
-fig2_plots <- ggarrange(plots = fig2_plots, nrow = 2, align = "v")
-ggsave(file="results/fig2_plots.png", plot=fig2_plots, width = 12, height = 8, units = "in")
+fig2_plots <- list( pos_coverage_all_plot,sample_coverage_boxplot_qfilt, sample_mapq_plot)
+fig2_plots <- ggarrange(plots = fig2_plots, nrow = 3, align = "v")
+ggsave(file="results/fig2_plots.png", plot=fig2_plots, width = 12, height = 12, units = "in")
 
 
 
@@ -348,7 +347,7 @@ for(i in SRR_names){
   # Lineage_validated created below 
   }
 
-302:315
+
   #################### Variant calling stats ########################
 
 
@@ -474,21 +473,48 @@ colnames(all_lineages_validated_pos) <- "Pos"
 # lineage validated, 
 for(i in SRR_names) {
   SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- merge(all_lineages_validated_pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], all.x =T, by.x = "Pos", by.y = "Pos")
-  SRR_table_list_HET_OR_LOWLVL_validated[[i]] %>% drop_na(ID)
+  SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- SRR_table_list_HET_OR_LOWLVL_validated[[i]][,1:18] %>% drop_na()
+  #SRR_table_list_HET_OR_LOWLVL_validated[[i]] %>% !(subset(SRR_table_list_HET_OR_LOWLVL_validated[[i]], Filter =="NA"))
   }
 
 
-SRR_table_list_HET_OR_LOWLVL_validated[[i]][!is.na(SRR_table_list_HET_OR_LOWLVL_validated[[i]]$ID),]
+#SRR_table_list_HET_OR_LOWLVL_validated[[i]][!is.na(SRR_table_list_HET_OR_LOWLVL_validated[[i]]$ID),]
+
+     ### make data frame of positions of all our variants ###
+all_variants <-  data.frame(matrix(ncol = 1))
+colnames(all_variants) <- "Pos"
+
+for (SRR in SRR_names) {
+  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
+  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+  all_variants <- merge(all_variants, SRR_pos_level, by = "Pos", all = T)
+}
 
 
-variant_stats <- data.frame(matrix(nrow = length(SRR_table_list), ncol = 8))
-colnames(variant_stats) <- c("SRR","No.Variants", "No.Unfiltered_Variants", "No.het", "No.hom","No.transition", "No.transversion", "No.missense")
+   ######### Variant stats ########
+variant_stats <- data.frame(matrix(nrow = length(SRR_names), ncol = 10))
+colnames(variant_stats) <- c("SRR", "No.Unfiltered.Variants", "No.het", "No.hom", "No.lineage.validated","No.transition", "No.transversion", "Ts/Tv", "No.missense", "Strand bias")
 variant_stats$SRR <- SRR_names
-#variant_stats$
 
+
+nrow(all_variants)
+total<-0
 #for (i in SRR_names){
-#  variant_stats$No.Variants[[i]] <- nrow(SRR_table_list[[i]])
+#  variant_stats$No.Variants[[i]] <- nrow(SRR_table_list_HET_OR_LOWLVL_nofilt[[i]])
+#  total_het_nofilt_variants <- total_het_nofilt_variants + nrow(SRR_table_list_HET_OR_LOWLVL_nofilt[[i]]) 
+#  tmp <- subset(SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], Substitution =="transition")
+#  variant_stats$No.transition[[i]] <- nrow(tmp)
+#  tmp <- subset(SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], Substitution =="transversion")
+#  variant_stats$No.transversion[[i]] <- nrow(tmp)
+#  variant_stats$`Ts/Tv`[[i]] <- variant_stats$No.transition[[i]]/variant_stats$No.transversion[[i]]
 #}
+
+for (i in SRR_names){
+ n <- subset(SRR_table_list_HET_OR_LOWLVL_validated[[i]], Filter =="STRAND_BIAS") %>% nrow
+ #print(nrow(SRR_table_list_HET_OR_LOWLVL_validated[[i]]))
+ print(n)
+}
+ #### Lineage stats #####
 
 
 
@@ -503,15 +529,7 @@ colnames(Ludwig_variants) <- c("Ludwig_variant_positions", SRR_names)
 Ludwig_variants$tobecombined_Pos <- Ludwig_variants$Ludwig_variant_positions
 
 
-# make data frame of positions of all our variants
-all_variants <-  data.frame(matrix(ncol = 1))
-colnames(all_variants) <- "Pos"
 
-for (SRR in SRR_names) {
-  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
-  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
-  all_variants <- merge(all_variants, SRR_pos_level, by = "Pos", all = T)
-}
 # Combine with Ludwigs data (all unconverted variant positions: Hg19-rCRS)
 all_variants$OurPos <- all_variants$Pos
 all_variants_and_Ludwigs <- merge(all_variants, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
@@ -594,9 +612,10 @@ corr_plot_all <- ggplot(melted_correlation_data, aes(Ludwigs_variant_level, our_
         legend.text = element_text(size=10), legend.position = "none") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") +
-  labs(x = "Heteroplasmy (Ludwig et al, 2019)", y = "Heteroplasmy", colour = "Variants")+
-  expand_limits(x=1,y=1)
-ggsave(file="results/correlation_with_Luwig_by_pos.png", plot=corr_plot_all, width = 4, height = 4, units = "in")
+  labs(x = "sqrt(Allele Frequency): Ludwig et al, 2019", y = "sqrt(Allele Frequency)", colour = "Variants")+
+  expand_limits(x=1,y=1) +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+ggsave(file="results/correlation_with_Luwig_by_pos.png", plot=corr_plot_all, width = 8, height = 4, units = "in")
 
 
 
@@ -712,6 +731,10 @@ for (i in SRR_names){
   SRR_table_list[[i]]  <- merge(SRR_table_list[[i]], barplot_lims, by.x = "Pos", by.y = "Position", all = T)
 }
 
+for (i in SRR_names){
+  print(i)
+  SRR_table_list_HET_OR_LOWLVL_validated[[i]]  <- merge(SRR_table_list_HET_OR_LOWLVL_validated[[i]], barplot_lims, by.x = "Pos", by.y = "Position", all = T)
+}
 
 # function to return monotonic values for second y axis transformation (coverage)
 f <- function(y){
@@ -760,7 +783,7 @@ for (p in paths){
 # plots contain blacklisted variants.
     print(SRR)
 # Create individual plot:    
-    plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list[[SRR]], aes(Pos, VariantLevel)) + 
+    plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_HET_OR_LOWLVL_validated[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 0.9, aes(colour = factor(Filter))) + 
       scale_color_manual(values = c("PASS" = "dodgerblue3",
                                     "STRAND_BIAS"="red",
@@ -797,7 +820,7 @@ for (p in paths){
   lab_lineage_grob <- arrangeGrob(lineage_plot, left = y.grob, bottom = x.grob)
   
 # save plot
-  file_string <- paste0("results/",p[[1]],"_nofilt.png")
+  file_string <- paste0("results/",p[[1]],"validated_nofilt.png")
   px_height <- 1.2*length(plots_in_lineage)+0.8
   ggsave(file=file_string, plot=lab_lineage_grob, width = 8, height = px_height, units = "in")
 }
@@ -862,7 +885,7 @@ for (p in paths){
     # plots contain blacklisted variants.
     print(SRR)
     # Create individual plot:    
-    plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]], aes(Pos, VariantLevel)) + 
+    plots_in_lineage[[SRR]] <- ggplot(data = SRR_table_list_HET_OR_LOWLVL_validated[[SRR]], aes(Pos, VariantLevel)) + 
       geom_col(width = 0.9, aes(colour = factor(Filter))) + 
       scale_color_manual(values = c("PASS" = "dodgerblue3",
                                     "STRAND_BIAS"="red",
@@ -880,7 +903,7 @@ for (p in paths){
       geom_text_repel(aes(label = Pos), size = 1.5, nudge_y = 0.05, label.padding = 0.03, box.padding = 0.03, max.overlaps = 13) +
       scale_x_continuous(breaks = seq(0, 16569, by = 1000)) +
       scale_y_continuous(breaks = seq(0, 1.1, by = 0.2)) +
-      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15) + # coverage track
+      geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.4, size = 0.15) + # coverage track
       geom_hline(yintercept=0, size = 0.2) +
       coord_cartesian(ylim = c(0, 1))
   }
@@ -1097,10 +1120,12 @@ for (p in paths){
         theme_minimal() +
         theme(plot.background = element_rect(fill = "white",
                                 colour = "white"),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-               axis.line = element_line(colour = "black"), legend.position = "none") +
+               axis.line = element_line(colour = "black"), legend.position = "none", text = element_text(size=20)) +
         ggtitle(plot_title) +
         scale_x_continuous(breaks = mut_load_change$Generation, labels = mut_load_change$Generation_labs) +
-        expand_limits(y = 0)
+        expand_limits(y = c(0,0.01)) +
+        geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red")+
+        labs(y = "Allele Frequency")
       
       
       # save plot
@@ -1112,9 +1137,10 @@ for (p in paths){
     else {  # if VARIANTS_OF_INTEREST hasn't been reached (at.positions=F)
       next
     }
-
   }
 }
+
+
 
 
 
@@ -1136,11 +1162,12 @@ bulk_replicates_Ludwigs_nofilt[is.na(bulk_replicates_Ludwigs_nofilt)] <- 0
 bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(sqrt(SRR7245880),sqrt(SRR7245881))) +
   geom_point() +
   geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
-  labs(x ="Heteroplasmy (SRR7245880)", y ="Heteroplasmy (SRR7245881)") +
+  labs(x ="sqrt(AF) of Bulk replicate SRR7245880", y ="sqrt(AF) of Bulk replicate SRR7245881") +
   scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") #+
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
 ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
 
 
