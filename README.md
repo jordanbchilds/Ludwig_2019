@@ -1,4 +1,4 @@
-# Ludwig_2019  TODO better title
+# A framework for tracking heteroplasmic mitochondrial mutations through cell lineages
 Re-analysis of data from [Ludwig et al. (2019)](https://doi.org/10.1016/j.cell.2019.01.022), to quantify the expansion of mtDNA mutations throughout the cell culture lineage.  Basically, assume that inital/parent population has exactly the human mtDNA reference genome (this doesn't quite seem to be the case) then look for point mutations by aligning reads from each generation with human mtDNA reference genome, counting the proportion of point mutations (deviations from reference genome) at each nucleobase.  By examining how mutation loads change along each cell lineage, we can observe (non-pathogenic) mutation populations expanding and contracting during the strict and relaxed mtDNA replication occurring in cell culture.
 TODO not pdf - jpg or png
 <img src="LudwigFigs.pdf">
@@ -31,7 +31,7 @@ Run scripts for the following stages by submitting batch jobs to SLURM partition
 
 **analyse.sh** is a BASH shell script that builds indices from the reference genome, aligns reads to the whole human genome, using [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml). In this way reads of NUMTs (nuclear mitochondrial DNA: transposed from the mitochondrial genome to the nuclear genome) should not be mapped to the mitochondrial genome where they can introduce false variant calls. The raw alignment results (alignment\_stdout.txt) and a summary (alignment\_summary.txt) are produced. 
 
-**post\_alignment\_QC.sh** is a BASH shell script that 
+**post\_alignment\_QC.sh** is a BASH shell script that TODO
 
 
  
