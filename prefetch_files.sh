@@ -18,12 +18,10 @@ module load SAMtools/1.12-GCC-10.2.0;
 # Export to shell PATH variable
 export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
 
-# make directories
-#mkdir fastq;
-#mkdir pileup;
-#mkdir nuc;
-#mkdir mito;
-#mkdir sra;
+# create directories
+mkdir fastq;
+mkdir nuc;
+mkdir sra;
 
 
 # To download the samples, you might be tempted to use fastq-dump from sra-tools.
@@ -49,24 +47,12 @@ python3 parse.py $gse;
 
 
   ## check if sratools is installed
-if [ -f "mutserve/mutserve" ]; then 
-  echo "mutserve already installed";
+if [ -f "sratoolkit.2.11.0-ubuntu64/README.md" ]; then 
+  echo "SRA-tools is installed";
 else
-  mkdir mutserve/;
-  cd mutserve/;
-  source ../mutserve_installer.sh;
-  echo "mutserve installed";
-  cd ../;
+  echo "SRA-tools is not installed. Please see the README.md document to install and configure.";
+  exit 1
 fi
-
-
-
-
-
-
-
-
-
 
 
 
