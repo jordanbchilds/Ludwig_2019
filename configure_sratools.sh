@@ -20,7 +20,7 @@ export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
 # type "fyoxyo" when interactive display opens
  vdb-config -i;
 
-# Update the prefetch download directory by editing SRA configuration file
+# Update the prefetch download directory by editing SRA configuration file. (SRAtools creates a directory (.ncbi/) in your home directory, and puts the configuration file there.)
 
 echo '/repository/user/main/public/rt = '"\"$(pwd)/sra\"" >> $HOME/.ncbi/user-settings.mkfg;
 echo '/repository/user/main/public/root = '"\"$(pwd)/sra\"" >> $HOME/.ncbi/user-settings.mkfg;
