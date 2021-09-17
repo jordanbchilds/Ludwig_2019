@@ -63,9 +63,13 @@ lineage_cols <- c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="ye
 
   ####################  Pre-alignment plots and tables #########################
 
+# table of all sequencing runs in Ludwig paper - only TF1 bulk ATAc-seq needed
 raw_sample_info <- read.csv("SraRunTable_1.csv", header = T)
+
+# raw sequencing information
 pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt", header = T) 
 colnames(pre_multiqc) <- c("SRR_sample", "percent_dup", "percent_gc", "sequence_lengths", "percent_fails", "num_seqs")
+
 
 median.default(pre_multiqc$num_seqs)
 min(pre_multiqc$num_seqs)
@@ -78,15 +82,19 @@ sd(pre_multiqc$percent_gc)
 
 # see post for meanbaseq
 
+
+# histogram of estimated number of duplicated sequences in raw data
 pre_dup_hist <- ggplot(data = pre_multiqc, aes(percent_dup)) +
   geom_histogram(fill = "dodgerblue3", colour = "black", binwidth = 2) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   labs(x ="% duplicate reads in clone") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) 
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
+  geom_vline(xintercept = median(pre_multiqc$percent_dup), linetype = "dotted", size = 1.5, colour = "lightblue")
 file_string <- "results/pre_alignment_dup_seqs_hist.png"
 ggsave(file=file_string, plot=pre_dup_hist, width = 8, height = 4, units = "in")
 
+# histogram of raw reads
 pre_num_seqs_hist <- ggplot(data = pre_multiqc, aes(num_seqs)) +
   geom_histogram(fill = "dodgerblue3", colour = "black", bins = 30) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
@@ -98,6 +106,7 @@ pre_num_seqs_hist <- ggplot(data = pre_multiqc, aes(num_seqs)) +
 file_string <- "results/pre_alignment_num_seqs_hist.png"
 ggsave(file=file_string, plot=pre_num_seqs_hist, width = 8, height = 4, units = "in")
 
+# combine for figure 2
 pre_plots <- list(pre_num_seqs_hist,pre_dup_hist)
 pre_plots <- ggarrange(plots = pre_plots, nrow = 2, align = "hv")
 ggsave(file="results/pre_plots.png", plot = pre_plots, width = 8, height = 8, units = "in")
@@ -125,24 +134,28 @@ for (i in SRR_names){
 
     ###################### Post alignment quality ########################
 
+# overall alignment rate for each clone
 percent_alignment <- read.table("alignment_summary.txt", header = T)
 mean(percent_alignment$Overall_alignment_rate)
 min(percent_alignment$Overall_alignment_rate)
 
 
+# summary statistics for coverages (before and after filtering for mapping and base quality):
+# information included (column names): "X.rname", "startpos","endpos","numreads","covbases","coverage","meandepth","meanbaseq","meanmapq","SRRs","read_lengths","calculated_mean_depth","calculated_sd_depth" and min and max depths for qfilt
 all_coverages_qfilt <- read.csv("coverages/all_coverages_qfilt.txt", header = T, sep = "\t")
 all_coverages_qfilt$SRRs <- SRR_names
 all_coverages <- read.csv("coverages/all_coverages.txt", header = T, sep = "\t")
 all_coverages$SRRs <- SRR_names
 df_SRR_names <- data.frame(SRR_names)
 all_coverages$read_lengths <- merge(data.frame(SRR_names), raw_sample_info, all.x = T, by.x = "SRR_names", by.y = "Run")[,3]
+all_coverages_qfilt$read_lengths <- merge(data.frame(SRR_names), raw_sample_info, all.x = T, by.x = "SRR_names", by.y = "Run")[,3]
 
-all_coverages$calculated_mean <- as.numeric(lapply(depths[,3:ncol(depths)], mean))
-all_coverages$calculated_sd <- as.numeric(lapply(depths[,3:ncol(depths)], sd))
-all_coverages_qfilt$calculated_mean <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], mean))
-all_coverages_qfilt$calculated_sd <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], sd))
-all_coverages_qfilt$min <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], min))
-all_coverages_qfilt$max <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], max))
+all_coverages$calculated_mean_depth <- as.numeric(lapply(depths[,3:ncol(depths)], mean))
+all_coverages$calculated_sd_depth <- as.numeric(lapply(depths[,3:ncol(depths)], sd))
+all_coverages_qfilt$calculated_mean_depth <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], mean))
+all_coverages_qfilt$calculated_sd_depth <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], sd))
+all_coverages_qfilt$min_depth <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], min))
+all_coverages_qfilt$max_depth <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], max))
 
 # create dataframe for boxplot of per sample coverages
 all_depths_qfilt <- list()
@@ -156,13 +169,21 @@ depths_qfilt_bplot_data <- data.frame(matrix(nrow = 1143261, ncol = 2))
 depths_qfilt_bplot_data$X1 <- SRR_rep_names
 depths_qfilt_bplot_data$X2 <- as.numeric(all_depths_qfilt)
 
-depths_qfilt_bplot_data <- melt(depths_qfilt[,-1], id.vars = c("Pos"))
+depths_qfilt_bplot_data <- reshape2::melt(depths_qfilt[,-1], id.vars = c("Pos"))
 depths_qfilt_bplot_data["read_depths" <=1] <- 1
 colnames(depths_qfilt_bplot_data) <- c("Pos", "SRRs", "read_depths")
 
 
-fold_coverage <- (mean(pre_multiqc$sequence_lengths)/16569)*mean(pre_multiqc$num_seqs)
+fold_coverage <- (mean(pre_multiqc$sequence_lengths)/16569)*mean(all_coverages_qfilt$numreads)
 mean(all_coverages$meandepth)
+
+  ## pre map and base quality filtering ##
+mean(all_coverages$meandepth)
+mean(all_coverages_qfilt$meandepth)
+mean(all_coverages$meanbaseq)
+mean(all_coverages_qfilt$meanbaseq)
+mean(all_coverages_qfilt$meanmapq)
+mean(all_coverages$meanmapq)
 
 
 
@@ -172,14 +193,14 @@ yax <- c(1,2,4,8,16)
 yax <- 2^yax
 
 pos_coverage_all_plot <- ggplot(depths_qfilt_bplot_data) +
-  geom_line(aes(Pos,log2(read_depths), colour = SRRs))  +
+  geom_line(aes(Pos,log2(read_depths), colour = SRRs),size = 0.5)  +
   scale_y_continuous(trans='log2',breaks = c(1,2,4,8,16), labels = yax) +
   scale_x_continuous(breaks = c(0,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000))+
   #coord_trans(y="log2") +
-  geom_hline(yintercept = log2(300), colour = "red", size = 1,linetype="dotted")+
+  geom_hline(yintercept = log2(60), colour = "red", size = 1,linetype="dotted")+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none")+
-  labs(x= "Mitochondrial genome position", y = "log2(Read depth")
+  labs(x= "Mitochondrial genome position", y = "log2(Read depth)")
 
 ggsave(file="results/genome_coverage_plot.png", plot=pos_coverage_all_plot, width = 8, height = 4, units = "in")
 
@@ -279,16 +300,18 @@ sample_mapq_plot <- ggplot(data = all_coverages, aes(SRRs, meanmapq)) +
   scale_fill_manual(values = c("150"="skyblue3","76"="plum3"), name = "Read length", labels = c("2x75bp", "2x35bp")) +
   scale_y_continuous(expand = expansion(mult = c(0, .1)), labels = scales::comma) +
   theme(axis.text.x = element_text(angle = 90, vjust=1.05, hjust = 1.0, size = 10),
-        axis.ticks.x = element_line(),
+        text=element_text(size=13), axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white"), legend.position=c(.8, .2)) +
-  labs(x = "Clone", y = "Mean mapping quality")
+  labs(x = "Clone", y = "Mean read mapping quality (unfiltered)")
+ggsave(file="results/sample_mapq_plot.png", plot=sample_mapq_plot, width = 12, height = 5, units = "in")
+
 
 sample_coverage_boxplot_qfilt <- ggplot(data = depths_qfilt_bplot_data, aes(SRRs, read_depths)) +
   geom_boxplot() +
   scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
-  geom_hline(yintercept=200, size = 0.2, colour = "red", linetype = "dotted") +
+  geom_hline(yintercept=60, size = 1, colour = "red", linetype = "dotted") +
   theme(axis.text.x = element_text(angle = 90, vjust=1.05, hjust = 1.0, size = 10),
-        axis.ticks.x = element_line(),
+        axis.ticks.x = element_line(), text=element_text(size=13),
         panel.background = element_rect(fill = "white")) +
   expand_limits(y = 0) +
   labs(x = "Clone", y="Read depth")
@@ -316,9 +339,9 @@ sample_baseq_plot_qfilt
 sample_mapq_plot_qfilt
 sample_reads_plot_qfilt
 
-fig2_plots <- list( pos_coverage_all_plot,sample_coverage_boxplot_qfilt, sample_mapq_plot)
-fig2_plots <- ggarrange(plots = fig2_plots, nrow = 3, align = "v")
-ggsave(file="results/fig2_plots.png", plot=fig2_plots, width = 12, height = 12, units = "in")
+fig2_plots <- list(pos_coverage_all_plot,sample_coverage_boxplot_qfilt)
+fig2_plots <- ggarrange(plots = fig2_plots, nrow = 2, align = "v")
+ggsave(file="results/fig2_plots.png", plot=fig2_plots, width = 12, height = 8, units = "in")
 
 
 
@@ -412,8 +435,8 @@ validation_paths <- as.list(strsplit(readLines("validation_groups.txt"), " "))
 
 all_variants_in_lineages <- list()
 validated_per_lineage <- list()
-all_lineages_validated <- data.frame()
-all_lineages_validated$Pos <- 310
+all_lineages_validated <- data.frame(310)
+colnames(all_lineages_validated) <- "Pos"
 for (p in validation_paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
