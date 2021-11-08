@@ -1,11 +1,29 @@
-# A framework for tracking heteroplasmic mitochondrial mutations through cell lineages
-Re-analysis of data from [Ludwig et al. (2019)](https://doi.org/10.1016/j.cell.2019.01.022), to quantify the expansion of mtDNA mutations throughout the cell culture lineage.  Basically, assume that inital/parent population has exactly the human mtDNA reference genome (this doesn't quite seem to be the case) then look for point mutations by aligning reads from each generation with human mtDNA reference genome, counting the proportion of point mutations (deviations from reference genome) at each nucleobase.  By examining how mutation loads change along each cell lineage, we can observe (non-pathogenic) mutation populations expanding and contracting during the strict and relaxed mtDNA replication occurring in cell culture.
+## A framework for tracking heteroplasmic mitochondrial mutations through cell lineages
+This specialized variant calling pipeline was developed to identify (non-pathogenic) mutations undergoing clonal expansion in human cell lineages. Improved understanding of clonal expansion may be necessary for the development of treatments for mitochondrial diseases in the future; this pipeline is intended to provide allele frequency data for mathematical modelling of mtDNA population dynamics.
+
+This pipeline is currently tailored for re-analysis of bulk ATAC-seq data from [Ludwig et al. (2019)](https://doi.org/10.1016/j.cell.2019.01.022) to quantify the expansion of mtDNA mutations throughout indirectly related clonal human cell cultures.
 TODO not pdf - jpg or png
 <img src="LudwigFigs.pdf">
 
+# Detecting Clonal Expansion through Lineage Validation
+Specific properties are expected in mutations which show clonal expansion: they are heteroplasmic, inherited, and should demonstrate an autocorrelated pattern of changes in allele frequency between generations. These properties also provide a unique opportunity to validate variant calls: very low-level mutations which may be indistinguishable from sequencing/PCR errors in an individual, can be called with confidence when inherited and observed in related clone. Termed as __Lineage validation__, this improves variant calling because some of the limitations when calling mutations in single clones with high confidence can be ignored. Relatively relaxed filters are used for initial variant calls in order to maximise the number of true positive, low-level calls. Then the mutations are filtered through lineage validation. This simultaneously removes potentially false positive calls from errors, (only called in individual clones), and identifies inherited mutations which may show clonal expansion. The allele frequencies of the variant calls are visualised for each path through a lineage tree, and an autocorrelated pattern of changes in allele frquencies can be used to identify clonal expansion.
+
+1 Read filtering: 
+  Mapping quality >18
+  Base quality >20
+  Alignment quality >30
+2 Variant filtering:
+  Allele frequency >0.001 and < 0.990 (heteroplasmic)
+  Exclude sites with coverage of <10 reads per strand
+  Exclude alleles with < 3 reads per allele per strand
+  Mutserve applies a maximum likelihood model to account for sequencing errors
+  Mutserve annotates calls with strand bias
+  Allele frequency <0.990
+3 __Lineage Validation__
+  Mutation must be _present in >1 clone in a lineage_, and have an _allele frequency >0.01 in at least one clone_ in the lineage (confidence in a mutation with an allele frequency above the standard minimum threshold, 0.01, is extended to low-level mutations (which would otherwise be indistinguishable from PCR error) at the same genomic position of related clones, in the same lineage.
 
 # Additional software 
-Most of the programs used in this pipeline is already installed as a SLURM module, or is automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from `configure_sratools.sh`. When prompted set default configuration by inputting: "f","y","o","x","y","o".
+Most of the programs used in this pipeline are already installed as a SLURM module, or is automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from `configure_sratools.sh`. When prompted set default configuration by inputting: "f","y","o","x","y","o".
 
 # Workflow
 Stages of the pipeline are split into _ bash scripts. This is to allow different stages to be evaluated and adjusted if necessary before proceeding. For example: the quality of the data should be checked before alignment.
