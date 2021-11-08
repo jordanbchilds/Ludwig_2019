@@ -6,21 +6,20 @@ TODO not pdf - jpg or png
 <img src="LudwigFigs.pdf">
 
 # Detecting Clonal Expansion through Lineage Validation
-Specific properties are expected in mutations which show clonal expansion: they are heteroplasmic, inherited, and should demonstrate an autocorrelated pattern of changes in allele frequency between generations. These properties also provide a unique opportunity to validate variant calls: very low-level mutations which may be indistinguishable from sequencing/PCR errors in an individual, can be called with confidence when inherited and observed in related clone. Termed as __Lineage validation__, this improves variant calling because some of the limitations when calling mutations in single clones with high confidence can be ignored. Relatively relaxed filters are used for initial variant calls in order to maximise the number of true positive, low-level calls. Then the mutations are filtered through lineage validation. This simultaneously removes potentially false positive calls from errors, (only called in individual clones), and identifies inherited mutations which may show clonal expansion. The allele frequencies of the variant calls are visualised for each path through a lineage tree, and an autocorrelated pattern of changes in allele frquencies can be used to identify clonal expansion.
+Specific properties are expected in mutations which show clonal expansion: they are heteroplasmic, inherited, and should demonstrate an autocorrelated pattern of changes in allele frequency between generations. These properties also provide a unique opportunity to validate variant calls: very low-level mutations which may be indistinguishable from sequencing/PCR errors in an individual, can be called with confidence when inherited and observed in related clone. Termed as __Lineage validation__, this improves variant calling because some of the limitations when calling mutations in single clones with high confidence can be bypassed. Relatively relaxed filters are used for initial variant calls in order to maximise the number of true positive, low-level calls. Then the mutations are filtered through lineage validation. This simultaneously removes potentially false positive calls from errors, (only called in individual clones), and identifies inherited mutations which may show clonal expansion. The allele frequencies of the variant calls are visualised for each path through a lineage tree, and an autocorrelated pattern of changes in allele frquencies can be used to identify clonal expansion.
 
-1 Read filtering: 
-  Mapping quality >18
-  Base quality >20
-  Alignment quality >30
-2 Variant filtering:
-  Allele frequency >0.001 and < 0.990 (heteroplasmic)
-  Exclude sites with coverage of <10 reads per strand
-  Exclude alleles with < 3 reads per allele per strand
-  Mutserve applies a maximum likelihood model to account for sequencing errors
-  Mutserve annotates calls with strand bias
-  Allele frequency <0.990
-3 __Lineage Validation__
-  Mutation must be _present in >1 clone in a lineage_, and have an _allele frequency >0.01 in at least one clone_ in the lineage (confidence in a mutation with an allele frequency above the standard minimum threshold, 0.01, is extended to low-level mutations (which would otherwise be indistinguishable from PCR error) at the same genomic position of related clones, in the same lineage.
+1. Read filtering: 
+* Mapping quality >18
+* Base quality >20
+* Alignment quality >30
+2. Variant filtering:
+* Allele frequency >0.001 and < 0.990 (heteroplasmic)
+* Exclude sites with coverage of <10 reads per strand
+* Exclude alleles with < 3 reads per allele per strand
+* Mutserve applies a maximum likelihood model to account for sequencing errors
+* Mutserve annotates calls with strand bias
+3. __Lineage Validation__
+* Mutation must be _present in >1 clone in a lineage_, and have an _allele frequency >0.01 in at least one clone_ in the lineage. This allows confidence in a mutation with an allele frequency above the standard minimum threshold for sequencing/PCR errors (0.01) to be extended to low-level and indirectly inherited mutations (which would otherwise be indistinguishable from PCR error) at the same genomic position of related clones, in the same lineage.
 
 # Additional software 
 Most of the programs used in this pipeline are already installed as a SLURM module, or is automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from `configure_sratools.sh`. When prompted set default configuration by inputting: "f","y","o","x","y","o".
