@@ -1,4 +1,4 @@
-## A framework for tracking heteroplasmic mitochondrial mutations through cell lineages
+# A framework for tracking heteroplasmic mitochondrial mutations through cell lineages
 This specialized variant calling pipeline was developed to identify (non-pathogenic) mutations undergoing clonal expansion in human cell lineages. Improved understanding of clonal expansion may be necessary for the development of treatments for mitochondrial diseases in the future; this pipeline is intended to provide allele frequency data for mathematical modelling of mtDNA population dynamics.
 
 This pipeline is currently tailored for re-analysis of bulk ATAC-seq data from [Ludwig et al. (2019)](https://doi.org/10.1016/j.cell.2019.01.022) to quantify the expansion of mtDNA mutations throughout indirectly related clonal human cell cultures.
@@ -8,24 +8,8 @@ TODO not pdf - jpg or png
 # Detecting Clonal Expansion through Lineage Validation
 Specific properties are expected in mutations which show clonal expansion: they are heteroplasmic, inherited, and should demonstrate an autocorrelated pattern of changes in allele frequency between generations. These properties also provide a unique opportunity to validate variant calls: very low-level mutations which may be indistinguishable from sequencing/PCR errors in an individual, can be called with confidence when inherited and observed in related clone. Termed as __Lineage validation__, this improves variant calling because some of the limitations when calling mutations in single clones with high confidence can be bypassed. Relatively relaxed filters are used for initial variant calls in order to maximise the number of true positive, low-level calls. Then the mutations are filtered through lineage validation. This simultaneously removes potentially false positive calls from errors, (only called in individual clones), and identifies inherited mutations which may show clonal expansion. The allele frequencies of the variant calls are visualised for each path through a lineage tree, and an autocorrelated pattern of changes in allele frquencies can be used to identify clonal expansion.
 
-1. Read filtering: 
-* Mapping quality >18
-* Base quality >20
-* Alignment quality >30
-2. Variant filtering:
-* Allele frequency >0.001 and < 0.990 (heteroplasmic)
-* Exclude sites with coverage of <10 reads per strand
-* Exclude alleles with < 3 reads per allele per strand
-* Mutserve applies a maximum likelihood model to account for sequencing errors
-* Mutserve annotates calls with strand bias
-3. __Lineage Validation__
-* Mutation must be _present in >1 clone in a lineage_, and have an _allele frequency >0.01 in at least one clone_ in the lineage. This allows confidence in a mutation with an allele frequency above the standard minimum threshold for sequencing/PCR errors (0.01) to be extended to low-level and indirectly inherited mutations (which would otherwise be indistinguishable from PCR error) at the same genomic position of related clones, in the same lineage.
-
-# Additional software 
-Most of the programs used in this pipeline are already installed as a SLURM module, or is automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from `configure_sratools.sh`. When prompted set default configuration by inputting: "f","y","o","x","y","o".
-
 # Workflow
-Stages of the pipeline are split into _ bash scripts. This is to allow different stages to be evaluated and adjusted if necessary before proceeding. For example: the quality of the data should be checked before alignment.
+Stages of the pipeline are split into 6 bash scripts. This is to allow different stages to be evaluated and adjusted if necessary before proceeding. For example: the quality of the data should be checked before alignment.
 
 
 Run scripts for the following stages by submitting batch jobs to SLURM partitions: `sbatch SCRIPT_NAME.sh`
@@ -36,7 +20,7 @@ Run scripts for the following stages by submitting batch jobs to SLURM partition
 3. Align reads to reference genome (analyse.sh)
 4. Assess alignment quality (post\_alignment\_QC.sh)
 5. Variant call (variant\_call.sh)
-6. Visualise and explore heteroplasmic variants (plot\_mutations.sh)
+6. Visualise and explore clonal expansion in heteroplasmic variants (plot\_mutations.sh)
 
 **prefetch\_files.sh** is a BASH shell script. Calls **parse.py** to get metadata (creates SRR\_Acc\_List.txt with all the SRR names: one name per sample, for all the samples Ludwig et al., 2019). Uses SRR names in SRR\_Acc\_List.txt to download SRR files from the sequence read archive. Checks to make sure each SRR has been downloaded and is complete. If not, attempts to redownload. Saves .sra files to sra/sra/SRR\*.sra
 
@@ -55,8 +39,26 @@ Run scripts for the following stages by submitting batch jobs to SLURM partition
 **plot\_mutations\_script.R** is an R script which outputs tables and plots to summarise and visualise heteroplasmic point mutations, to explore how allele frequencies change through different cell lineages. It also produces plots for different stages of pipeline, including pre-alignment quality plots, post-alignment. Finally it provides comparisons with the 44 high confidence alleles detected by Ludwig et al., 2019. 
 It takes annotated mutserve variant files, coverage and read depth files, sample metadata, and Ludwig et al., allele frequency data, and lineage path information specified in **lineages\_paths.txt**.
 
-For example, here is an exploratory plot of unfiltered, heteroplasmic or low-level variants for the samples in one possible path through the F4 lineage.
+### Variant Calling
+1. Read filtering: 
+* Mapping quality >18
+* Base quality >20
+* Alignment quality >30
+2. Variant filtering:
+* Allele frequency >0.001 and < 0.990 (heteroplasmic)
+* Exclude sites with coverage of <10 reads per strand
+* Exclude alleles with < 3 reads per allele per strand
+* Mutserve applies a maximum likelihood model to account for sequencing errors
+* Mutserve annotates calls with strand bias
+3. __Lineage Validation__
+* Mutation must be _present in >1 clone in a lineage_, and have an _allele frequency >0.01 in at least one clone_ in the lineage. This allows confidence in a mutation with an allele frequency above the standard minimum threshold for sequencing/PCR errors (0.01) to be extended to low-level and indirectly inherited mutations (which would otherwise be indistinguishable from PCR error) at the same genomic position of related clones, in the same lineage.
+
+Here is an example of an exploratory plot of unfiltered, heteroplasmic or low-level variants for the samples in one possible path through the F4 lineage.
 <img src="results/G11_longest_upper_HET_OR_LOWLVL_nofilt.png">
 
 Using exploratory plots like the example above and the tables of heteroplasmic variant frequencies, individual point mutations which may show stochastic changes in allele frequency can be found, and their mutation load profiles for a lineage plotted, (specified in **lineage\_paths.txt**).
 <img src="results/G11_longest_upper_pos_822.png">
+
+# Additional software 
+Most of the programs used in this pipeline are already installed as a SLURM module, or is automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from `configure_sratools.sh`. When prompted set default configuration by inputting: "f","y","o","x","y","o".
+
