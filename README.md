@@ -1,5 +1,9 @@
-!()[logo-newcastle-university.png] !()[logo-wellcome-centre-mitcondrial-research.png]
+<img align="left" src="logo-newcastle-university.png" width="300" /> <img align="right" src="logo-wellcome-centre-mitcondrial-research.png" width="300" />  
 
+&nbsp;  
+&nbsp;  
+&nbsp;  
+&nbsp;  
 # A framework for tracking heteroplasmic mitochondrial mutations through cell lineages
 > This research project was carried out and written up as the thesis for my MSc Bioinformatics degree at Newcastle University, and to assist research at the Wellcome Centre for Mitochondrial Research. It was supervised by Dr Conor Lawless and Dr Dasha Deen. The thesis can be found [here](A_framework_for_tracking heteroplasmic_mitochondrial_mutations_through_cell_lineages.pdf)
 
