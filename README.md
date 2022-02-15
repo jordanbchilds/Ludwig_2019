@@ -1,4 +1,8 @@
+![](https://www.ncl.ac.uk/gomobileassets/img/logo.svg) !()[https://i0.wp.com/www.newcastle-mitochondria.com/wp-content/themes/newcastle/images/logo-updated-1.png]
+
 # A framework for tracking heteroplasmic mitochondrial mutations through cell lineages
+This research project was carried out and written up as the thesis for my MSc Bioinformatics degree at Newcastle University, and to assist research at the Wellcome Centre for Mitochondrial Research. It was supervised by Dr Conor Lawless and Dr Dasha Deen. The thesis can be found [here](A framework for tracking heteroplasmic mitochondrial mutations through cell lineages.pdf)
+
 This specialized variant calling pipeline was developed to identify (non-pathogenic) mutations undergoing clonal expansion in human cell lineages. Improved understanding of clonal expansion may be necessary for the development of treatments for mitochondrial diseases in the future; this pipeline is intended to provide allele frequency data for mathematical modelling of mtDNA population dynamics.
 
 This pipeline is currently tailored for re-analysis of bulk ATAC-seq data from [Ludwig et al. (2019)](https://doi.org/10.1016/j.cell.2019.01.022) to quantify the expansion of mtDNA mutations throughout indirectly related clonal human cell cultures.
