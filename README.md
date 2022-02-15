@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 !()[logo-newcastle-university.png] !()[logo-wellcome-centre-mitcondrial-research.png]
 
 # A framework for tracking heteroplasmic mitochondrial mutations through cell lineages
