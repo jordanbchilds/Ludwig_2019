@@ -12,7 +12,7 @@ This specialized variant calling pipeline was developed to identify (non-pathoge
 This pipeline is currently tailored for re-analysis of bulk ATAC-seq data from [Ludwig _et al._ (2019)](https://doi.org/10.1016/j.cell.2019.01.022) to quantify the expansion of mtDNA mutations throughout indirectly related clonal human cell cultures.  
 &nbsp;  
 <img src="Lineage_tree_README.jpg" width="300">  
-# TODO caption and reference. can't directly observe longituninally as sequencing kills clone and its descendants.
+TODO caption and reference. can't directly observe longituninally as sequencing kills clone and its descendants.
 
 
 # Detecting Clonal Expansion through Lineage Validation
