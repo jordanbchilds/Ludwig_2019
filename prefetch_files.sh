@@ -12,11 +12,14 @@ module load Python/3.8.6-GCCcore-10.2.0;
 module load SAMtools/1.12-GCC-10.2.0;
 
 
-    ## Make sure you have SRA toolkit installed.
-# if not see configure_sratoolkilt.sh
-# (implement a check for SRA toolkit)
-# Export to shell PATH variable
-export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
+    ## check if sratools is installed
+if [ -f "sratoolkit.2.11.0-ubuntu64/README.md" ]; then 
+  echo "SRA-tools is installed";
+else
+  echo "SRA-tools is not installed. Please see the README.md document to install and configure.";
+  exit 1
+fi
+
 
 # create directories
 mkdir fastq;
@@ -42,17 +45,6 @@ pip3 install GEOparse;
 
 # run parse.py
 python3 parse.py $gse;
-
-
-
-
-  ## check if sratools is installed
-if [ -f "sratoolkit.2.11.0-ubuntu64/README.md" ]; then 
-  echo "SRA-tools is installed";
-else
-  echo "SRA-tools is not installed. Please see the README.md document to install and configure.";
-  exit 1
-fi
 
 
 
@@ -88,10 +80,6 @@ fi
 
 done
 
-
-
-# Export sratools bin to shell PATH variable
-export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
 
 gse='GSE115218';
 
