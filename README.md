@@ -62,13 +62,14 @@ It takes annotated mutserve variant files, coverage and read depth files, sample
 * Mutation must be _present in >1 clone in a lineage_, and have an _allele frequency >0.01 in at least one clone_ in the lineage. This allows confidence in a mutation with an allele frequency above the standard minimum threshold for sequencing/PCR errors (0.01) to be extended to low-level and indirectly inherited mutations (which would otherwise be indistinguishable from PCR error) at the same genomic position of related clones, in the same lineage.
 
 Below is an exploratory plot of unfiltered, heteroplasmic or low-level variants for the samples in one possible path through the G11 lineage (Fig. 2). Using this plot (and tables of heteroplasmic mutations' allele frequencies) candidate mutations which demonstrate a pattern of autocorrelated allele frequencies throughout a specific lineage, indicative of clonal expansion, can be visually identified. Then a mutation load profile can be plotted for each candidate position (see Fig. 3). Each graph represents the mitochondrial genome of an clone in a specific lineage (see the [clone lineage tree](Lineage_tree_README.jpg)), with the genomic position on the x axis, and allele frequency of _heteroplasmic_ mutations on the y axis.   
+
 <img src="results/G11_longest_upper_HET_OR_LOWLVL_nofilt.png">  
 **Fig 2. Allele frequencies of heteroplasmic or low-level mutations for samples in one possible path through the G11 lineage.** Labels indicate the precise genomic position of the mutation. Colour indicates presence of strand bias (red = strand bias, blue = no strand bias). One example of an candidate mutation has been highlighted.
 
 Using exploratory plots like the example above (Fig. 2) and the tables of heteroplasmic variant frequencies, individual point mutations which may show stochastic changes in allele frequency can be identified, and their mutation load profiles for a lineage plotted. 
 For each candidate mutation, a mutation load profile (Fig. 3 below) can be used to observe the change in allele frequency between generations.  
 <img src="results/G11_longest_upper_pos_822.png">
-Fig. 3: TODO
+**Fig. 3: TODO**
 
 # Additional software 
 Most of the programs used in this pipeline are already installed as a SLURM module, or is automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from `configure_sratools.sh`. When prompted set default configuration by inputting: "f","y","o","x","y","o".
