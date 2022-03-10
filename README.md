@@ -26,11 +26,11 @@ Run scripts for the following stages by submitting batch jobs to SLURM partition
 
 
 1. Prefetch .sra files from the sequence read archive, and convert to fastq format. (prefetch\_files.sh)
-2. Assess prealignment quality (QC.sh)
-3. Align reads to reference genome (analyse.sh)
-4. Assess alignment quality (post\_alignment\_QC.sh)
-5. Variant call (variant\_call.sh)
-6. Visualise and explore clonal expansion in heteroplasmic variants (plot\_mutations.sh)
+2. Assess prealignment quality [QC.sh](QC.sh)
+3. Align reads to reference genome [analyse.sh](analyse.sh)
+4. Assess alignment quality [post\_alignment\_QC.sh](post\_alignment\_QC.sh)
+5. Variant call [variant\_call.sh](variant\_call.sh)
+6. Visualise and explore clonal expansion in heteroplasmic variants [plot\_mutations.sh](plot\_mutations.sh)
 
 **prefetch\_files.sh** is a BASH shell script. Calls **parse.py** to get metadata (creates SRR\_Acc\_List.txt with all the SRR names: one name per sample, for all the samples Ludwig et al., 2019). Uses SRR names in SRR\_Acc\_List.txt to download SRR files from the sequence read archive. Checks to make sure each SRR has been downloaded and is complete. If not, attempts to redownload. Saves .sra files to sra/sra/SRR\*.sra
 
