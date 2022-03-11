@@ -37,7 +37,12 @@ mkdir sra;
 # https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE115218
 # https://doi.org/10.1016/j.cell.2019.01.022
 
-gse='GSE115218';
+
+# superseries (with all Ludwig data, including RNA-seq, scATAC, scRNA, difference cell lines etc...): 
+#gse='GSE115218';
+# subseries with bulk ATAC-seq TF1 cells:
+gse='GSE115208';
+
 # parse.py gets list of SRA sequence names from GSE series of "Human lineage tracing enabled by mitochondrial mutations and single cell genomics"
 
 # install GEOparse python3 module. pip3 install _ won't install if module is already installed.
@@ -81,10 +86,8 @@ fi
 done
 
 
-gse='GSE115218';
-
-# read bulk ATAC-seq from TF1 cells into array
-readarray -t rts < multiQC/group_SRP149534_SRRs.txt;
+# read bulk ATAC-seq from TF1 cells into array TODO get SRR numbers automatically from GSE
+readarray -t rts < group_SRP149534_SRRs.txt;
 
 
 
