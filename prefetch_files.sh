@@ -10,6 +10,7 @@
     ## load modules
 module load Python/3.8.6-GCCcore-10.2.0;
 module load SAMtools/1.12-GCC-10.2.0;
+module load parallel/20200522-GCCcore-10.2.0
 
 
     ## check if sratools is installed
@@ -19,6 +20,9 @@ else
   echo "SRA-tools is not installed. Please see the README.md document to install and configure.";
   exit 1
 fi
+
+# Export to shell PATH variable
+export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
 
 
 # create directories
@@ -55,14 +59,14 @@ python3 parse.py $gse;
 
     ## Prefetch .sra files ##
 
-echo "Prefetching all SRRs in ${gse}_sra.txt ...";
-prefetch --option-file "${gse}_sra.txt";
-echo "Done";
+#echo "Prefetching all SRRs in ${gse}_sra.txt ...";
+#prefetch --option-file "${gse}_sra.txt";
+#echo "Done";
+
 
     ## Validate	sra files ##
-
-readarray -t rts < SRR_Acc_List.txt;
-
+# read bulk ATAC-seq from TF1 cells into array TODO get SRR numbers automatically from GSE
+readarray -t rts < group_SRP149534_SRRs.txt 
 
 # validate each prefetched file and output any missing or incomplete to 'failed_to_prefetch.txt'
 for i in "${rts[@]}"
@@ -86,15 +90,12 @@ fi
 done
 
 
-# read bulk ATAC-seq from TF1 cells into array TODO get SRR numbers automatically from GSE
-readarray -t rts < group_SRP149534_SRRs.txt;
-
+#readarray -t rts < group_SRP149534_SRRs.txt;
 
 
     ## Convert prefetched .sra files to fasta format ##
 
 # loop to find if .sra file has been dumped (converted to fastq.gz) and if not add file to list
-
 for i in "${rts[@]}";
 do
 if test -f "fastq/${i}_1.fastq.gz";
@@ -110,14 +111,17 @@ cat dump_list.txt | parallel --jobs 8 "fastq-dump --split-files --gzip --outdir 
 rm dump_list.txt;
 
 # Delete large sra files after dumping
-#rm -rf sra;
+rm -rf sra;
 
  ## Download reference genome ##
-cd nuc/;
-wget http://hgdownload.cse.ucsc.edu/goldenpath/hg38/bigZips/hg38.fa.gz;
-gunzip hg38.fa.gz;
-cd ..;
-
+if [ -f "nuc/hg38.fa" ]; then
+  echo "hg38 reference genome already downloaded";
+else
+  cd nuc/;
+  wget http://hgdownload.cse.ucsc.edu/goldenpath/hg38/bigZips/hg38.fa.gz;
+  gunzip hg38.fa.gz;
+  cd ..;
+fi
 
 module purge;
 
