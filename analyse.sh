@@ -13,24 +13,26 @@ module load SAMtools/1.12-GCC-10.2.0;
 module load Bowtie2/2.3.4.2-foss-2018b;
 module load parallel/20200522-GCCcore-10.2.0
 
-echo "modules loaded";
-
+mkdir bam;
 
 gse='GSE115218';
 
 # read bulk ATAC-seq from TF1 cells into array
-readarray -t rts < multiQC/group_SRP149534_SRRs.txt;
+readarray -t rts < group_SRP149534_SRRs.txt;
 
 
+  ## build indices ##
+if test -f "bam/btref.1.bt2"; then
+  echo "bowtie2-build reference indices";
+else
+  bowtie2-build --threads 8 nuc/hg38.fa nuc/btref;
+fi
 
-# build indices
-echo "bowtie2-build reference indices";
-bowtie2-build --threads 8 nuc/hg38.fa nuc/btref;
-
+#locale;
+#export LANG=en_GB.utf8
+#export LC_ALL="en_GB.utf8" 
 locale;
-export LANG=en_GB.utf8
-export LC_ALL="en_GB.utf8" 
-locale;
+
 
   ## Align reads ##
 
@@ -78,7 +80,6 @@ do
  echo "$rt $overall" >> alignment_summary.txt;
 
 done
-
 
 
 module purge;
