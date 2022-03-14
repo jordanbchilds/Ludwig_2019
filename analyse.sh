@@ -22,7 +22,7 @@ readarray -t rts < group_SRP149534_SRRs.txt;
 
 
   ## build indices ##
-if test -f "bam/btref.1.bt2"; then
+if test -f "nuc/btref.1.bt2"; then
   echo "bowtie2-build reference indices";
 else
   bowtie2-build --threads 8 nuc/hg38.fa nuc/btref;
