@@ -19,8 +19,7 @@ mkdir fastQC_results;
 #find fastq/SRR72458*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
 
 
-
-  ## Get metadata for all from: https://www.ncbi.nlm.nih.gov/Traces/study/?query_key=1&WebEnv=MCID_60b8a39352def33200839b51&o=acc_s%3Aa
+  ## See metadata for all from: https://www.ncbi.nlm.nih.gov/Traces/study/?query_key=1&WebEnv=MCID_60b8a39352def33200839b51&o=acc_s%3Aa
 
 # get file sizes for SRR*.fastq.gz files, and change file name to SRR number
 #ls -la fastq/ > fastqgz_list.txt;
@@ -47,6 +46,9 @@ export LC_ALL="en_GB.utf8"
 
 locale;
 
+
+  ## Adaptor trimming ##
+# either trimmomatic or bamclipper?
 
   ## run multiqc ##
 
