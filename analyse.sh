@@ -47,18 +47,33 @@ do
  else 
    
     echo "Aligning ${rt} to whole genome...";
-# bowtie2 parameters: -p 8 cores, forward and reverse read, ref, local alignment (soft-clipping allowed), very sensitive (-L 20: 20 bp substrings in multiseed, -i s,1,0.50: shorter intervals between seed substrings, -D 20 -R 3: see manual), -t: time to align in stout,  out? -X 2000???.
-# samtools view parameters:  first filter: - (input from stdin), -h (header), eg. -F 0 (do not output alignments with FLAG integer), eg. -q 10 (skip alignments with MAPQ quality <10), -u outputs uncompressed bam into pipe.
-#samtools sort: sorts by leftmost coordinates for indexing
 
-    bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -u | samtools sort --threads 8 - > bam/${rt}_sorted.bam ;
-    echo "bam/${rt}_sorted.bam aligned. Indexing..";
-    
-    # index sorted bam files
-    samtools index -@ 8 bam/${rt}_sorted.bam ;
+# bowtie2 parameters: -p 8 cores, -1 forward and -2 reverse read, -x ref, --local alignment (soft-clipping allowed), very sensitive (-L 20: 20 bp substrings in multiseed, -i s,1,0.50: shorter intervals between seed substrings, -D 20 -R 3: see manual), -t: time to align in stout,  out? -X 2000???.
+
+# samtools view parameters: - (input from stdin), -h (header), eg. -F 0 (do not output alignments with FLAG integer), eg. -q 10 (skip alignments with MAPQ quality <10), --un-gz unmapped reads to zipped file, -u outputs uncompressed bam into pipe.
+
+# samtools fixmate adds mate score (ms) tags (used by markdup to select best reads): -m ms tags.
+
+# samtools sort: sorts by leftmost coordinates for indexing
+
+# samtools markdup: -s print basic stats, -r REMOVE duplicates, 
+
+    bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | \
+samtools view --threads 8 - -h -u | \
+samtools fixmate --threads 8 - -m -u | \
+samtools sort --threads 8 - -u | \ 
+samtools markdup --threads 8 - -s > bam/${rt}_sorted.bam ;
+# ^add removal of optical duplicates with -d _ : what distance for Nextseq?
+
+    # index sorted bam files: -b .bai
+    echo "bam/${rt}_sorted.bam aligned. Indexing.."; 
+    samtools index --threads 8 -b bam/${rt}_sorted.bam ;
 
     # create bam containing only mitochondrial aligned reads
 #    samtools view --threads 8 -b -h bam/${rt}_sorted.bam MT > bam/${rt}_sorted_chrM.bam;
+ 
+    # get bam files headers: (-H header, -? human readable)
+    samtools view -H -? bam/${rt}_sorted.bam >> ../bam_summaries.txt 
 
  fi
 done
@@ -69,7 +84,8 @@ export LANG=C.UTF-8 ;
 export LC_ALL= ;
 locale;
 
-# command to cp text from slurm outfile to alignment stats
+
+# Copy text from slurm outfile to alignment stats
 cp slurm-${SLURM_JOB_ID}.out alignment_stdout.txt
 echo 'SRR Overall_alignment_rate' > alignment_summary.txt
 
