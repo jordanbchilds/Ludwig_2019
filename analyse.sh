@@ -58,20 +58,27 @@ do
 
 # samtools markdup: -s print basic stats, -r REMOVE duplicates, 
 
-bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - > bam/${rt}_sorted1.bam ;
+bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m - -u | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - -u > bam/${rt}.bam
+
+# after first sort in pipe:
+#> bam/${rt}_sorted1.bam ;
+
+
 
 echo "collate and fixmate"
 #samtools collate --threads 8 bam/${rt}_sorted.bam -O | 
 samtools fixmate --threads 8 -m bam/${rt}_sorted1.bam bam/${rt}_fixmated.bam
-echo "sort"
-samtools sort --threads 8 bam/${rt}_unsorted.bam -o bam/${rt}_sorted2.bam
+rm bam/${rt}_sorted1.bam  
+echo "sort by coordinates"
+samtools sort --threads 8 bam/${rt}_fixmated.bam -o bam/${rt}_sorted2.bam
+rm bam/${rt}_fixmated.bam 
 echo "markdup"
 samtools markdup --threads 8 -s bam/${rt}_sorted2.bam bam/${rt}.bam
 
 # TODO add removal of optical duplicates with -d _ : what distance for Nextseq?
 
     # index sorted bam files: -b .bai
-    echo "Indexing.."; 
+    echo "Index"; 
 #samtools sort --threads 8 bam/${rt}_marked.bam -o bam/{rt}.bam 
 samtools index -@ 8 bam/${rt}.bam ;
     
