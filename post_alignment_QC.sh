@@ -11,10 +11,8 @@ module load SAMtools/1.12-GCC-10.2.0;
 
 mkdir coverages/;
 
-
 # ls -1 prints each file on a new line
 ls -1 -d bam/* | grep -v "bai" > ls_bam_files.txt;
-
 
   ## SAMtools depth ##
 # Calculate depth for all positions (-a), comment line of column names (-H), base (-q) and mapping quality (-Q) greater than 20: (based on default settings for mutserve variant caller), region chrM (-r), remove depth limit (-d 0) 

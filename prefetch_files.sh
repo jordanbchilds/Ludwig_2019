@@ -67,6 +67,7 @@ python3 parse.py $gse;
     ## Validate	sra files ##
 # read bulk ATAC-seq from TF1 cells into array TODO get SRR numbers automatically from GSE
 readarray -t rts < group_SRP149534_SRRs.txt 
+#readarray -t rts < individual.txt
 
 # validate each prefetched file and output any missing or incomplete to 'failed_to_prefetch.txt'
 for i in "${rts[@]}"
@@ -112,6 +113,9 @@ rm dump_list.txt;
 
 # Delete large sra files after dumping
 rm -rf sra;
+
+# zip fastq files
+find fastq/SRR*.fastq | parallel --jobs 8 "gzip -r {}"
 
  ## Download reference genome ##
 if [ -f "nuc/hg38.fa" ]; then
