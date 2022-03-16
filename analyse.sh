@@ -3,7 +3,7 @@
 #SBATCH --chdir=/nobackup/proj/clsclmr/Ludwig_2019
 #SBATCH -p defq
 #SBATCH -A clsclmr
-#SBATCH -t 48:00:00
+#SBATCH -t 24:00:00
 #SBATCH -c 8
 #
 
@@ -15,7 +15,7 @@ module load parallel/20200522-GCCcore-10.2.0
 
 mkdir bam;
 
-gse='GSE115218';
+gse='GSE115208';
 
 # read bulk ATAC-seq from TF1 cells into array
 readarray -t rts < group_SRP149534_SRRs.txt;
@@ -31,7 +31,7 @@ fi
 #locale;
 #export LANG=en_GB.utf8
 #export LC_ALL="en_GB.utf8" 
-locale;
+#locale;
 
 
   ## Align reads ##
@@ -46,7 +46,7 @@ do
     echo "${rt} already aligned";
  else 
    
-    echo "Aligning ${rt} to whole genome...";
+    echo "Aligning ${rt} to genome...";
 
 # bowtie2 parameters: -p 8 cores, -1 forward and -2 reverse read, -x ref, --local alignment (soft-clipping allowed), very sensitive (-L 20: 20 bp substrings in multiseed, -i s,1,0.50: shorter intervals between seed substrings, -D 20 -R 3: see manual), -t: time to align in stout,  out? -X 2000???.
 
@@ -54,32 +54,38 @@ do
 
 # samtools fixmate adds mate score (ms) tags (used by markdup to select best reads): -m ms tags.
 
-# samtools sort: sorts by leftmost coordinates for indexing
+# samtools sort: normally sorts by leftmost coordinates for indexing, -n sorts by QNAME (so mate pairs can be labelled with fixmate)
 
 # samtools markdup: -s print basic stats, -r REMOVE duplicates, 
 
-    bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | \
-samtools view --threads 8 - -h -u | \
-samtools fixmate --threads 8 - -m -u | \
-samtools sort --threads 8 - -u | \ 
-samtools markdup --threads 8 - -s > bam/${rt}_sorted.bam ;
-# ^add removal of optical duplicates with -d _ : what distance for Nextseq?
+bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - > bam/${rt}_sorted1.bam ;
+
+echo "collate and fixmate"
+#samtools collate --threads 8 bam/${rt}_sorted.bam -O | 
+samtools fixmate --threads 8 -m bam/${rt}_sorted1.bam bam/${rt}_fixmated.bam
+echo "sort"
+samtools sort --threads 8 bam/${rt}_unsorted.bam -o bam/${rt}_sorted2.bam
+echo "markdup"
+samtools markdup --threads 8 -s bam/${rt}_sorted2.bam bam/${rt}.bam
+
+# TODO add removal of optical duplicates with -d _ : what distance for Nextseq?
 
     # index sorted bam files: -b .bai
-    echo "bam/${rt}_sorted.bam aligned. Indexing.."; 
-    samtools index --threads 8 -b bam/${rt}_sorted.bam ;
-
-    # create bam containing only mitochondrial aligned reads
+    echo "Indexing.."; 
+#samtools sort --threads 8 bam/${rt}_marked.bam -o bam/{rt}.bam 
+samtools index -@ 8 bam/${rt}.bam ;
+    
+# create bam containing only mitochondrial aligned reads
 #    samtools view --threads 8 -b -h bam/${rt}_sorted.bam MT > bam/${rt}_sorted_chrM.bam;
  
-    # get bam files headers: (-H header, -? human readable)
-    samtools view -H -? bam/${rt}_sorted.bam >> ../bam_summaries.txt 
+    # get bam files headers: (-H header)
+    #samtools view -H bam/${rt}_sorted.bam >> ../bam_summaries.txt 
 
  fi
 done
 
 
-locale;
+#locale;
 export LANG=C.UTF-8 ; 
 export LC_ALL= ;
 locale;
@@ -97,6 +103,8 @@ do
  echo "$rt $overall" >> alignment_summary.txt;
 
 done
+
+#grep chrM reference.fa | bcftools consensus calls.vcf.gz > consensus.fa
 
 
 module purge;
