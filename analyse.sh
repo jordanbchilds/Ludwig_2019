@@ -22,6 +22,7 @@ readarray -t rts < group_SRP149534_SRRs.txt;
 
 
   ## build indices ##
+#TODO if consensus available ref=consensus.
 if test -f "nuc/btref.1.bt2"; then
  echo "bowtie2-build reference indices already built";
 else
