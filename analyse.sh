@@ -3,7 +3,7 @@
 #SBATCH --chdir=/nobackup/proj/clsclmr/Ludwig_2019
 #SBATCH -p defq
 #SBATCH -A clsclmr
-#SBATCH -t 24:00:00
+#SBATCH -t 48:00:00
 #SBATCH -c 8
 #
 
@@ -43,7 +43,7 @@ do
  echo ${rt};
  #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
 
- if [ -f "bam/${rt}_sorted.bam.bai" ]; then
+ if [ -f "bam/${rt}.bam.bai" ]; then
   echo "${rt} already aligned";
  else 
    
@@ -110,7 +110,6 @@ do
  echo "$rt $overall_alignment $bowtie2_total_reads $markdup_total_reads $total_duplicates $unique_lib_size" >> alignment_and_duplicate_summary.txt 
 done
 
-#grep chrM reference.fa | bcftools consensus calls.vcf.gz > consensus.fa
 
 
 module purge;
