@@ -74,5 +74,24 @@ For each candidate mutation, a mutation load profile (Fig. 3 below) can be used 
 Using exploratory plots like the example above (Fig. 2) and the tables of heteroplasmic variant frequencies, individual point mutations which may show stochastic changes in allele frequency can be identified, and their mutation load profiles for a lineage plotted. 
 For each candidate mutation, a mutation load profile (Fig. 3 below) can be used to observe the change in allele frequency between generations.  
 # Additional software 
-Most of the programs used in this pipeline are already installed as a SLURM module, or is automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from [configure_sratools.sh](configure_sratools.sh). When prompted set default configuration by inputting: "f","y","o","x","y","o".
+Most of the programs used in this pipeline are already installed as a SLURM module, or are automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from [configure_sratools.sh](configure_sratools.sh). When prompted set default configuration by inputting: "f","y","o","x","y","o".
 
+# TODO
+- Restructure project into folders
+- Check script comments
+- (rename project?)
+- Mark duplicates
+  - Optical duplicates
+- Create consenus sequence
+- Re-align to consensus instead of ref
+- Compare genome coverage, no. variants, strand bias for:
+  - duplicates vs no dups
+  - aligned to reference vs aligned to consensus
+- Replace mutserve variant caller:
+  - raw pileup calls - only quality filtering, no sequencing error adjustments
+  - **write variant caller which incorporates AF autocorrelation**
+  - alternative variant annotation software
+- Remove two samples with skewed GC distribution?
+- (Modify for use outside of Rocket - yzer?)
+- Limit distance between paired-end reads when aligning
+- Cheatsheet of useful bash and slurm commands
