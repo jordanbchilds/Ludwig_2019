@@ -23,11 +23,11 @@ readarray -t rts < group_SRP149534_SRRs.txt;
 
   ## build indices ##
 #TODO if consensus available ref=consensus.
-if test -f "nuc/btref.1.bt2"; then
+if test -f "nuc/hg38.1.bt2"; then
  echo "bowtie2-build reference indices already built";
 else
  echo "building reference indices..."
- bowtie2-build --threads 8 nuc/hg38.fa nuc/btref;
+ bowtie2-build --threads 8 nuc/hg38.fa nuc/hg38;
 fi
 
 #locale;
@@ -62,7 +62,7 @@ do
 
 # samtools markdup: -s print basic stats, -r will REMOVE duplicates, 
 
-  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/btref --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s -u - - > bam/${rt}.bam
+  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/hg38 --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s -u - - > bam/${rt}.bam
 
 # Duplicate commands using intermediate files instead of piping: (after sorting by QNAME)
 #echo "collate and fixmate"
@@ -98,19 +98,18 @@ locale;
 
 
 # Copy stats from slurm outfile (stout) to alignment stats
-cp slurm-${SLURM_JOB_ID}.out alignment_stdout.txt
-echo 'SRR Overall_alignment_rate Total_reads_bowtie2 Total_reads_markdup Total_duplicates Estimated_unique_lib_size' > alignment_and_duplicate_summary.txt
+cp slurm-${SLURM_JOB_ID}.out alignment_stats/alignment_stdout.txt
+echo 'SRR Overall_alignment_rate Total_reads_bowtie2 Total_reads_markdup Total_duplicates Estimated_unique_lib_size' >> alignment_stats/alignment_and_duplicate_summary.txt
 
 for rt in "${rts[@]}"
 do
- overall_alignment=`grep -A 20 "$rt" alignment_stdout.txt | grep "overall" | cut -d "%" -f 1`;
- bowtie2_total_reads=`grep -A 20 "$rt" alignment_stdout.txt | grep "reads; of these:" | cut -d " " -f 1`;
- markdup_total_reads=`grep -A 41 "$rt" alignment_stdout.txt | grep "READ:" | cut -d " " -f 2`;
- total_duplicates=`grep -A 41 "$rt" alignment_stdout.txt | grep "DUPLICATE TOTAL:" | cut -d " " -f 3`;
- unique_lib_size=`grep -A 41 "$rt" alignment_stdout.txt | grep "ESTIMATED_LIBRARY_SIZE" | cut -d " " -f 2`; 
- echo "$rt $overall_alignment $bowtie2_total_reads $markdup_total_reads $total_duplicates $unique_lib_size" >> alignment_and_duplicate_summary.txt 
+ overall_alignment=`grep -A 20 "$rt" alignment_stats/alignment_stdout.txt | grep "overall" | cut -d "%" -f 1`;
+ bowtie2_total_reads=`grep -A 20 "$rt" alignment_stats/alignment_stdout.txt | grep "reads; of these:" | cut -d " " -f 1`;
+ markdup_total_reads=`grep -A 41 "$rt" alignment_stats/alignment_stdout.txt | grep "READ:" | cut -d " " -f 2`;
+ total_duplicates=`grep -A 41 "$rt" alignment_stats/alignment_stdout.txt | grep "DUPLICATE TOTAL:" | cut -d " " -f 3`;
+ unique_lib_size=`grep -A 41 "$rt" alignment_stats/alignment_stdout.txt | grep "ESTIMATED_LIBRARY_SIZE" | cut -d " " -f 2`; 
+ echo "$rt $overall_alignment $bowtie2_total_reads $markdup_total_reads $total_duplicates $unique_lib_size" >> alignment_stats/alignment_and_duplicate_summary.txt 
 done
-
 
 
 module purge;
