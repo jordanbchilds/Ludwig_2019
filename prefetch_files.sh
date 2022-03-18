@@ -91,9 +91,6 @@ fi
 done
 
 
-#readarray -t rts < group_SRP149534_SRRs.txt;
-
-
     ## Convert prefetched .sra files to fasta format ##
 
 # loop to find if .sra file has been dumped (converted to fastq.gz) and if not add file to list
