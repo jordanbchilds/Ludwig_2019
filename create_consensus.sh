@@ -18,13 +18,17 @@ module load SAMtools/1.12-GCC-10.2.0;
 # bcftools consensus doesn't account for allele frequency, just replaces reference allele with all alternative alleles in vcf when copying the reference.fa. Consequently homozygous variant calls (AF > 0.95, likely already fixed in parent population) are extracted first:
 
 # extract fixed homozygous variant calls (AF>0.95) from bulk parent .vcfs (SRR7245880.vcf.gz, SRR7245881.vcf.gz) into combined vcf.
-grep '^\#' vcf/SRR7245880.vcf > nuc/fixed_calls.vcf  # extract header lines in vcf: all lines begin (^) with '#'.
-grep $'\t1:' vcf/SRR7245880.vcf >> nuc/fixed_calls.vcf  # extract homozygous calls: genotype column in GT:AF:DP = \t 1:(AF):(DP)
-grep $'\t1:' vcf/SRR7245881.vcf >> nuc/fixed_calls.vcf  # extract in bulk sequencing replicate.
+grep '^\#' vcf/SRR7245880.vcf > nuc/parent_fixed.vcf;  # extract header lines in vcf: all lines begin (^) with '#'.
+grep $'\t1:' vcf/SRR7245880.vcf > nuc/fixed_calls.vcf;  # extract homozygous calls: genotype column in GT:AF:DP = \t 1:(AF):(DP)
+grep $'\t1:' vcf/SRR7245881.vcf >> nuc/fixed_calls.vcf;  # extract in bulk sequencing replicate.
 # Remove duplicate variant calls
-sort -u -t$'\t' -k2n nuc/fixed_calls.vcf > nuc/parent_fixed.vcf
-rm nuc/fixed_calls.vcf
-# get consensus sequence of bulk parent clones from vcf SRR7245880.vcf.gz  
-cat nuc/hg38.fa | bcftools consensus nuc/parent_fixed.vcf > nuc/parent_consensus.fa
-
+sort -u -t$'\t' -k2n nuc/fixed_calls.vcf >> nuc/parent_fixed.vcf;
+rm nuc/fixed_calls.vcf;
+#bgzip nuc/parent_fixed.vcf;
+bcftools view -Oz -o nuc/parent_fixed.vcf.gz nuc/parent_fixed.vcf
+bcftools index nuc/parent_fixed.vcf.gz;
+# get consensus sequence of bulk parent clones from vcf 
+#samtools faidx nuc/hg38.fa
+#cat nuc/hg38.fa | 
+bcftools consensus -f nuc/hg38.fa nuc/parent_fixed.vcf.gz -o nuc/parent_consensus.fa
 
