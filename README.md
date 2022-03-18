@@ -95,3 +95,4 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 - (Modify for use outside of Rocket - yzer?)
 - Limit distance between paired-end reads when aligning
 - Cheatsheet of useful bash and slurm commands
+- make group_SRRs file
