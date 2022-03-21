@@ -22,13 +22,25 @@ readarray -t rts < group_SRP149534_SRRs.txt;
 
 
   ## build indices ##
-#TODO if consensus available ref=consensus.
-if test -f "nuc/hg38.1.bt2"; then
- echo "bowtie2-build reference indices already built";
+
+if test -f "nuc/parent_consensus.1.bt2"; then
+  ref="nuc/parent_consensus"
+  echo "Parent clone consensus sequence available and indexed: nuc/parent_consensus.1.bt2"
+elif test -f "nuc/parent_consensus.fa"; then
+  echo "parent clone consensus fasta available, indexing..."
+  bowtie2-build --threads 8 nuc/parent_consensus.fa nuc/parent_consensus; 
+  echo "bowtie2 referenece indices built"
+  ref="nuc/parent_consensus"
+ 
+elif test -f "nuc/hg38.1.bt2"; then
+  echo "bowtie2-build reference indices already built";
+  ref="nuc/hg38"
 else
- echo "building reference indices..."
- bowtie2-build --threads 8 nuc/hg38.fa nuc/hg38;
+  echo "building reference indices..."
+  bowtie2-build --threads 8 nuc/hg38.fa nuc/hg38;
+  ref="nuc/hg38" 
 fi
+
 
 #locale;
 #export LANG=en_GB.utf8
@@ -48,7 +60,7 @@ do
   echo "${rt} already aligned";
  else 
    
-  echo "Aligning ${rt} to genome...";
+  echo "Aligning ${rt} to ${ref} reference genome...";
 
 # bowtie2 parameters: 
 # -p 8 cores, -1 forward and -2 reverse read, -x ref, --local alignment (soft-clipping allowed), very sensitive (-L 20: 20 bp substrings in multiseed, -i s,1,0.50: shorter intervals between seed substrings, -D 20 -R 3: see manual), -t: time to align in stout,  out? -X 2000???.
@@ -62,7 +74,7 @@ do
 
 # samtools markdup: -s print basic stats, -r will REMOVE duplicates, 
 
-  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x nuc/hg38 --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s -u - - > bam/${rt}.bam
+  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s -u - - > bam/${rt}.bam
 
 # Duplicate commands using intermediate files instead of piping: (after sorting by QNAME)
 #echo "collate and fixmate"
