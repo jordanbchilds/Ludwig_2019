@@ -32,3 +32,12 @@ bcftools index nuc/parent_fixed.vcf.gz;
 #cat nuc/hg38.fa | 
 bcftools consensus -f nuc/hg38.fa nuc/parent_fixed.vcf.gz -o nuc/parent_consensus.fa
 
+
+# extract chrM fasta
+chrM_start=$(grep -n "chrM" nuc/parent_consensus.fa | cut -d ":" -f 1 -)
+echo $chrM_start
+chrM_end=$(grep -n ^'>' nuc/parent_consensus.fa | grep -A 1 "chrM" | grep --invert-match "chrM" | cut -d ":" -f 1 -)
+chrM_end=$(expr ${chrM_end} - 1)
+echo $chrM_end 
+sed -n "${chrM_start},${chrM_end}p" nuc/parent_consensus.fa > nuc/parent_chrM_consensus.fa
+
