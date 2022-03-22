@@ -13,6 +13,10 @@ fastQC_results/*
 plots/
 bcftools_out/*
 
+data/GSE115208.txt
+data/GSE115208_sra.txt
+vcf_mapq18/
+
 # output files
 
 failed_to_prefetch.txt
