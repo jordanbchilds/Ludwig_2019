@@ -13,7 +13,7 @@ module load SAMtools/1.12-GCC-10.2.0;
 
 mkdir alignment_stats/;
 
-# Extract bam file names 
+# Extract bam file names (using bam files instead of group SRRs to get bam/prefix, and to avoid excluded samples)
 ls -1 -d bam/* | grep -v "bai" > ls_bam_files.txt  # ls -1 prints each file on a new line 
 
 
@@ -86,7 +86,7 @@ rm ls_bam_files.txt;
 #
 #
 ## read bulk ATAC-seq from TF1 cells into array
-#readarray -t rts < multiQC/group_SRP149534_SRRs.txt;
+#readarray -t rts < data/group_SRP149534_SRRs.txt;
 #touch qualimap_coverages.txt;
 #
 #for rt in "${rts[@]}";
