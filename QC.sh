@@ -50,33 +50,34 @@ locale;
   ## Adaptor trimming ##
 # either trimmomatic or bamclipper?
 
-  ## run multiqc ##
+
+  ## Run multiqc ##
 
 for j in ${types[@]}
 do
   mkdir tmp_multiqc
-  # extract all lines from metadata_ls.csv containing $j from categories.txt line
-  #grep ${j} SraRunTable_1.csv | cut -d ',' -f 1 > group_${j}_SRRs.txt; 
+  # extract all lines from data/SraRunTable.txt containing $j from categories.txt line
+  #grep ${j} data/SraRunTable.txt | cut -d ',' -f 1 > data/group_${j}_SRRs.txt; 
     
   # read SRRs of group into array
-  wc -l group_${j}_SRRs.txt
-  readarray -t group_SRRs < group_${j}_SRRs.txt
+  wc -l data/group_${j}_SRRs.txt
+  readarray -t group_SRRs < data/group_${j}_SRRs.txt
   
   # mv each SRR*_fastqc.zip file into tmp_multiqc; run multiqc on all in group
   for i in ${group_SRRs[@]}
-    do
+  do
     echo ${i}
     find fastq/${i}_1.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
     find fastq/${i}_2.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
     
     cp fastQC_results/${i}_1_fastqc.zip tmp_multiqc/${i}_1_fastqc.zip 
     cp fastQC_results/${i}_2_fastqc.zip tmp_multiqc/${i}_2_fastqc.zip 
-    done
+  done
 
-# run multiqc
-multiqc tmp_multiqc/*_fastqc.zip -f -n group_${j}_multiQC_report -o multiQC/
+  # run multiqc
+  multiqc tmp_multiqc/*_fastqc.zip -f -n group_${j}_multiQC_report -o multiQC/
 
-rm -r tmp_multiqc/
+  rm -r tmp_multiqc/
 done
 
 # Revert to system locale environment variables
