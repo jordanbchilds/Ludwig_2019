@@ -58,7 +58,7 @@ python3 ../parse.py $gse;
 cd ../
 
 
-    ## Prefetch .sra files ##
+    ## Prefetch .sra files (depreciated) ##
 
 #echo "Prefetching all SRRs in ${gse}_sra.txt ...";
 #prefetch --option-file "data/${gse}_sra.txt";
@@ -78,7 +78,8 @@ for j in ${types[@]}
 do
 
   grep $j data/SraRunTable.txt | cut -d ',' -f 1 > data/group_${j}_SRRs.txt; 
-  grep $j data/SraRunTable.txt | cut -d ',' -f 13 > data/group_${j}_SRXs.txt; 
+  # table is comma separated but has some commas within strings in one "cell": delete everything before "SRX", then everything after the first comma.
+  grep $j data/SraRunTable.txt | sed s/.*SRX/SRX/g | sed s/\,.*//g > data/group_${j}_SRXs.txt;  
  
   # prefetch using SRX numbers
   prefetch --option-file "data/group_${j}_SRXs.txt";
