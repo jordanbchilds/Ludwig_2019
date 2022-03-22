@@ -136,7 +136,7 @@ do
   rm dump_list.txt;
   
   # Delete large sra files after dumping
-  #rm -rf sra;
+  rm -rf sra;
 
 done
 
