@@ -43,9 +43,9 @@ mkdir data
 
 
 # superseries (with all Ludwig data, including RNA-seq, scATAC, scRNA, difference cell lines etc...): 
-#gse='GSE115218';
+gse='GSE115218';
 # subseries with bulk ATAC-seq TF1 cells:
-gse='GSE115208';
+#gse='GSE115208';
 
 # parse.py gets list of SRA sequence names from GSE series of "Human lineage tracing enabled by mitochondrial mutations and single cell genomics"
 
@@ -59,7 +59,7 @@ cd ../
 
 
     ## Prefetch .sra files (depreciated) ##
-
+## Use $GSE to select runs:
 #echo "Prefetching all SRRs in ${gse}_sra.txt ...";
 #prefetch --option-file "data/${gse}_sra.txt";
 #echo "Done";
@@ -70,7 +70,14 @@ cd ../
 # read bulk ATAC-seq from TF1 cells into array TODO get SRR numbers automatically from GSE
 
 # Get SRR numbers from metadata table SraRunTable.txt: downloaded from https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA474183&o=acc_s%3Aa
-# Select which group of runs to analyse with a keyword in categories.txt eg. SRP149534 or PRJNA474186 for bulk ATAC-seq of TF1 cells. Other keywords like RNA-seq can be used to select runs (rows) in SraRunTable.txt. 
+# Select which group of runs to analyse with a keyword in categories.txt 
+# each line of categories.txt contains a string that distinguishes it as a sugcategory in metadata file: eg. RNA-seq, SRP149534 (one of 14 subseries), MiSeq 
+
+# interesting keywords for subsets of data (see categories.txt):
+# 1. Grouped sequencing type: RNA-Seq vs ATAC-Seq vs OTHER (mitosc-seq)
+# 2. Platform: NextSeq 500 vs Illumina MiSeq
+# 3. Subseries (cell type, sequening type, same library preparation?): 14 Subseries of GSE115218: (SRP149534 SRP149535 SRP149536 SRP149537 SRP149538 SRP149539 SRP149540 SRP149541 SRP149542 SRP149545 SRP156531 SRP156532 SRP168762 SRP168821)
+
 # The bulk-ATAC-seq of TF1 cells all have the subseries ID: SRP149534
 readarray -t types < categories.txt
 
@@ -81,7 +88,7 @@ do
   # table is comma separated but has some commas within strings in one "cell": delete everything before "SRX", then everything after the first comma.
   grep $j data/SraRunTable.txt | sed s/.*SRX/SRX/g | sed s/\,.*//g > data/group_${j}_SRXs.txt;  
  
-  # prefetch using SRX numbers
+  # prefetch using SRX numbers TODO don't prefetch if fastq file present
   prefetch --option-file "data/group_${j}_SRXs.txt";
  
 

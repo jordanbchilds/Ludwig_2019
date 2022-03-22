@@ -15,7 +15,6 @@ module load parallel/20200522-GCCcore-10.2.0
 
 mkdir bam;
 
-gse='GSE115208';
 
 # read bulk ATAC-seq from TF1 cells into array
 readarray -t rts < data/group_SRP149534_SRRs.txt;
@@ -41,7 +40,7 @@ else
   ref="nuc/hg38" 
 fi
 
-
+ 
 #locale;
 #export LANG=en_GB.utf8
 #export LC_ALL="en_GB.utf8" 
