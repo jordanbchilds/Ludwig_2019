@@ -36,7 +36,7 @@ mkdir data
 # Better to run sra-tools prefetch first, then fastq-dump on result
 
 
-     ## Use custom python script to download metadata ##
+     ## Use custom python script to download metadata for .sra downloads ##
 
 # https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE115218
 # https://doi.org/10.1016/j.cell.2019.01.022
@@ -54,7 +54,7 @@ pip3 install GEOparse;
 
 # run parse.py
 cd data/
-python3 parse.py $gse;
+python3 ../parse.py $gse;
 cd ../
 
 
@@ -65,52 +65,72 @@ cd ../
 #echo "Done";
 
 
-    ## Validate	sra files ##
+    ## Prefetch and validate sra files ##
+
 # read bulk ATAC-seq from TF1 cells into array TODO get SRR numbers automatically from GSE
-readarray -t rts < data/group_SRP149534_SRRs.txt 
-#readarray -t rts < data/individual.txt
 
-# validate each prefetched file and output any missing or incomplete to 'failed_to_prefetch.txt'
-for i in "${rts[@]}"
+# Get SRR numbers from metadata table SraRunTable.txt: downloaded from https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA474183&o=acc_s%3Aa
+# Select which group of runs to analyse with a keyword in categories.txt eg. SRP149534 or PRJNA474186 for bulk ATAC-seq of TF1 cells. Other keywords like RNA-seq can be used to select runs (rows) in SraRunTable.txt. 
+# The bulk-ATAC-seq of TF1 cells all have the subseries ID: SRP149534
+readarray -t types < categories.txt
+
+for j in ${types[@]}
 do
 
-echo $i
-vdb-validate sra/sra/${i}.sra &> sra/${i}_validation.txt;
+  grep $j data/SraRunTable.txt | cut -d ',' -f 1 > data/group_${j}_SRRs.txt; 
+  grep $j data/SraRunTable.txt | cut -d ',' -f 13 > data/group_${j}_SRXs.txt; 
+ 
+  # prefetch using SRX numbers
+  prefetch --option-file "data/group_${j}_SRXs.txt";
+ 
 
-if grep -q 'err' sra/${i}_validation.txt; 
-then
-echo ${i} >> failed_to_prefetch.txt
-prefetch ${i}
-fi
-
-if grep -q "could not be found" sra/${i}_validation.txt;
-then
-echo ${i} >> failed_to_prefetch.txt
-prefetch ${i}
-fi
+  # for ATAC-seq of TF1 cells:
+  readarray -t rts < data/group_${j}_SRRs.txt 
+  #readarray -t rts < data/individual.txt
+  
+  # validate each prefetched file and output any missing or incomplete to 'failed_to_prefetch.txt'
+  for i in "${rts[@]}"
+  do
+  
+    echo $i
+    vdb-validate sra/sra/${i}.sra &> sra/${i}_validation.txt;
+    
+    if grep -q 'err' sra/${i}_validation.txt; 
+    then
+    echo ${i} >> failed_to_prefetch.txt
+    prefetch ${i}
+    fi
+    
+    if grep -q "could not be found" sra/${i}_validation.txt;
+    then
+    echo ${i} >> failed_to_prefetch.txt
+    prefetch ${i}
+    fi
+    
+  done
+  
+  
+      ## Convert prefetched .sra files to fasta format ##
+  
+  # loop to find if .sra file has been dumped (converted to fastq.gz) and if not add file to list
+  for i in "${rts[@]}";
+  do
+  if test -f "fastq/${i}_1.fastq.gz";
+  then
+    echo "${i}_1.fastq.gz file exists";
+  else
+    echo ${i} >> dump_list.txt
+    echo "${i}.sra added to dump_list.txt";
+  fi
+  done
+  
+  cat dump_list.txt | parallel --jobs 8 "fastq-dump --split-files --gzip --outdir fastq/ sra/sra/{}.sra";
+  rm dump_list.txt;
+  
+  # Delete large sra files after dumping
+  #rm -rf sra;
 
 done
-
-
-    ## Convert prefetched .sra files to fasta format ##
-
-# loop to find if .sra file has been dumped (converted to fastq.gz) and if not add file to list
-for i in "${rts[@]}";
-do
-if test -f "fastq/${i}_1.fastq.gz";
-then
-  echo "${i}_1.fastq.gz file exists";
-else
-  echo ${i} >> dump_list.txt
-  echo "${i}.sra added to dump_list.txt";
-fi
-done
-
-cat dump_list.txt | parallel --jobs 8 "fastq-dump --split-files --gzip --outdir fastq/ sra/sra/{}.sra";
-rm dump_list.txt;
-
-# Delete large sra files after dumping
-rm -rf sra;
 
 # zip fastq files
 find fastq/SRR*.fastq | parallel --jobs 8 "gzip -r {}"
