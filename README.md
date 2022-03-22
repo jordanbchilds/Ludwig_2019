@@ -96,3 +96,4 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 - Limit distance between paired-end reads when aligning
 - Cheatsheet of useful bash and slurm commands
 - make group_SRRs file
+- extract SRX numbers for prefetch into group__SRX.txt
