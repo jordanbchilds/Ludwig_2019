@@ -26,10 +26,10 @@ export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
 
 
 # create directories
-mkdir fastq;
-mkdir nuc;
-mkdir sra;
-
+mkdir fastq
+mkdir nuc
+mkdir sra
+mkdir data
 
 # To download the samples, you might be tempted to use fastq-dump from sra-tools.
 # However, this is slow and unable to resume from broken connection.
@@ -53,21 +53,22 @@ gse='GSE115208';
 pip3 install GEOparse;
 
 # run parse.py
+cd data/
 python3 parse.py $gse;
-
+cd ../
 
 
     ## Prefetch .sra files ##
 
 #echo "Prefetching all SRRs in ${gse}_sra.txt ...";
-#prefetch --option-file "${gse}_sra.txt";
+#prefetch --option-file "data/${gse}_sra.txt";
 #echo "Done";
 
 
     ## Validate	sra files ##
 # read bulk ATAC-seq from TF1 cells into array TODO get SRR numbers automatically from GSE
-readarray -t rts < group_SRP149534_SRRs.txt 
-#readarray -t rts < individual.txt
+readarray -t rts < data/group_SRP149534_SRRs.txt 
+#readarray -t rts < data/individual.txt
 
 # validate each prefetched file and output any missing or incomplete to 'failed_to_prefetch.txt'
 for i in "${rts[@]}"
@@ -118,6 +119,7 @@ find fastq/SRR*.fastq | parallel --jobs 8 "gzip -r {}"
 if [ -f "nuc/hg38.fa" ]; then
   echo "hg38 reference genome already downloaded";
 else
+  echo "Downloading hg38 reference genome..."
   cd nuc/;
   wget http://hgdownload.cse.ucsc.edu/goldenpath/hg38/bigZips/hg38.fa.gz;
   gunzip hg38.fa.gz;
