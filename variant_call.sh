@@ -20,7 +20,7 @@ else
   echo "installing mutserve...";
   mkdir mutserve/;
   cd mutserve/;
-  source ../mutserve_installer.sh;
+  source ../scripts/mutserve_installer.sh;
   cd ../;
 fi
 
