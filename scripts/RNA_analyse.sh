@@ -20,6 +20,7 @@ echo "modules loaded";
 # read bulk bulk RNA-seq from TF1 cells into array
 readarray -t rts < multiQC/group_SRP149536_SRRs.txt;
 
+# TODO update reference, rewrite alignment commands
 
 # build indices
 echo "hisat2-build reference indices";
