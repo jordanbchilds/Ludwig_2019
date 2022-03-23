@@ -11,7 +11,7 @@ module load Java/11.0.2;
 module load BCFtools/1.10.2-foss-2019b;
 module load SAMtools/1.12-GCC-10.2.0; 
 
-mkdir vcf_mapq18/
+mkdir vcf_consensus-nodups/
 
   ## check if mutserve is installed
 if [ -f "mutserve/mutserve" ]; then 
@@ -34,8 +34,6 @@ else
   ref="mutserve/rCRS.fasta"
 fi
 
-#temp change:
-ref=mutserve/rCRS.fasta
 
 echo "Reference fasta file: ${ref}"
 
@@ -44,19 +42,21 @@ do
 
   echo ${rt};
 
-  if [ -f "vcf_mapq18/${rt}_annotated.txt" ]; then
+  if [ -f "vcf_consensus-nodups/${rt}_annotated.txt" ]; then
     echo "${rt} already called";
   else 
     
     # default settings: min heteroplasmy level=0.01, mapping quality=20, base quality=20, alignment quality=30
     echo "Calling variants for ${rt}...";
-    ./mutserve/mutserve call bam/${rt}.bam --threads 8 --baseQ 20 --mapQ 18 --level 0.001 --reference ${ref} --output vcf_mapq18/${rt}.vcf ;
-    
+    ./mutserve/mutserve call bamc/${rt}.bam --threads 8 --baseQ 20 --mapQ 18 --level 0.001 --reference ${ref} --output vcf_consensus-nodups/${rt}.vcf.gz ;
+
+    gunzip vcf_consensus-nodups/${rt}.vcf.gz
+
     echo "left aligning with bcftools";
-    bcftools norm vcf_mapq18/${rt}.vcf -f ${ref} --multiallelics +snps -o vcf_mapq18/${rt}_normalised.vcf -Ov
+    bcftools norm vcf_consensus-nodups/${rt}.vcf -f ${ref} --multiallelics +snps -o vcf_consensus-nodups/${rt}_normalised.vcf -Ov
     
     echo "Annotating mutserve .txt output";
-    ./mutserve/mutserve annotate --input vcf_mapq18/${rt}.txt --annotation mutserve/rCRS_annotation_2020-08-20.txt --output vcf_mapq18/${rt}_annotated.txt
+    ./mutserve/mutserve annotate --input vcf_consensus-nodups/${rt}.txt --annotation mutserve/rCRS_annotation_2020-08-20.txt --output vcf_consensus-nodups/${rt}_annotated.txt
   fi
 done
 
@@ -80,7 +80,7 @@ do
   else 
     
     echo "Creating mpileup for ${rt}...";
-    samtools view bam/${rt}.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref ${ref} -q 18 -Q 20 --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,INFO/AD,INFO/ADF,INFO/ADR --threads 8 -Ov --output bcftools_out/${rt}_mpileup.vcf;
+    samtools view bamc/${rt}.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref ${ref} -q 18 -Q 20 --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,INFO/AD,INFO/ADF,INFO/ADR --threads 8 -Ov --output bcftools_out/${rt}_mpileup.vcf;
     echo "Calling point mutations (bcftools call) for ${rt}...";
     #bgzip -i -c bcftools_out/${rt}_mpileup.vcf --threads 8 | bcftools call - --multiallelic-caller --keep-alts --skip-variants indels --regions chrM -Ov --ploidy 1 --output bcftools_out/${rt}_calls.vcf;
   fi
