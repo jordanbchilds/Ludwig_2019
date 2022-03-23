@@ -15,47 +15,18 @@ module load parallel/20200522-GCCcore-10.2.0
 
 echo "modules loaded";
 
-# Export sratools bin to shell PATH variable
-export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
+# Download bulk RNA-seq of TF1 cells using prefetch_files.sh, and the keyword SRP149535 in categories.txt.
 
-gse='GSE115218';
-
-# read bulk ATAC-seq from TF1 cells into array
-readarray -t rts < multiQC/group_SRP149534_SRRs.txt;
+# read bulk bulk RNA-seq from TF1 cells into array
+readarray -t rts < multiQC/group_SRP149536_SRRs.txt;
 
 
-
-    ## Convert prefetched .sra files to fasta format ##
-
-# loop to find if .sra file has been dumped (converted to fastq.gz) and if not add file to list
-
-for i in "${rts[@]}";
-do
-if test -f "fastq/${i}_1.fastq.gz";
-then
-  echo "${i}_1.fastq.gz file exists";
-else
-  echo ${i} >> dump_list.txt
-  echo "${i}.sra added to dump_list.txt";
-fi
-done
-
-cat dump_list.txt | parallel --jobs 8 "fastq-dump --split-files --gzip --outdir fastq/ sra/sra/{}.sra";
-rm dump_list.txt;
-
-rm -rf sra;
-
-## Download reference genome ##
-#wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz ; 
-#gunzip GCA_000001405.28_GRCh38.p13_genomic.fna.gz;
-
-
+# build indices
 echo "hisat2-build reference indices";
 hisat2-build -p 8 nuc/hg38.fa nuc/ref;
 
 
-
- ## Align reads ##
+  ## Align reads ##
 
 for rt in "${rts[@]}"
 do
