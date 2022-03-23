@@ -14,7 +14,7 @@ module load MultiQC/1.7-foss-2018b-Python-3.6.6;
 mkdir fastQC_results;
 
 
-  ## run fastqc for specific SRR*.fastq.gz files, forward and reverse read. (Edited to run specific SRR file).
+  ## run fastqc for specific SRR*.fastq.gz files instead of whole group (forward and reverse reads). eg. SRR7245916 
 #find fastq/SRR7245916*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
 #find fastq/SRR72458*.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
 
@@ -26,25 +26,26 @@ mkdir fastQC_results;
 #sed -i 's|fastq\/||g' fastqgz_list.txt;
 #sed -i 's|.fastq.gz||g' fastqgz_list.txt;
 
- ## fastqgz_list.txt was combined with metadata in R to create file metadata_ls.csv 
+  # fastqgz_list.txt was combined with metadata in R to create file metadata_ls.csv (depreciated: replaced with SraRunTable.txt)
 
 
-# interesting subsets of data (see categories.txt):
+# interesting potential subsets of data (see categories.txt):
 # 1. Grouped sequencing type: RNA-Seq vs ATAC-Seq vs OTHER (mitosc-seq)
 # 2. Platform: NextSeq 500 vs Illumina MiSeq
 # 3. Subseries (cell type, sequening type, same library preparation?): 14 Subseries of GSE115218: (SRP149534 SRP149535 SRP149536 SRP149537 SRP149538 SRP149539 SRP149540 SRP149541 SRP149542 SRP149545 SRP156531 SRP156532 SRP168762 SRP168821)
 
-# each line of categories.txt contains a string that distinguishes it as a sugcategory in metadata file: eg. RNA-seq, SRP149534 (one of 14 subseries), MiSeq 
+# each line of categories.txt contains a string that distinguishes it as a sugcategory in metadata file: eg. RNA-seq, SRP149534 (one of 14 subseries), MiSeq etc. 
+
+# Read keyword for a group/s of SRRs
 readarray -t types < categories.txt
 
-echo ${types[@]}
+echo "Group/s: ${types[@]}"
+
 # Change to supported UTF-8 variable
 locale;
-
 export LANG=en_GB.utf8
 export LC_ALL="en_GB.utf8"
-
-locale;
+#locale;
 
 
   ## Adaptor trimming ##
@@ -56,14 +57,15 @@ locale;
 for j in ${types[@]}
 do
   mkdir tmp_multiqc
+  
   # extract all lines from data/SraRunTable.txt containing $j from categories.txt line
   #grep ${j} data/SraRunTable.txt | cut -d ',' -f 1 > data/group_${j}_SRRs.txt; 
     
   # read SRRs of group into array
-  wc -l data/group_${j}_SRRs.txt
+  echo "Number of samples: $(wc -l data/group_${j}_SRRs.txt)"
   readarray -t group_SRRs < data/group_${j}_SRRs.txt
   
-  # mv each SRR*_fastqc.zip file into tmp_multiqc; run multiqc on all in group
+  # run fastqc on each SRR in group, move each SRR*_fastqc.zip file into tmp_multiqc/, then run multiqc for all in the group
   for i in ${group_SRRs[@]}
   do
     echo ${i}
