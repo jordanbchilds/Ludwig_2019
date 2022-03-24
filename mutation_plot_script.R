@@ -6,7 +6,7 @@
 #args <- commandArgs(trailingOnly = T)
 #print(args)
 #setwd(args[1])
-setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
+setwd("/home/thomas/Documents/projects/Research_proj/Ludwig_2019/")
   
 
 
@@ -34,13 +34,13 @@ library("ComplexHeatmap")
 
 
   ## Read SRR files ##
-filenames <- list.files("vcf_map20/", pattern="*_annotated.txt")
+filenames <- list.files("vcf_consensus-nodups/", pattern="*_annotated.txt")
 # Create list of data frame names without the ".txt" part 
 SRR_names <-substr(filenames,1,10)
 
   ## Read coverage files ##
-depths <- read.table("coverages/depths.txt", sep = "\t", header = F, stringsAsFactors = T)
-depths_qfilt <- read.table("coverages/depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
+depths <- read.table("alignment_stats/depths.txt", sep = "\t", header = F, stringsAsFactors = T)
+depths_qfilt <- read.table("alignment_stats/depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
 colnames(depths_qfilt) <- c("chr", "Pos", SRR_names)
 colnames(depths) <- c("chr", "Pos", SRR_names)
 
@@ -135,16 +135,16 @@ for (i in SRR_names){
     ###################### Post alignment quality ########################
 
 # overall alignment rate for each clone
-percent_alignment <- read.table("alignment_summary.txt", header = T)
+percent_alignment <- read.table("alignment_stats/alignment_and_duplicate_summary.txt", header = T)
 mean(percent_alignment$Overall_alignment_rate)
 min(percent_alignment$Overall_alignment_rate)
 
 
 # summary statistics for coverages (before and after filtering for mapping and base quality):
 # information included (column names): "X.rname", "startpos","endpos","numreads","covbases","coverage","meandepth","meanbaseq","meanmapq","SRRs","read_lengths","calculated_mean_depth","calculated_sd_depth" and min and max depths for qfilt
-all_coverages_qfilt <- read.csv("coverages/all_coverages_qfilt.txt", header = T, sep = "\t")
+all_coverages_qfilt <- read.csv("alignment_stats/all_coverages_qfilt.txt", header = T, sep = "\t")
 all_coverages_qfilt$SRRs <- SRR_names
-all_coverages <- read.csv("coverages/all_coverages.txt", header = T, sep = "\t")
+all_coverages <- read.csv("alignment_stats/all_coverages.txt", header = T, sep = "\t")
 all_coverages$SRRs <- SRR_names
 df_SRR_names <- data.frame(SRR_names)
 all_coverages$read_lengths <- merge(data.frame(SRR_names), raw_sample_info, all.x = T, by.x = "SRR_names", by.y = "Run")[,3]
@@ -249,10 +249,10 @@ mean_mapq_hist <- ggplot(data = all_coverages, aes(meanmapq)) +
 
 
  # filtered read plots: coverage (x axis: SRR), no.reads, base quality, mapping quality
-sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, calculated_mean, calculated_sd)) +
+sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, calculated_mean_depth, calculated_sd)) +
   geom_col(colour = "black", fill = "dodgerblue3") +
-  geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
-  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) 
+  geom_errorbar(aes(ymin=calculated_mean_depth-calculated_sd_depth, ymax=calculated_mean_depth+calculated_sd_depth), width=0) +
+  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white"))
@@ -276,9 +276,9 @@ sample_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meanmapq)
         panel.background = element_rect(fill = "white")) 
 
 # unfiltered read plots: coverage (x axis: SRR), no.reads, base quality, mapping quality
-sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, calculated_mean, calculated_sd)) +
+sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, calculated_mean_depth, calculated_sd_depth)) +
   geom_col(colour = "black", fill = "orange") +
-  geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
+  geom_errorbar(aes(ymin=calculated_mean_depth-calculated_sd_depth, ymax=calculated_mean_depth+calculated_sd_depth), width=0) +
   scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0, size = 10),
         axis.ticks.x = element_line(),
@@ -614,9 +614,9 @@ for (SRR in SRR_names){
 
   ## Overall correlation ##
 # prepare data
-melted_our_Ludwig_variants <- melt(HET_OR_LOWLVL_nofilt_Ludwig_variants)
+melted_our_Ludwig_variants <- reshape2::melt(HET_OR_LOWLVL_nofilt_Ludwig_variants)
 Ludwig_variants <- Ludwig_variants[,-72]
-melted_Ludwig_variants <- melt(Ludwig_variants[,-1])
+melted_Ludwig_variants <- reshape2::melt(Ludwig_variants[,-1])
 colnames(melted_our_Ludwig_variants) <- c("rCRS_Ludwig_pos", "SRR_names", "our_variant_level")
 colnames(melted_Ludwig_variants) <- c("rCRS_Ludwig_pos", "SRR_names", "Ludwigs_variant_level")
 melted_our_Ludwig_variants[is.na(melted_our_Ludwig_variants)] = 0
