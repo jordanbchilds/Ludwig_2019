@@ -86,7 +86,7 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 - [ ] Re-align to consensus instead of ref
 - [ ] Compare genome coverage, no. variants, strand bias for:
      - [ ] duplicates vs no dups
-     - [ ]- aligned to reference vs aligned to consensus
+     - [ ] aligned to reference vs aligned to consensus
 - [ ] Replace mutserve variant caller:
      - [ ] raw pileup calls - only quality filtering, no sequencing error adjustments
      - [ ] **write variant caller which incorporates AF autocorrelation**
@@ -97,3 +97,11 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 - [ ] Cheatsheet of useful bash and slurm commands
 - [x] make group_SRRs file
 - [x] extract SRX numbers for prefetch into group__SRX.txt
+- [ ] baseq 20 too low? Especially when av baseq is high ~31. See spread of baseqs per position and compare between baseq 20 and 30: 1 in 100 vs 1 in 1000. baseq 25.23 = 3 in 1000. proportion of wrong calls per genomic position = Pr(wrong base)\*coverage/16569?
+
+
+Questions (add answers to research and reasoning)
+- Mark known low level seq error patterns, statistically compare autocorrelation between potential seq error and not
+- for this dataset and the relationships between clones (time, colony size, model - effectively back one generation, forward two)
+- How distinguishable will random changes in AF be from autocorrelated? How accurate can we really expect AF estimate to be? ...Given the amount of information lost when sequencing <- illustrate with graph. Model sequencing process (assumming no amplification bias) eg.:
+  - proportion of clone mtDNAs retained/captured after fragmentation, adaptor ligation and size selection: estimated mtDNA copy no.\*efficiency of ligation\*proportion of ligated in correct size range (research). 
