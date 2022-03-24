@@ -1,4 +1,5 @@
 bam/*
+bamc/*
 fastq/*
 frames/*
 frames_examine/*
@@ -11,6 +12,11 @@ multi_bamqc/*
 nuc/*
 fastQC_results/*
 plots/
+bcftools_out/*
+
+data/
+!data/SraRunTable.txt
+vcf_mapq18/
 
 # output files
 

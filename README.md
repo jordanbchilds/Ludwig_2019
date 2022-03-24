@@ -1,4 +1,4 @@
-<img align="left" src="logo-newcastle-university.png" width="300" /> <img align="right" src="logo-wellcome-centre-mitcondrial-research.png" width="300" />  
+<img align="left" src="images/logo-newcastle-university.png" width="300" /> <img align="right" src="images/logo-wellcome-centre-mitcondrial-research.png" width="300" />  
 
 &nbsp;  
 &nbsp;  
@@ -11,7 +11,7 @@ This specialized variant calling pipeline was developed to identify (non-pathoge
 
 Currently tailored for re-analysis of bulk ATAC-seq data from [Ludwig _et al._ (2019)](https://doi.org/10.1016/j.cell.2019.01.022) to quantify the expansion of mtDNA mutations throughout indirectly related clonal human cell cultures.  
 &nbsp;  
-<img src="Lineage_tree_README.jpg" width="300">  
+<img src="images/Lineage_tree_README.jpg" width="300">  
 TODO caption and reference. can't directly observe longituninally as sequencing kills clone and its descendants.
 
 
@@ -74,5 +74,35 @@ For each candidate mutation, a mutation load profile (Fig. 3 below) can be used 
 Using exploratory plots like the example above (Fig. 2) and the tables of heteroplasmic variant frequencies, individual point mutations which may show stochastic changes in allele frequency can be identified, and their mutation load profiles for a lineage plotted. 
 For each candidate mutation, a mutation load profile (Fig. 3 below) can be used to observe the change in allele frequency between generations.  
 # Additional software 
-Most of the programs used in this pipeline are already installed as a SLURM module, or is automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from [configure_sratools.sh](configure_sratools.sh). When prompted set default configuration by inputting: "f","y","o","x","y","o".
+Most of the programs used in this pipeline are already installed as a SLURM module, or are automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from [configure_sratools.sh](configure_sratools.sh). When prompted set default configuration by inputting: "f","y","o","x","y","o".
 
+# TODO
+- [x] Restructure project into folders
+- [ ] Check script comments
+- [ ] rename project?
+- [x] Mark duplicates
+     - [ ] Optical duplicates
+- [x] Create consenus sequence
+- [ ] Re-align to consensus instead of ref
+- [ ] Compare genome coverage, no. variants, strand bias for:
+     - [ ] duplicates vs no dups
+     - [ ] aligned to reference vs aligned to consensus
+- [ ] Replace mutserve variant caller:
+     - [ ] raw pileup calls - only quality filtering, no sequencing error adjustments
+     - [ ] **write variant caller which incorporates AF autocorrelation**
+     - [ ] alternative variant annotation software
+- [ ] Remove two samples with skewed GC distribution?
+- [ ] Modify for use outside of Rocket - yzer?
+- [ ] Limit distance between paired-end reads when aligning
+- [ ] Cheatsheet of useful bash and slurm commands
+- [x] make group_SRRs file
+- [x] extract SRX numbers for prefetch into group__SRX.txt
+- [ ] baseq 20 too low? Especially when av baseq is high ~31. See spread of baseqs per position and compare between baseq 20 and 30: 1 in 100 vs 1 in 1000. baseq 25.23 = 3 in 1000 (Q = -10log10(0.003)). proportion of wrong calls per genomic position = Pr(wrong base)\*coverage/16569?
+
+
+Questions (add answers to research and reasoning)
+- Mark known low level seq error patterns, statistically compare autocorrelation between potential seq error and not
+- for this dataset and the relationships between clones (time, colony size, model - effectively back one generation, forward two)
+- How distinguishable will random changes in AF be from autocorrelated? How accurate can we really expect AF estimate to be? ...Given the amount of information lost when sequencing <- illustrate with graph. Model sequencing process (assumming no amplification bias) eg.:
+  - proportion of clone mtDNAs retained/captured after fragmentation, adaptor ligation and size selection: estimated mtDNA copy no.\*efficiency of ligation\*proportion of ligated in correct size range (research). 
+- at base quality 30 (1 in 1000) we could expect an average of 1 read containing a mutation at every position just by chance? Not including pcr error etc.

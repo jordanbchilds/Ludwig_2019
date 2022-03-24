@@ -7,71 +7,66 @@
 #SBATCH -c 8
 #
 
+
 module load SAMtools/1.12-GCC-10.2.0;
 
-mkdir coverages/;
 
+mkdir alignment_stats/;
 
-# ls -1 prints each file on a new line
-ls -1 -d bam/* | grep -v "bai" > ls_bam_files.txt;
+# Extract bam file names (using bam files instead of group SRRs to get bam/prefix, and to avoid excluded samples)
+ls -1 -d bam/* | grep -v "bai" > ls_bam_files.txt  # ls -1 prints each file on a new line 
 
 
   ## SAMtools depth ##
-# Calculate depth for all positions (-a), comment line of column names (-H), base (-q) and mapping quality (-Q) greater than 20: (based on default settings for mutserve variant caller), region chrM (-r), remove depth limit (-d 0) 
-echo "calculating depths of filtered reads"
-samtools depth -f ls_bam_files.txt -a -H -q 20 -Q 18 -r chrM -d 0 -o coverages/depths_qfilt.txt
 
-#
-## no specified quality limits: defaults?
-#echo "calculating depths of all reads"
-#samtools depth -f ls_bam_files.txt -a -H -r chrM -d 0 -o coverages/depths.txt;
-#
+# Calculate depth for all positions (-a), comment line of column names (-H), base (-q) and mapping quality (-Q) greater than 20: (based on default settings for mutserve variant caller), region chrM (-r), remove depth limit (-d 0). Reads with UNMAP, SECONDARY, QCFAIL, or DUP flags are excluded by default.
+echo "Calculating depths of filtered reads"
+samtools depth -f ls_bam_files.txt -a -H -q 20 -Q 18 -r chrM -d 0 -o alignment_stats/depths_qfilt.txt
+
+#echo "calculating depths of reads (no base or mapping quality filters)"
+#samtools depth -f ls_bam_files.txt -a -H -r chrM -d 0 -o alignment_stats/depths.txt;
 
 
   ## SAMtools coverage ##
-# calculate mean depth, SD, no reads aligned, mean base quality, mean mapping quality, proportion of bases with depth <1 (why 1??) and output tab separated file. 
+
+# calculate mean depth, no reads, mean base quality, mean mapping quality, breadth of coverage and output tab separated file. 
 # list of bam files (-b), min base quality (-q), min mapping quality (-Q), mitochondrial chromosome (-r chrM).
 
-echo "calculating mean coverage of filtered reads";
-samtools coverage -b ls_bam_files.txt -q 20 -Q 18 -r chrM -o coverages/mean_coverage_qfilt.txt;
-#echo "calculating mean coverage of all reads";
-#samtools coverage -b ls_bam_files.txt -r chrM -o coverages/mean_coverage.txt;
-#
+#echo "calculating mean coverage of filtered reads across all files";
+#samtools coverage -b ls_bam_files.txt --excl-flags UNMAP,SECONDARY,QCFAIL,DUP -q 20 -Q 18 -r chrM -o alignment_stats/mean_coverage_qfilt.txt;
+#echo "calculating mean coverage of all reads, no base or mapping quality filters";
+#samtools coverage -b ls_bam_files.txt -r chrM -o alignment_stats/mean_coverage.txt;
 
 # loop for individual bam files
 
 # read list of bam files into array
 readarray -t bams < ls_bam_files.txt;
 
-#echo "SRRfile	rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq" > coverages/all_coverages.txt;
-echo "SRRfile	#rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq" > coverages/all_coverages_qfilt.txt;
+#echo "SRRfile	rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq" > alignment_stats/all_coverages.txt;
+echo "SRRfile	#rname	startpos	endpos	numreads	covbases	coverage	meandepth	meanbaseq	meanmapq" > alignment_stats/all_coverages_qfilt.txt;
  
 
 for i in "${bams[@]}";
 do
-i_nodir=${i//bam\//}
-
-# with filters
-echo "${i_nodir}: coverage of filtered reads"
-samtools coverage $i -q 20 -Q 18 -r chrM -o coverages/coverage_qfilt_${i_nodir}.txt;
-echo "${i_nodir}	`grep chrM coverages/coverage_qfilt_${i_nodir}.txt;`" >> coverages/all_coverages_qfilt.txt
-rm coverages/coverage_qfilt_${i_nodir}.txt; 
-
-## without filters
-#echo "${i_nodir}: coverage of all reads"
-#samtools coverage $i -r chrM -o coverages/coverage_${i_nodir}.txt;
-#echo "${i}	`grep chrM coverages/coverage_${i_nodir}.txt;`" >> coverages/all_coverages.txt
-#rm coverages/coverage_${i_nodir}.txt;
-
+ # remove bam/ prefix from i (bam/SRR*.bam) to get just SRR*.bam
+ i_nodir=${i//bam\//}
+ 
+ # with filters
+ echo "${i_nodir}: coverage of filtered reads"
+ samtools coverage $i -q 20 -Q 18 -r chrM --excl-flags UNMAP,SECONDARY,QCFAIL,DUP -o alignment_stats/coverage_qfilt_${i_nodir}.txt;
+ echo "${i_nodir}	`grep chrM alignment_stats/coverage_qfilt_${i_nodir}.txt;`" >> alignment_stats/all_coverages_qfilt.txt
+ rm alignment_stats/coverage_qfilt_${i_nodir}.txt; 
+ 
+ ## without filters
+ #echo "${i_nodir}: coverage of all reads"
+ #samtools coverage $i -r chrM -o alignment_stats/coverage_${i_nodir}.txt;
+ #echo "${i}	`grep chrM alignment_stats/coverage_${i_nodir}.txt;`" >> alignment_stats/all_coverages.txt
+ #rm alignment_stats/coverage_${i_nodir}.txt;
+ 
 done
 
 
-
-
-
 rm ls_bam_files.txt;
-
-
 
 
 ##  ##Get qualimap ##
@@ -91,7 +86,7 @@ rm ls_bam_files.txt;
 #
 #
 ## read bulk ATAC-seq from TF1 cells into array
-#readarray -t rts < multiQC/group_SRP149534_SRRs.txt;
+#readarray -t rts < data/group_SRP149534_SRRs.txt;
 #touch qualimap_coverages.txt;
 #
 #for rt in "${rts[@]}";
