@@ -39,5 +39,5 @@ echo $chrM_start
 chrM_end=$(grep -n ^'>' nuc/parent_consensus.fa | grep -A 1 "chrM" | grep --invert-match "chrM" | cut -d ":" -f 1 -)
 chrM_end=$(expr ${chrM_end} - 1)
 echo $chrM_end 
-sed -n "${chrM_start},${chrM_end}p" nuc/parent_consensus.fa > nuc/parent_chrM_consensus.fa
+sed -n "${chrM_start},${chrM_end}p" nuc/parent_consensus.fa | tr [:lower:] [:upper:] > nuc/parent_chrM_consensus.fa
 
