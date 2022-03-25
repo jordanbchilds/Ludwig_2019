@@ -6,7 +6,7 @@
 #args <- commandArgs(trailingOnly = T)
 #print(args)
 #setwd(args[1])
-setwd("/home/thomas/Documents/Research_proj/Ludwig_2019/")
+setwd("/home/thomas/Documents/projects/Research_proj/Ludwig_2019/")
   
 
 
@@ -34,13 +34,13 @@ library("ComplexHeatmap")
 
 
   ## Read SRR files ##
-filenames <- list.files("vcf_map20/", pattern="*_annotated.txt")
+filenames <- list.files("vcf_consensus-nodups/", pattern="*_annotated.txt")
 # Create list of data frame names without the ".txt" part 
 SRR_names <-substr(filenames,1,10)
 
   ## Read coverage files ##
-depths <- read.table("coverages/depths.txt", sep = "\t", header = F, stringsAsFactors = T)
-depths_qfilt <- read.table("coverages/depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
+depths <- read.table("alignment_stats/depths.txt", sep = "\t", header = F, stringsAsFactors = T)
+depths_qfilt <- read.table("alignment_stats/depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
 colnames(depths_qfilt) <- c("chr", "Pos", SRR_names)
 colnames(depths) <- c("chr", "Pos", SRR_names)
 
@@ -135,16 +135,16 @@ for (i in SRR_names){
     ###################### Post alignment quality ########################
 
 # overall alignment rate for each clone
-percent_alignment <- read.table("alignment_summary.txt", header = T)
+percent_alignment <- read.table("alignment_stats/alignment_and_duplicate_summary.txt", header = T)
 mean(percent_alignment$Overall_alignment_rate)
 min(percent_alignment$Overall_alignment_rate)
 
 
 # summary statistics for coverages (before and after filtering for mapping and base quality):
 # information included (column names): "X.rname", "startpos","endpos","numreads","covbases","coverage","meandepth","meanbaseq","meanmapq","SRRs","read_lengths","calculated_mean_depth","calculated_sd_depth" and min and max depths for qfilt
-all_coverages_qfilt <- read.csv("coverages/all_coverages_qfilt.txt", header = T, sep = "\t")
+all_coverages_qfilt <- read.csv("alignment_stats/all_coverages_qfilt.txt", header = T, sep = "\t")
 all_coverages_qfilt$SRRs <- SRR_names
-all_coverages <- read.csv("coverages/all_coverages.txt", header = T, sep = "\t")
+all_coverages <- read.csv("alignment_stats/all_coverages.txt", header = T, sep = "\t")
 all_coverages$SRRs <- SRR_names
 df_SRR_names <- data.frame(SRR_names)
 all_coverages$read_lengths <- merge(data.frame(SRR_names), raw_sample_info, all.x = T, by.x = "SRR_names", by.y = "Run")[,3]
@@ -249,10 +249,10 @@ mean_mapq_hist <- ggplot(data = all_coverages, aes(meanmapq)) +
 
 
  # filtered read plots: coverage (x axis: SRR), no.reads, base quality, mapping quality
-sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, calculated_mean, calculated_sd)) +
+sample_coverage_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, calculated_mean_depth, calculated_sd)) +
   geom_col(colour = "black", fill = "dodgerblue3") +
-  geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
-  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) 
+  geom_errorbar(aes(ymin=calculated_mean_depth-calculated_sd_depth, ymax=calculated_mean_depth+calculated_sd_depth), width=0) +
+  scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0),
         axis.ticks.x = element_line(),
         panel.background = element_rect(fill = "white"))
@@ -276,9 +276,9 @@ sample_mapq_plot_qfilt <- ggplot(data = all_coverages_qfilt, aes(SRRs, meanmapq)
         panel.background = element_rect(fill = "white")) 
 
 # unfiltered read plots: coverage (x axis: SRR), no.reads, base quality, mapping quality
-sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, calculated_mean, calculated_sd)) +
+sample_coverage_plot <- ggplot(data = all_coverages, aes(SRRs, calculated_mean_depth, calculated_sd_depth)) +
   geom_col(colour = "black", fill = "orange") +
-  geom_errorbar(aes(ymin=calculated_mean-calculated_sd, ymax=calculated_mean+calculated_sd), width=0) +
+  geom_errorbar(aes(ymin=calculated_mean_depth-calculated_sd_depth, ymax=calculated_mean_depth+calculated_sd_depth), width=0) +
   scale_y_continuous(trans='log2', expand = expansion(mult = c(0, .1))) +
   theme(axis.text.x = element_text(angle = 45, vjust=1.05, hjust = 1.0, size = 10),
         axis.ticks.x = element_line(),
@@ -357,7 +357,7 @@ SRR_table_list_HET_OR_LOWLVL_validated <- list()
 #threshold <- 0.05
 # Load files into list of data.frames
 for(i in SRR_names){
-  filepath <- file.path("vcf",paste(i,"_annotated.txt",sep=""))
+  filepath <- file.path("vcf_consensus-nodups/",paste(i,"_annotated.txt",sep=""))
   SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T)
   # remove positions (deletion eg. at 3107)
   SRR_table_list[[i]] <- SRR_table_list[[i]][!(SRR_table_list[[i]]$Pos==3107),]
@@ -384,7 +384,7 @@ write.csv(bulk_variant_pos, file = "results/bulk_variant_positions.csv", quote =
 
    ####  all_variants_in_path
 # merge to list all variants in lineage path
-# replace postition with variant level.
+# replace position with variant level.
 # if min variant level is < eg. 0.95 change filter to FIXED_IN_BULK.
 
 
@@ -430,20 +430,20 @@ print("table of bulk variants in lineage path saved in 'results/'")
 # Repeat for only heteroplasmic or low level variants, unfiltered
 
 validation_paths <- list()
-validation_paths <- as.list(strsplit(readLines("validation_groups.txt"), " "))
+validation_paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 
 all_variants_in_lineages <- list()
 validated_per_lineage <- list()
-all_lineages_validated <- data.frame(310)
+all_lineages_validated <- data.frame(matrix(ncol = 1))  # data.frame(310)  # one cell df
 colnames(all_lineages_validated) <- "Pos"
 for (p in validation_paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
     next
   }
-  all_variants_in_lineage <- data.frame(matrix(ncol = 1))
-  colnames(all_variants_in_lineage) <- "Pos"
+  all_variants_in_lineage_HET_OR_LOWLVL_nofilt <- data.frame(matrix(ncol = 1))
+  colnames(all_variants_in_lineage_HET_OR_LOWLVL_nofilt) <- "Pos"
   n=0
   
   for (SRR in p){
@@ -465,31 +465,31 @@ for (p in validation_paths){
     SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
     print(colnames(SRR_pos_level))
     colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
-    all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = T)
+    all_variants_in_lineage_HET_OR_LOWLVL_nofilt <- merge(all_variants_in_lineage_HET_OR_LOWLVL_nofilt, SRR_pos_level, by = "Pos", all = T)
     
   }
-  # only keep variants which have an allele frequency > 0.01. 
-  lineage_validated <- all_variants_in_lineage %>% filter_at(-1, any_vars(.>0.01))
+  # only keep variants which have at least one allele with an allele frequency > 0.01, and are present at least twice in the lineage
+  lineage_validated <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt %>% filter_at(-1, any_vars(.>0.01))
+  lineage_validated <- lineage_validated[rowSums(!is.na(lineage_validated[,-1]))>=2,]
   validated_per_lineage[[ p[[1]] ]] <- lineage_validated
   
-  all_lineages_validated <- merge(all_lineages_validated, lineage_validated, all = T)
+  # Add new lineage validated mutations to table with all lineage mutations
+  all_lineages_validated <- merge(all_lineages_validated, lineage_validated, by = "Pos", all = T)
   
-
-  file_string <- paste0("results/",p[[1]],"lineage_validated_mutations.csv")
+  file_string <- paste0("results/",p[[1]],"_lineage_validated_mutations.csv")
   write.csv(lineage_validated,file = file_string, quote = F)
   print("table of bulk variants in lineage path saved in 'results/'")
 
-  
   file_string <- paste0("results/",p[[1]],"_HET_nofilt_variants.csv")
-  write.csv(all_variants_in_lineage,file = file_string, quote = F)
-  print("table of bulk variants in lineage path saved in 'results/'")
-  all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage
+  write.csv(all_variants_in_lineage_HET_OR_LOWLVL_nofilt,file = file_string, quote = F)
+  print("table of variants in lineage path saved in 'results/'")
+  all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt
 }
 
 
 all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos),]
 file_string <- paste0("results/all_variants_lineage_validated.csv")
-write.csv(all_variants_in_lineage,file = file_string, quote = F)
+write.csv(all_lineages_validated,file = file_string, quote = F)
 
 all_lineages_validated_pos <- data.frame(all_lineages_validated$Pos)
 colnames(all_lineages_validated_pos) <- "Pos"
@@ -614,9 +614,9 @@ for (SRR in SRR_names){
 
   ## Overall correlation ##
 # prepare data
-melted_our_Ludwig_variants <- melt(HET_OR_LOWLVL_nofilt_Ludwig_variants)
+melted_our_Ludwig_variants <- reshape2::melt(HET_OR_LOWLVL_nofilt_Ludwig_variants)
 Ludwig_variants <- Ludwig_variants[,-72]
-melted_Ludwig_variants <- melt(Ludwig_variants[,-1])
+melted_Ludwig_variants <- reshape2::melt(Ludwig_variants[,-1])
 colnames(melted_our_Ludwig_variants) <- c("rCRS_Ludwig_pos", "SRR_names", "our_variant_level")
 colnames(melted_Ludwig_variants) <- c("rCRS_Ludwig_pos", "SRR_names", "Ludwigs_variant_level")
 melted_our_Ludwig_variants[is.na(melted_our_Ludwig_variants)] = 0
@@ -723,8 +723,8 @@ pca_df <- data.frame(pca_all$x)
 pca_plot <- ggplot(data = pca_df, aes(PC1, PC2)) +
   geom_point()
 
-########################   Mutation Plots   ############################
 
+########################   Mutation Plots   ############################
 
 barplot_lims <- data.frame(0:16569, rep(1,16570))
 colnames(barplot_lims) <- c("Position", "ylimit")
