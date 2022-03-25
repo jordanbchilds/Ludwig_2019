@@ -357,7 +357,7 @@ SRR_table_list_HET_OR_LOWLVL_validated <- list()
 #threshold <- 0.05
 # Load files into list of data.frames
 for(i in SRR_names){
-  filepath <- file.path("vcf",paste(i,"_annotated.txt",sep=""))
+  filepath <- file.path("vcf_consensus-nodups/",paste(i,"_annotated.txt",sep=""))
   SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T)
   # remove positions (deletion eg. at 3107)
   SRR_table_list[[i]] <- SRR_table_list[[i]][!(SRR_table_list[[i]]$Pos==3107),]
@@ -384,7 +384,7 @@ write.csv(bulk_variant_pos, file = "results/bulk_variant_positions.csv", quote =
 
    ####  all_variants_in_path
 # merge to list all variants in lineage path
-# replace postition with variant level.
+# replace position with variant level.
 # if min variant level is < eg. 0.95 change filter to FIXED_IN_BULK.
 
 
@@ -430,20 +430,20 @@ print("table of bulk variants in lineage path saved in 'results/'")
 # Repeat for only heteroplasmic or low level variants, unfiltered
 
 validation_paths <- list()
-validation_paths <- as.list(strsplit(readLines("validation_groups.txt"), " "))
+validation_paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 
 all_variants_in_lineages <- list()
 validated_per_lineage <- list()
-all_lineages_validated <- data.frame(310)
+all_lineages_validated <- data.frame(matrix(ncol = 1))  # data.frame(310)  # one cell df
 colnames(all_lineages_validated) <- "Pos"
 for (p in validation_paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
     next
   }
-  all_variants_in_lineage <- data.frame(matrix(ncol = 1))
-  colnames(all_variants_in_lineage) <- "Pos"
+  all_variants_in_lineage_HET_OR_LOWLVL_nofilt <- data.frame(matrix(ncol = 1))
+  colnames(all_variants_in_lineage_HET_OR_LOWLVL_nofilt) <- "Pos"
   n=0
   
   for (SRR in p){
@@ -465,31 +465,31 @@ for (p in validation_paths){
     SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
     print(colnames(SRR_pos_level))
     colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
-    all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = T)
+    all_variants_in_lineage_HET_OR_LOWLVL_nofilt <- merge(all_variants_in_lineage_HET_OR_LOWLVL_nofilt, SRR_pos_level, by = "Pos", all = T)
     
   }
-  # only keep variants which have an allele frequency > 0.01. 
-  lineage_validated <- all_variants_in_lineage %>% filter_at(-1, any_vars(.>0.01))
+  # only keep variants which have at least one allele with an allele frequency > 0.01, and are present at least twice in the lineage
+  lineage_validated <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt %>% filter_at(-1, any_vars(.>0.01))
+  lineage_validated <- lineage_validated[rowSums(!is.na(lineage_validated[,-1]))>=2,]
   validated_per_lineage[[ p[[1]] ]] <- lineage_validated
   
-  all_lineages_validated <- merge(all_lineages_validated, lineage_validated, all = T)
+  # Add new lineage validated mutations to table with all lineage mutations
+  all_lineages_validated <- merge(all_lineages_validated, lineage_validated, by = "Pos", all = T)
   
-
-  file_string <- paste0("results/",p[[1]],"lineage_validated_mutations.csv")
+  file_string <- paste0("results/",p[[1]],"_lineage_validated_mutations.csv")
   write.csv(lineage_validated,file = file_string, quote = F)
   print("table of bulk variants in lineage path saved in 'results/'")
 
-  
   file_string <- paste0("results/",p[[1]],"_HET_nofilt_variants.csv")
-  write.csv(all_variants_in_lineage,file = file_string, quote = F)
-  print("table of bulk variants in lineage path saved in 'results/'")
-  all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage
+  write.csv(all_variants_in_lineage_HET_OR_LOWLVL_nofilt,file = file_string, quote = F)
+  print("table of variants in lineage path saved in 'results/'")
+  all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt
 }
 
 
 all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos),]
 file_string <- paste0("results/all_variants_lineage_validated.csv")
-write.csv(all_variants_in_lineage,file = file_string, quote = F)
+write.csv(all_lineages_validated,file = file_string, quote = F)
 
 all_lineages_validated_pos <- data.frame(all_lineages_validated$Pos)
 colnames(all_lineages_validated_pos) <- "Pos"
@@ -723,8 +723,8 @@ pca_df <- data.frame(pca_all$x)
 pca_plot <- ggplot(data = pca_df, aes(PC1, PC2)) +
   geom_point()
 
-########################   Mutation Plots   ############################
 
+########################   Mutation Plots   ############################
 
 barplot_lims <- data.frame(0:16569, rep(1,16570))
 colnames(barplot_lims) <- c("Position", "ylimit")
