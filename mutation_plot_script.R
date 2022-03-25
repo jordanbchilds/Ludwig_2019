@@ -435,8 +435,10 @@ validation_paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 all_variants_in_lineages <- list()
 validated_per_lineage <- list()
-all_lineages_validated <- data.frame(matrix(ncol = 1))  # data.frame(310)  # one cell df
+all_lineages_validated <- data.frame(matrix(ncol = 1)) 
 colnames(all_lineages_validated) <- "Pos"
+all_lineages_pot_autocor_validated <- data.frame(matrix(ncol = 1))# data.frame(310)  # one cell df
+colnames(all_lineages_pot_autocor_validated) <- "Pos"
 for (p in validation_paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
@@ -473,8 +475,15 @@ for (p in validation_paths){
   lineage_validated <- lineage_validated[rowSums(!is.na(lineage_validated[,-1]))>=2,]
   validated_per_lineage[[ p[[1]] ]] <- lineage_validated
   
-  # Add new lineage validated mutations to table with all lineage mutations
+  # Get mutations which could be validated though autocorrelation (occur >=2 x in lineage, not necessary to also have one below 0.01 heteroplasmy)
+  potential_autocorrelation <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt[rowSums(!is.na(all_variants_in_lineage_HET_OR_LOWLVL_nofilt[,-1]))>=2,]
+  file_string <- paste0("results/",p[[1]],"_pot_valid_by_autocorrelation.csv")
+  write.csv(potential_autocorrelation, file = file_string, quote = F)
+  
+  # Add new lineage validated mutations to table with all lineage mutations, same for potentially validated with autocorrelation
   all_lineages_validated <- merge(all_lineages_validated, lineage_validated, by = "Pos", all = T)
+  all_lineages_pot_autocor_validated <- merge(all_lineages_pot_autocor_validated, potential_autocorrelation, by = "Pos", all = T)
+  
   
   file_string <- paste0("results/",p[[1]],"_lineage_validated_mutations.csv")
   write.csv(lineage_validated,file = file_string, quote = F)
@@ -484,12 +493,19 @@ for (p in validation_paths){
   write.csv(all_variants_in_lineage_HET_OR_LOWLVL_nofilt,file = file_string, quote = F)
   print("table of variants in lineage path saved in 'results/'")
   all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt
+  
+  
 }
 
 
 all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos),]
 file_string <- paste0("results/all_variants_lineage_validated.csv")
 write.csv(all_lineages_validated,file = file_string, quote = F)
+
+all_lineages_pot_autocor_validated <- all_lineages_pot_autocor_validated[!duplicated(all_lineages_pot_autocor_validated$Pos),]
+file_string <- paste0("results/all_lineages_pot_valid_by_autocorrelation.csv")
+write.csv(all_lineages_validated,file = file_string, quote = F)
+
 
 all_lineages_validated_pos <- data.frame(all_lineages_validated$Pos)
 colnames(all_lineages_validated_pos) <- "Pos"
