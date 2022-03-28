@@ -64,7 +64,7 @@ lineage_cols <- c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="ye
   ####################  Pre-alignment plots and tables #########################
 
 # table of all sequencing runs in Ludwig paper - only TF1 bulk ATAc-seq needed
-raw_sample_info <- read.csv("SraRunTable_1.csv", header = T)
+raw_sample_info <- read.csv("data/SraRunTable_1.csv", header = T)
 
 # raw sequencing information
 pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt", header = T) 
@@ -435,8 +435,10 @@ validation_paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 all_variants_in_lineages <- list()
 validated_per_lineage <- list()
-all_lineages_validated <- data.frame(matrix(ncol = 1))  # data.frame(310)  # one cell df
+all_lineages_validated <- data.frame(matrix(ncol = 1)) 
 colnames(all_lineages_validated) <- "Pos"
+all_lineages_pot_autocor_validated <- data.frame(matrix(ncol = 1))# data.frame(310)  # one cell df
+colnames(all_lineages_pot_autocor_validated) <- "Pos"
 for (p in validation_paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
@@ -473,8 +475,15 @@ for (p in validation_paths){
   lineage_validated <- lineage_validated[rowSums(!is.na(lineage_validated[,-1]))>=2,]
   validated_per_lineage[[ p[[1]] ]] <- lineage_validated
   
-  # Add new lineage validated mutations to table with all lineage mutations
+  # Get mutations which could be validated though autocorrelation (occur >=2 x in lineage, not necessary to also have one below 0.01 heteroplasmy)
+  potential_autocorrelation <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt[rowSums(!is.na(all_variants_in_lineage_HET_OR_LOWLVL_nofilt[,-1]))>=2,]
+  file_string <- paste0("results/",p[[1]],"_pot_valid_by_autocorrelation.csv")
+  write.csv(potential_autocorrelation, file = file_string, quote = F)
+  
+  # Add new lineage validated mutations to table with all lineage mutations, same for potentially validated with autocorrelation
   all_lineages_validated <- merge(all_lineages_validated, lineage_validated, by = "Pos", all = T)
+  all_lineages_pot_autocor_validated <- merge(all_lineages_pot_autocor_validated, potential_autocorrelation, by = "Pos", all = T)
+  
   
   file_string <- paste0("results/",p[[1]],"_lineage_validated_mutations.csv")
   write.csv(lineage_validated,file = file_string, quote = F)
@@ -484,12 +493,19 @@ for (p in validation_paths){
   write.csv(all_variants_in_lineage_HET_OR_LOWLVL_nofilt,file = file_string, quote = F)
   print("table of variants in lineage path saved in 'results/'")
   all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt
+  
+  
 }
 
 
 all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos),]
 file_string <- paste0("results/all_variants_lineage_validated.csv")
 write.csv(all_lineages_validated,file = file_string, quote = F)
+
+all_lineages_pot_autocor_validated <- all_lineages_pot_autocor_validated[!duplicated(all_lineages_pot_autocor_validated$Pos),]
+file_string <- paste0("results/all_lineages_pot_valid_by_autocorrelation.csv")
+write.csv(all_lineages_validated,file = file_string, quote = F)
+
 
 all_lineages_validated_pos <- data.frame(all_lineages_validated$Pos)
 colnames(all_lineages_validated_pos) <- "Pos"
@@ -547,7 +563,7 @@ for (i in SRR_names){
 
 # Ludwig's research aligned to the Hg19 mitochondrial genome, which has indels compared to rCRS. Positions off by 0,-2,-1,-2 in different parts of the chromosome. See converted positions below.
 # read in Ludwigs variants, and variant level in each sample
-Ludwig_variants <- read.csv("LUDWIG_TF1_clones_ATAC_alleleFrequencies.csv", header = T)
+Ludwig_variants <- read.csv("data/LUDWIG_TF1_clones_ATAC_alleleFrequencies.csv", header = T)
 colnames(Ludwig_variants) <- c("Ludwig_variant_positions", SRR_names)
 Ludwig_variants$tobecombined_Pos <- Ludwig_variants$Ludwig_variant_positions
 
@@ -696,21 +712,21 @@ write.csv(Ludwig_pearson_by_pos,file = file_string, quote = F)
 
  ############## Heatmap of Ludwig's variant positions #######################
 
-HET_OR_LOWLVL_nofilt_Ludwig_variants[is.na(HET_OR_LOWLVL_nofilt_Ludwig_variants)] <- as.numeric(0)
-htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants <- HET_OR_LOWLVL_nofilt_Ludwig_variants[,-1]
-rownames(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants) <- HET_OR_LOWLVL_nofilt_Ludwig_variants$rCRS_Ludwig_pos
-colnames(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants) <- SRR_names
-htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants <- sqrt(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants)
+#HET_OR_LOWLVL_nofilt_Ludwig_variants[is.na(HET_OR_LOWLVL_nofilt_Ludwig_variants)] <- as.numeric(0)
+#htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants <- HET_OR_LOWLVL_nofilt_Ludwig_variants[,-1]
+#rownames(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants) <- HET_OR_LOWLVL_nofilt_Ludwig_variants$rCRS_Ludwig_pos
+#colnames(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants) <- SRR_names
+#htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants <- sqrt(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants)
 
-het_lvl_cols <- colorRamp2(breaks = c(0.05,0.4), 
-                     colors = c("white", "red"))
-lineage_cols <- list(Lineage = c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="yellow", "F4"="grey", "B5"="burlywood4", "B11"="palevioletred2", "A9"="lightseagreen", "D3"="palegreen1", "C7"="lightgoldenrod", "C4"="pink2","C10"="cyan", "B9"="plum1","G10"="steelblue2", "D6"="springgreen4","C9"="red", "mix"="darkgreen"))
+#het_lvl_cols <- colorRamp2(breaks = c(0.05,0.4), 
+#                     colors = c("white", "red"))
+#lineage_cols <- list(Lineage = c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="yellow", "F4"="grey", "B5"="burlywood4", "B11"="palevioletred2", "A9"="lightseagreen", "D3"="palegreen1", "C7"="lightgoldenrod", "C4"="pink2","C10"="cyan", "B9"="plum1","G10"="steelblue2", "D6"="springgreen4","C9"="red", "mix"="darkgreen"))
 
-ha <- HeatmapAnnotation(Lineage = SRR_lineage_generation$lineages, col = lineage_cols)
-heatmap_ludwig_variants <- Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "sqrt(allele frequency)", col = het_lvl_cols, na_col = "white", top_annotation = ha, row_names_gp = gpar(fontsize = 9),column_names_gp = gpar(fontsize = 9))
-png(filename="results/heatmap_Ludwig_variants.png", width = 1024*1.5, height = 1024, units = "px")
-heatmap_ludwig_variants
-dev.off()
+#ha <- HeatmapAnnotation(Lineage = SRR_lineage_generation$lineages, col = lineage_cols)
+#heatmap_ludwig_variants <- Heatmap(htmp_HET_OR_LOWLVL_nofilt_Ludwig_variants, name = "sqrt(allele frequency)", col = het_lvl_cols, na_col = "white", top_annotation = ha, row_names_gp = gpar(fontsize = 9),column_names_gp = gpar(fontsize = 9))
+#png(filename="results/heatmap_Ludwig_variants.png", width = 1024*1.5, height = 1024, units = "px")
+#heatmap_ludwig_variants
+#dev.off()
 
 ##########################  PCA  ##########################################
 

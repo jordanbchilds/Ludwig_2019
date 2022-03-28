@@ -83,11 +83,12 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 - [x] Mark duplicates
      - [ ] Optical duplicates
 - [x] Create consenus sequence
-- [ ] Re-align to consensus instead of ref
+- [x] Re-align to consensus instead of ref
 - [ ] Compare genome coverage, no. variants, strand bias for:
      - [ ] duplicates vs no dups
      - [ ] aligned to reference vs aligned to consensus
 - [ ] Replace mutserve variant caller:
+     - [ ] Research joint variant callers: just groups or lineage/relationship metatdata
      - [ ] raw pileup calls - only quality filtering, no sequencing error adjustments
      - [ ] **write variant caller which incorporates AF autocorrelation**
      - [ ] alternative variant annotation software
