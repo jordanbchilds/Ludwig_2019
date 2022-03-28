@@ -83,11 +83,12 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 - [x] Mark duplicates
      - [ ] Optical duplicates
 - [x] Create consenus sequence
-- [ ] Re-align to consensus instead of ref
+- [x] Re-align to consensus instead of ref
 - [ ] Compare genome coverage, no. variants, strand bias for:
      - [ ] duplicates vs no dups
      - [ ] aligned to reference vs aligned to consensus
 - [ ] Replace mutserve variant caller:
+     - [ ] Research joint variant callers: just groups or lineage/relationship metatdata
      - [ ] raw pileup calls - only quality filtering, no sequencing error adjustments
      - [ ] **write variant caller which incorporates AF autocorrelation**
      - [ ] alternative variant annotation software
@@ -98,6 +99,7 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 - [x] make group_SRRs file
 - [x] extract SRX numbers for prefetch into group__SRX.txt
 - [ ] baseq 20 too low? Especially when av baseq is high ~31. See spread of baseqs per position and compare between baseq 20 and 30: 1 in 100 vs 1 in 1000. baseq 25.23 = 3 in 1000 (Q = -10log10(0.003)). proportion of wrong calls per genomic position = Pr(wrong base)\*coverage/16569?
+- [ ] Add validation_groups.txt creation
 
 
 Questions (add answers to research and reasoning)
