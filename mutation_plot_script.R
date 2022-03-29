@@ -401,7 +401,6 @@ for (p in paths){
     print(SRR)
     print(typeof(SRR))
     if (n==1){
-      
       next
     }
     # stop where the variants of interest positions are listed on the line (for 
@@ -559,27 +558,28 @@ variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_
 n=0
 table_list <- list(SRR_table_list_HET_OR_LOWLVL_nofilt, SRR_table_list_HET_OR_LOWLVL, SRR_table_list_HET_OR_LOWLVL_validated)
 for (table in table_list){
-n=n+1
-#print(table)
-No.Variants = list()
-No.transitions = list()
-No.transversions = list()
-No.Strand.Bias = list()
-for (SRR in table){
-  No.Variants <- c(No.Variants, nrow(SRR))
-  No.transitions <- c(No.transitions, nrow(SRR[SRR$Substitution == "transversion", ]))
-  No.transversions <- c(No.transversions, nrow(SRR[SRR$Substitution =="transition", ]))
-  No.Strand.Bias <- c(No.Strand.Bias, nrow(SRR[SRR$Filter == "STRAND_BIAS", ]))
-#  variant_stats$`Ts/Tv`[[i]] <- variant_stats$No.transition[[i]]/variant_stats$No.transversion[[i]]
-}
-variant_stats_by_SRR <- data.frame(SRR_names)
-variant_stats_by_SRR$No.Variants <- t(as.data.frame(No.Variants))[,1]
-variant_stats_by_SRR$No.transitions <- t(as.data.frame(No.transitions))[,1]
-variant_stats_by_SRR$No.transversions <- t(as.data.frame(No.transversions))[,1]
-variant_stats_by_SRR$No.Strand.Bias <- t(as.data.frame(No.Strand.Bias))[,1]
-print(variant_stats_by_SRR)
-dfname <- variant_summaries_dfnames[n]
-variant_summaries[[dfname]] <- variant_stats_by_SRR
+  n=n+1
+  #print(table)
+  No.Variants = list()
+  No.transitions = list()
+  No.transversions = list()
+  No.Strand.Bias = list()
+  for (SRR in table){
+    No.Variants <- c(No.Variants, nrow(SRR))
+    No.transitions <- c(No.transitions, nrow(SRR[which(SRR$Substitution == "transversion"), ]))
+    No.transversions <- c(No.transversions, nrow(SRR[which(SRR$Substitution =="transition"), ]))
+    No.Strand.Bias <- c(No.Strand.Bias, nrow(SRR[which(SRR$Filter == "STRAND_BIAS"), ]))
+    #  variant_stats$`Ts/Tv`[[i]] <- variant_stats$No.transition[[i]]/variant_stats$No.transversion[[i]]
+  }
+  variant_stats_by_SRR <- data.frame(SRR_names)
+  variant_stats_by_SRR$No.Variants <- t(as.data.frame(No.Variants))[,1]
+  variant_stats_by_SRR$No.transitions <- t(as.data.frame(No.transitions))[,1]
+  variant_stats_by_SRR$No.transversions <- t(as.data.frame(No.transversions))[,1]
+  variant_stats_by_SRR$No.Strand.Bias <- t(as.data.frame(No.Strand.Bias))[,1]
+  print(variant_stats_by_SRR)
+  dfname <- variant_summaries_dfnames[n]
+  variant_summaries[[dfname]] <- variant_stats_by_SRR
+
 }
 
 
@@ -1077,7 +1077,6 @@ for (p in paths){
       geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15) + # coverage across genome
       geom_hline(yintercept=0, size = 0.2) +
       coord_cartesian(ylim = c(0, 1))
-      
     
   }
   
