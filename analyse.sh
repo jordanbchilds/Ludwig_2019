@@ -13,7 +13,7 @@ module load SAMtools/1.12-GCC-10.2.0;
 module load Bowtie2/2.3.4.2-foss-2018b;
 module load parallel/20200522-GCCcore-10.2.0
 
-mkdir bamc/;
+mkdir bam_c/;
 
 
 # read bulk ATAC-seq from TF1 cells into array
@@ -40,6 +40,8 @@ else
   ref="nuc/hg38" 
 fi
 
+# tmp change ref
+#ref="nuc/hg38"
  
 #locale;
 #export LANG=en_GB.utf8
@@ -55,7 +57,7 @@ do
  echo ${rt};
  #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
 
- if [ -f "bamc/${rt}.bam.bai" ]; then
+ if [ -f "bam_c/${rt}.bam.bai" ]; then
   echo "${rt} already aligned";
  else 
    
@@ -73,30 +75,30 @@ do
 
 # samtools markdup: -s print basic stats, -r will REMOVE duplicates, 
 
-  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq.gz | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - bamc/${rt}.bam
+  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq.gz | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - bam_c/${rt}.bam
 
 # Duplicate commands using intermediate files instead of piping: (after sorting by QNAME)
 #echo "collate and fixmate"
-##samtools collate --threads 8 bamc/${rt}_sorted.bam -O | 
-#samtools fixmate --threads 8 -m bamc/${rt}_sorted1.bam bamc/${rt}_fixmated.bam
-#rm bamc/${rt}_sorted1.bam  
+##samtools collate --threads 8 bam_c/${rt}_sorted.bam -O | 
+#samtools fixmate --threads 8 -m bam_c/${rt}_sorted1.bam bam_c/${rt}_fixmated.bam
+#rm bam_c/${rt}_sorted1.bam  
 #echo "sort by coordinates"
-#samtools sort --threads 8 bamc/${rt}_fixmated.bam -o bamc/${rt}_sorted2.bam
-#rm bamc/${rt}_fixmated.bam 
+#samtools sort --threads 8 bam_c/${rt}_fixmated.bam -o bam_c/${rt}_sorted2.bam
+#rm bam_c/${rt}_fixmated.bam 
 #echo "markdup"
-#samtools markdup --threads 8 -s bamc/${rt}_sorted2.bam bamc/${rt}.bam
+#samtools markdup --threads 8 -s bam_c/${rt}_sorted2.bam bam_c/${rt}.bam
 
 # TODO add removal of optical duplicates with -d _ : what distance for Nextseq?
 
   # index sorted bam files:
   echo "Index"; 
-  samtools index -@ 8 bamc/${rt}.bam ;
+  samtools index -@ 8 bam_c/${rt}.bam ;
     
 # create bam containing only mitochondrial aligned reads
-#    samtools view --threads 8 -b -h bamc/${rt}_sorted.bam chrM > bamc/${rt}_sorted_chrM.bam;
+#    samtools view --threads 8 -b -h bam_c/${rt}_sorted.bam chrM > bam_c/${rt}_sorted_chrM.bam;
  
     # get bam files headers: (-H header)
-    #samtools view -H bamc/${rt}_sorted.bam >> ../bam_summaries.txt 
+    #samtools view -H bam_c/${rt}_sorted.bam >> ../bam_summaries.txt 
 
  fi
 done
@@ -110,6 +112,7 @@ locale;
 
 # Copy stats from slurm outfile (stout) to alignment stats
 cp slurm-${SLURM_JOB_ID}.out alignment_stats/alignment_stdout.txt
+echo "Reference: ${ref} "
 echo 'SRR Overall_alignment_rate Total_reads_bowtie2 Total_reads_markdup Total_duplicates Estimated_unique_lib_size' >> alignment_stats/alignment_and_duplicate_summary.txt
 
 for rt in "${rts[@]}"
