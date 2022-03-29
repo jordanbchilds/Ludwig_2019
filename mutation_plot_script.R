@@ -566,7 +566,6 @@ No.transitions = list()
 No.transversions = list()
 No.Strand.Bias = list()
 for (SRR in table){
-  print(SRR)
   No.Variants <- c(No.Variants, nrow(SRR))
   No.transitions <- c(No.transitions, nrow(SRR[SRR$Substitution == "transversion", ]))
   No.transversions <- c(No.transversions, nrow(SRR[SRR$Substitution =="transition", ]))
@@ -580,7 +579,6 @@ variant_stats_by_SRR$No.transversions <- t(as.data.frame(No.transversions))[,1]
 variant_stats_by_SRR$No.Strand.Bias <- t(as.data.frame(No.Strand.Bias))[,1]
 print(variant_stats_by_SRR)
 dfname <- variant_summaries_dfnames[n]
-print(dfname)
 variant_summaries[[dfname]] <- variant_stats_by_SRR
 }
 
@@ -1098,12 +1096,6 @@ for (p in paths){
   px_height <- 500*length(plots_in_lineage)+370
   ggsave(file=file_string, plot=lab_lineage_grob, width = 3600, height = px_height, units = "px")
 }
-
-
-
-
-
-
 
 
 
