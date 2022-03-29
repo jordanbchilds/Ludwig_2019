@@ -1118,13 +1118,11 @@ for (p in paths){
     print("skipping comment line...")
     next
   } 
+  if (exists("lin_mut_load_change")){remove(lin_mut_load_change)}
   SRRs_in_path <- list()
   index=0
   at.positions = F
-#  # Create table of all VARIANTS_OF_INTEREST per lineage
-#  lin_mut_load_change <- data.frame(matrix(nrow = 25, ncol = 5))
-#  colnames(lin_mut_load_change) <- c("SRR", "Generation", "Generation_labs", "NextVariantLevel", "NextCoverage")
-  
+
   for (string in p){
     print(string)
     index=index+1
@@ -1157,14 +1155,15 @@ for (p in paths){
       print(paste0("Plotting position: ", pos_of_interest, ", for lineage path: ", p[[1]]))
       
       # Check to see if lin_mut_load_change has been made, if not make (allows nrow to be set from length(SRRs_in_path))
+      # Create table of all VARIANTS_OF_INTEREST per lineage
       if (!exists("lin_mut_load_change")){
-        lin_mut_load_change <- data.frame(matrix(nrow = length(SRRs_in_path), ncol = 5))
-        colnames(lin_mut_load_change) <- c("SRR", "Generation", "Generation_labs", "NextVariantLevel", "NextCoverage")
+        lin_mut_load_change <- data.frame(matrix(nrow = 0, ncol = 7))
+        colnames(lin_mut_load_change) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "VariantLevel", "Coverage")
       }
-
-# make new data frame for new variant position
-      mut_load_change <- data.frame(matrix(nrow = length(SRRs_in_path), ncol = 5))
-      colnames(mut_load_change) <- c("SRR", "Generation", "Generation_labs", "VariantLevel", "Coverage")
+      
+      # make new data frame for new variant position
+      mut_load_change <- data.frame(matrix(nrow = length(SRRs_in_path), ncol = 7))
+      colnames(mut_load_change) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "VariantLevel", "Coverage")
       print(paste("SRRs_in_path: ", SRRs_in_path))
       for (SRR_name in SRRs_in_path){
         n=n+1
@@ -1174,6 +1173,8 @@ for (p in paths){
         mut_load_change$Generation_labs[n] <- paste(SRR_lineage_generation$generation_axis_labs[SRR_lineage_generation$SRR_names==SRR_name])
         mut_load_change$VariantLevel[n] <- SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]
         mut_load_change$Coverage[n] <- depths_qfilt[[SRR_name]][pos_of_interest]
+        mut_load_change$Pos[n] <- pos_of_interest
+        mut_load_change$Lineage <- p[[1]]
       }
       last_SRR <- SRRs_in_path[length(SRRs_in_path)]
       lin <- as.character(SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==last_SRR])
@@ -1201,14 +1202,43 @@ for (p in paths){
       n=0
       print("n reset")
       
-      #lin_mut_load_change$NextVariantLevel <- mut_load_change$VariantLevel
-      #colnames(lin_mut_load_change[lin_mut_load_change == "NextVariantLevel"]) <- pos_of_interest
+      print(mut_load_change)
+      lin_mut_load_change <- rbind(lin_mut_load_change, mut_load_change)
       } 
     else {  # if VARIANTS_OF_INTEREST hasn't been reached (at.positions=F)
       next
     }
   }
+  lin_mut_load_change$SRR <- mut_load_change$SRR
+  lin_mut_load_change$Generation <- mut_load_change$Generation
+  lin_mut_load_change$Generation_labs <- mut_load_change$Generation_labs
+  lin_mut_load_change[, c("NextVariantLevel", "NextCoverage")] <- list(NULL)
   print(lin_mut_load_change)
+  
+  # Plot all interesting variant positions for lineage on one graph
+  mut_load_change[is.na(mut_load_change)] <- 0
+  plot_title <- paste0(p[[1]],": ALL positions of interest")
+  mut_plot <- ggplot(data = lin_mut_load_change, aes(x=Generation,y=VariantLevel,group=Pos)) +
+    geom_line(colour = lin_col) +
+    geom_text_repel(aes(label = Coverage, size = 13)) +
+    geom_point(colour = lin_col) +
+    theme_minimal() +
+    theme(plot.background = element_rect(fill = "white",
+                                         colour = "white"),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          axis.line = element_line(colour = "black"), legend.position = "none", text = element_text(size=20)) +
+    ggtitle(plot_title) +
+    scale_x_continuous(breaks = lin_mut_load_change$Generation, labels = lin_mut_load_change$Generation_labs) +
+    expand_limits(y = c(0,0.01)) +
+    geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red")+
+    labs(y = "Allele Frequency")
+  
+  # save plot
+  file_string <- paste0("results/",p[[1]],"_ALL_pos_of_interest.png")
+  ggsave(file=file_string, plot=mut_plot)
+  n=0
+  print("n reset")
+  
+
 }
 
 
