@@ -19,7 +19,7 @@ setwd("/home/thomas/Documents/projects/Research_proj/Ludwig_2019/")
 #print(local_lib_path)
 #.libPaths(c(local_lib_path, .libPaths()))
 
-packages <- c("tidyr","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize", "reshape2","cowplot", "data.table", "dplyr")
+packages <- c("tidyr","tidyverse","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize", "reshape2","cowplot", "data.table", "dplyr")
 lapply(packages, FUN = function(i) {
   if (!require(i, character.only = TRUE)) {
     install.packages(i, dependencies = TRUE, lib = local_lib_path, repos="https://www.stats.bris.ac.uk/R/")
@@ -373,9 +373,6 @@ for(i in SRR_names){
 
   #################### Variant calling stats ########################
 
-
-
-
 bulk_variant_pos80 <- data.frame(SRR_table_list_HET_OR_LOWLVL$SRR7245880$Pos)#[SRR_table_list$SRR7245880$Type==2])
 bulk_variant_pos81 <- data.frame(SRR_table_list_HET_OR_LOWLVL$SRR7245881$Pos)#[SRR_table_list$SRR7245881$Type==2])
 bulk_variant_pos <- merge(bulk_variant_pos80, bulk_variant_pos81, by=1, all=T)
@@ -386,7 +383,6 @@ write.csv(bulk_variant_pos, file = "results/bulk_variant_positions.csv", quote =
 # merge to list all variants in lineage path
 # replace position with variant level.
 # if min variant level is < eg. 0.95 change filter to FIXED_IN_BULK.
-
 
 # Produce table of the variant levels in each sample of all variants found in the lineage path
 
@@ -426,18 +422,18 @@ write.csv(all_variants_in_lineage,file = file_string, quote = F)
 print("table of bulk variants in lineage path saved in 'results/'")
 }
 
+     ##################  LINEAGE VALIDATION  ###########################
 
-# Repeat for only heteroplasmic or low level variants, unfiltered
+# Repeat to produce table for only unfiltered heteroplasmic or low level variants (ie. incl strand bias), and another table for lineage validated.
 
 validation_paths <- list()
-validation_paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
-
+validation_paths <- as.list(strsplit(readLines("validation_groups.txt"), " "))
 
 all_variants_in_lineages <- list()
 validated_per_lineage <- list()
 all_lineages_validated <- data.frame(matrix(ncol = 1)) 
 colnames(all_lineages_validated) <- "Pos"
-all_lineages_pot_autocor_validated <- data.frame(matrix(ncol = 1))# data.frame(310)  # one cell df
+all_lineages_pot_autocor_validated <- data.frame(matrix(ncol = 1))
 colnames(all_lineages_pot_autocor_validated) <- "Pos"
 for (p in validation_paths){
   if (p[[1]] == "#"){
@@ -468,12 +464,22 @@ for (p in validation_paths){
     print(colnames(SRR_pos_level))
     colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
     all_variants_in_lineage_HET_OR_LOWLVL_nofilt <- merge(all_variants_in_lineage_HET_OR_LOWLVL_nofilt, SRR_pos_level, by = "Pos", all = T)
-    
   }
+  
+  file_string <- paste0("results/",p[[1]],"_HET_nofilt_variants.csv")
+  write.csv(all_variants_in_lineage_HET_OR_LOWLVL_nofilt,file = file_string, quote = F)
+  print("table of variants in lineage path saved in 'results/'")
+  all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt
+  
+  ## LINEAGE VALIDATION ##
   # only keep variants which have at least one allele with an allele frequency > 0.01, and are present at least twice in the lineage
   lineage_validated <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt %>% filter_at(-1, any_vars(.>0.01))
   lineage_validated <- lineage_validated[rowSums(!is.na(lineage_validated[,-1]))>=2,]
   validated_per_lineage[[ p[[1]] ]] <- lineage_validated
+  
+  file_string <- paste0("results/",p[[1]],"_lineage_validated_mutations.csv")
+  write.csv(lineage_validated,file = file_string, quote = F)
+  print("table of bulk variants in lineage path saved in 'results/'")
   
   # Get mutations which could be validated though autocorrelation (occur >=2 x in lineage, not necessary to also have one below 0.01 heteroplasmy)
   potential_autocorrelation <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt[rowSums(!is.na(all_variants_in_lineage_HET_OR_LOWLVL_nofilt[,-1]))>=2,]
@@ -483,25 +489,15 @@ for (p in validation_paths){
   # Add new lineage validated mutations to table with all lineage mutations, same for potentially validated with autocorrelation
   all_lineages_validated <- merge(all_lineages_validated, lineage_validated, by = "Pos", all = T)
   all_lineages_pot_autocor_validated <- merge(all_lineages_pot_autocor_validated, potential_autocorrelation, by = "Pos", all = T)
-  
-  
-  file_string <- paste0("results/",p[[1]],"_lineage_validated_mutations.csv")
-  write.csv(lineage_validated,file = file_string, quote = F)
-  print("table of bulk variants in lineage path saved in 'results/'")
 
-  file_string <- paste0("results/",p[[1]],"_HET_nofilt_variants.csv")
-  write.csv(all_variants_in_lineage_HET_OR_LOWLVL_nofilt,file = file_string, quote = F)
-  print("table of variants in lineage path saved in 'results/'")
-  all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt
-  
-  
 }
 
-
+# write table of all lineage validated variants from any lineage
 all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos),]
 file_string <- paste0("results/all_variants_lineage_validated.csv")
 write.csv(all_lineages_validated,file = file_string, quote = F)
 
+# write table of variants which could potentially be validated with autocorrelation (present in more than one sample, not necessarily any with an AF>0.01)
 all_lineages_pot_autocor_validated <- all_lineages_pot_autocor_validated[!duplicated(all_lineages_pot_autocor_validated$Pos),]
 file_string <- paste0("results/all_lineages_pot_valid_by_autocorrelation.csv")
 write.csv(all_lineages_validated,file = file_string, quote = F)
@@ -511,15 +507,38 @@ all_lineages_validated_pos <- data.frame(all_lineages_validated$Pos)
 colnames(all_lineages_validated_pos) <- "Pos"
 # lineage validated, 
 for(i in SRR_names) {
-  SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- merge(all_lineages_validated_pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], all.x =T, by.x = "Pos", by.y = "Pos")
-  SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- SRR_table_list_HET_OR_LOWLVL_validated[[i]][,1:18] %>% drop_na()
+  SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- merge(all_lineages_validated_pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], by.x = "Pos", by.y = "Pos")
+  #SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- SRR_table_list_HET_OR_LOWLVL_validated[[i]][,1:18] %>% drop_na()
   #SRR_table_list_HET_OR_LOWLVL_validated[[i]] %>% !(subset(SRR_table_list_HET_OR_LOWLVL_validated[[i]], Filter =="NA"))
   }
 
-
 #SRR_table_list_HET_OR_LOWLVL_validated[[i]][!is.na(SRR_table_list_HET_OR_LOWLVL_validated[[i]]$ID),]
 
+
+  # Get total no validated mutations
+n=0
+for (i in SRR_table_list_HET_OR_LOWLVL_validated){
+  n=n+nrow(i)
+}
+print(n)
+
+  # Get total no nofilt mutations
+n=0
+for (i in SRR_table_list_HET_OR_LOWLVL_nofilt){
+  n=n+nrow(i)
+}
+print(n)
+
+  # no het or lowlvl pass (not strand bias)
+n=0
+for (i in SRR_table_list_HET_OR_LOWLVL){
+  n=n+nrow(i)
+}
+print(n)
+
+
      ### make data frame of positions of all our variants ###
+
 all_variants <-  data.frame(matrix(ncol = 1))
 colnames(all_variants) <- "Pos"
 
@@ -530,33 +549,44 @@ for (SRR in SRR_names) {
 }
 
 
-   ######### Variant stats ########
-variant_stats <- data.frame(matrix(nrow = length(SRR_names), ncol = 10))
-colnames(variant_stats) <- c("SRR", "No.Unfiltered.Variants", "No.het", "No.hom", "No.lineage.validated","No.transition", "No.transversion", "Ts/Tv", "No.missense", "Strand bias")
-variant_stats$SRR <- SRR_names
+   ###################### Variant stats ###################
 
-
-nrow(all_variants)
-total<-0
-#for (i in SRR_names){
-#  variant_stats$No.Variants[[i]] <- nrow(SRR_table_list_HET_OR_LOWLVL_nofilt[[i]])
-#  total_het_nofilt_variants <- total_het_nofilt_variants + nrow(SRR_table_list_HET_OR_LOWLVL_nofilt[[i]]) 
-#  tmp <- subset(SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], Substitution =="transition")
-#  variant_stats$No.transition[[i]] <- nrow(tmp)
-#  tmp <- subset(SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], Substitution =="transversion")
-#  variant_stats$No.transversion[[i]] <- nrow(tmp)
+#variant_stats <- data.frame(matrix(nrow = length(SRR_names), ncol = 10))
+#colnames(variant_stats) <- c("SRR", "No.Variants", "No.het", "No.hom", "No.lineage.validated","No.transition", "No.transversion", "Ts/Tv", "No.missense", "Strand bias")
+#variant_stats$SRR <- SRR_names
+variant_summaries <- list()
+variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_LOWLVL_validated")
+n=0
+table_list <- list(SRR_table_list_HET_OR_LOWLVL_nofilt, SRR_table_list_HET_OR_LOWLVL, SRR_table_list_HET_OR_LOWLVL_validated)
+for (table in table_list){
+n=n+1
+#print(table)
+No.Variants = list()
+No.transitions = list()
+No.transversions = list()
+No.Strand.Bias = list()
+for (SRR in table){
+  print(SRR)
+  No.Variants <- c(No.Variants, nrow(SRR))
+  No.transitions <- c(No.transitions, nrow(SRR[SRR$Substitution == "transversion", ]))
+  No.transversions <- c(No.transversions, nrow(SRR[SRR$Substitution =="transition", ]))
+  No.Strand.Bias <- c(No.Strand.Bias, nrow(SRR[SRR$Filter == "STRAND_BIAS", ]))
 #  variant_stats$`Ts/Tv`[[i]] <- variant_stats$No.transition[[i]]/variant_stats$No.transversion[[i]]
-#}
-
-for (i in SRR_names){
- n <- subset(SRR_table_list_HET_OR_LOWLVL_validated[[i]], Filter =="STRAND_BIAS") %>% nrow
- #print(nrow(SRR_table_list_HET_OR_LOWLVL_validated[[i]]))
- print(n)
 }
- #### Lineage stats #####
+variant_stats_by_SRR <- data.frame(SRR_names)
+variant_stats_by_SRR$No.Variants <- t(as.data.frame(No.Variants))[,1]
+variant_stats_by_SRR$No.transitions <- t(as.data.frame(No.transitions))[,1]
+variant_stats_by_SRR$No.transversions <- t(as.data.frame(No.transversions))[,1]
+variant_stats_by_SRR$No.Strand.Bias <- t(as.data.frame(No.Strand.Bias))[,1]
+print(variant_stats_by_SRR)
+dfname <- variant_summaries_dfnames[n]
+print(dfname)
+variant_summaries[[dfname]] <- variant_stats_by_SRR
+}
 
 
 
+#### Lineage stats #####
 
 
    ###############  Comparison with Ludwig's variants  #################
@@ -1082,7 +1112,6 @@ for (p in paths){
 
   ###############  Position-specific mutation load plots  #####################
   #####################  for variants of interest  ############################
-
 
 
 #pos_of_interest <- 4769
