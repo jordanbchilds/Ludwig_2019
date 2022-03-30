@@ -77,14 +77,15 @@ For each candidate mutation, a mutation load profile (Fig. 3 below) can be used 
 Most of the programs used in this pipeline are already installed as a SLURM module, or are automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from [configure_sratools.sh](configure_sratools.sh). When prompted set default configuration by inputting: "f","y","o","x","y","o".
 
 # TODO
-- [x] Restructure project into folders
+- [x] Restructure project into folders, refactor code accordingly
+- [x] Easier download of data/selection of samples
 - [ ] Check script comments
 - [ ] rename project?
 - [x] Mark duplicates
      - [ ] Optical duplicates
 - [x] Create consenus sequence
 - [x] Re-align to consensus instead of ref
-- [ ] Compare genome coverage, no. variants, strand bias for:
+- [ ] Compare genome coverage, no. variants, overlap of variants, strand bias for:
      - [ ] duplicates vs no dups
      - [ ] aligned to reference vs aligned to consensus
 - [ ] Replace mutserve variant caller:
@@ -100,7 +101,10 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 - [x] extract SRX numbers for prefetch into group__SRX.txt
 - [ ] baseq 20 too low? Especially when av baseq is high ~31. See spread of baseqs per position and compare between baseq 20 and 30: 1 in 100 vs 1 in 1000. baseq 25.23 = 3 in 1000 (Q = -10log10(0.003)). proportion of wrong calls per genomic position = Pr(wrong base)\*coverage/16569?
 - [ ] Add validation_groups.txt creation
-
+- [ ] lower threshold for Heteroplasmic when creating consensus, remove HET\_orLOWLVL filters when plotting with consensus aligned data.
+- [ ] Plot for multiple positions within lineage/same positions in different lineages
+- [ ] Look at plots for suspicious looking 
+- [ ] Find out why variant calls are missing between bulk replicates when they aren't in LUDWIG - mutserve vs raw read no.s
 
 Questions (add answers to research and reasoning)
 - Mark known low level seq error patterns, statistically compare autocorrelation between potential seq error and not
