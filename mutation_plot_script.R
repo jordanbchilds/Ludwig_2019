@@ -1235,9 +1235,43 @@ for (p in paths){
   
 }
 
+# get Positions of interest that occur in more than one lineage
+#lin_mut_load_change$no_lins_pos_is_present <- unique(lin_mut_load_change[ ,c('Pos', 'Lineage')]) %>% count(Pos) %>% filter(n>=2) #%>% select(n)
+cross_lineage_positions_interest <- unique(lin_mut_load_change[ ,c('Pos', 'Lineage')]) %>% filter(!str_detect(Lineage, 'LUDWIG')) %>% count(Pos) #%>% filter(n>=2)
+cross_lineage_positions_interest <- merge((lin_mut_load_change %>% filter(!str_detect(Lineage, 'LUDWIG'))), cross_lineage_positions_interest, by = 'Pos') %>% filter(n>=2)
+nrow(cross_lineage_positions_interest)
+nrow(lin_mut_load_change)
 
-
-
+for (pos_of_interest in unique(cross_lineage_positions_interest$Pos)){
+      # Plot for new variant position
+      #mut_load_change[is.na(mut_load_change)] <- 0
+  cross_lineages <- unique(cross_lineage_positions_interest[ ,c('Pos', 'Lineage')]) %>% filter(Pos == pos_of_interest)
+  print(c(pos_of_interest, cross_lineages$Lineage))
+  # Plot ALL interesting variant positions on one graph per lineage
+  mut_load_change[is.na(mut_load_change)] <- 0
+  plot_title <- paste0("Position: ", pos_of_interest, "across lineages")
+  mut_plot <- ggplot(data = cross_lineage_positions_interest[cross_lineage_positions_interest$Pos == pos_of_interest, ], aes(x=Generation,y=VariantLevel,group=Lineage,colour=Lineage_group)) +
+    geom_line() +
+    scale_colour_manual(values=lineage_cols, breaks=colnames(lineage_cols)) +
+    geom_text_repel(aes(label = Coverage, size = 13)) +
+    geom_point() + #aes(colour=lin_col)) +
+    theme_minimal() +
+    theme(plot.background = element_rect(fill = "white",
+                                         colour = "white"),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          axis.line = element_line(colour = "black"), legend.position = "none", text = element_text(size=20)) +
+    ggtitle(plot_title) +
+    scale_x_continuous(breaks = lin_mut_load_change$Generation, labels = lin_mut_load_change$Generation_labs) +
+    expand_limits(y = c(0,0.01)) +
+    geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red")+
+    labs(y = "Allele Frequency")
+  
+  # save plot
+  file_string <- paste0("results/pos_", pos_of_interest, "_lins_", paste0(c(cross_lineages$lineages)), ".png")
+  ggsave(file=file_string, plot=mut_plot)
+  n=0
+  print("n reset")
+  
+}
 
 
 
