@@ -75,31 +75,13 @@ do
 
 # samtools markdup: -s print basic stats, -r will REMOVE duplicates, 
 
-  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq.gz | samtools view --threads 8 - -h -u | samtools sort --threads 8 - -o bam_c/${rt}.bam
-# samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - bam_c/${rt}.bam
-
-# Duplicate commands using intermediate files instead of piping: (after sorting by QNAME)
-#echo "collate and fixmate"
-##samtools collate --threads 8 bam_c/${rt}_sorted.bam -O | 
-#samtools fixmate --threads 8 -m bam_c/${rt}_sorted1.bam bam_c/${rt}_fixmated.bam
-#rm bam_c/${rt}_sorted1.bam  
-#echo "sort by coordinates"
-#samtools sort --threads 8 bam_c/${rt}_fixmated.bam -o bam_c/${rt}_sorted2.bam
-#rm bam_c/${rt}_fixmated.bam 
-#echo "markdup"
-#samtools markdup --threads 8 -s bam_c/${rt}_sorted2.bam bam_c/${rt}.bam
-
+  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq.gz | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - bam_c/${rt}.bam
+# To align without marking dups, change the first samtools sort in pipe to index by coordinates (remove -n argument) and immediatelyoutput bam for indexing below.
 # TODO add removal of optical duplicates with -d _ : what distance for Nextseq?
 
   # index sorted bam files:
   echo "Index"; 
   samtools index -@ 8 bam_c/${rt}.bam ;
-    
-# create bam containing only mitochondrial aligned reads
-#    samtools view --threads 8 -b -h bam_c/${rt}_sorted.bam chrM > bam_c/${rt}_sorted_chrM.bam;
- 
-    # get bam files headers: (-H header)
-    #samtools view -H bam_c/${rt}_sorted.bam >> ../bam_summaries.txt 
 
  fi
 done
