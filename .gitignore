@@ -1,5 +1,5 @@
 bam/*
-bamc/*
+bam*/*
 fastq/*
 frames/*
 frames_examine/*
@@ -13,17 +13,17 @@ nuc/*
 fastQC_results/*
 plots/
 bcftools_out/*
-
+results/
+!results/example*
 data/
 !data/SraRunTable.txt
 vcf_mapq18/
 
-# output files
-
+# debugging output files
 failed_to_prefetch.txt
-fastQC_results/
 fastqgz_list.txt
-requirements.txt
+
+#requirements.txt
 
 # SLURM stdout files
 slurm-*
@@ -37,8 +37,10 @@ mutserve/*
 # Sratools
 sratoolkit.2.11.0-ubuntu64/*
 
+# Large output file types
 *.fna
 *.fasta
+*.fa
 *.fastq
 *.fq
 *.gz
