@@ -113,7 +113,7 @@ locale;
 
 # Copy stats from slurm outfile (stout) to alignment stats
 cp slurm-${SLURM_JOB_ID}.out alignment_stats/alignment_stdout.txt
-echo "Reference: ${ref} "
+echo "Reference: ${ref} " >> alignment_stats/alignment_and_duplicate_summary.txt
 echo 'SRR Overall_alignment_rate Total_reads_bowtie2 Total_reads_markdup Total_duplicates Estimated_unique_lib_size' >> alignment_stats/alignment_and_duplicate_summary.txt
 
 for rt in "${rts[@]}"
