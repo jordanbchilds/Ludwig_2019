@@ -34,12 +34,12 @@ library("ComplexHeatmap")
 
 
   ## Read SRR files ##
-filenames <- list.files("vcf_consensus-dups/", pattern="*_annotated.txt")
+filenames <- list.files("vcf_map20/", pattern="*_annotated.txt")
 # Create list of data frame names without the ".txt" part 
 SRR_names <-substr(filenames,1,10)
 
   ## Read coverage files ##
-depths <- read.table("alignment_stats/depths.txt", sep = "\t", header = F, stringsAsFactors = T)
+depths <- read.table("alignment_stats/depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
 depths_qfilt <- read.table("alignment_stats/depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
 colnames(depths_qfilt) <- c("chr", "Pos", SRR_names)
 colnames(depths) <- c("chr", "Pos", SRR_names)
@@ -144,7 +144,7 @@ min(percent_alignment$Overall_alignment_rate)
 # information included (column names): "X.rname", "startpos","endpos","numreads","covbases","coverage","meandepth","meanbaseq","meanmapq","SRRs","read_lengths","calculated_mean_depth","calculated_sd_depth" and min and max depths for qfilt
 all_coverages_qfilt <- read.csv("alignment_stats/all_coverages_qfilt.txt", header = T, sep = "\t")
 all_coverages_qfilt$SRRs <- SRR_names
-all_coverages <- read.csv("alignment_stats/all_coverages.txt", header = T, sep = "\t")
+all_coverages <- read.csv("alignment_stats/all_coverages_qfilt.txt", header = T, sep = "\t")
 all_coverages$SRRs <- SRR_names
 df_SRR_names <- data.frame(SRR_names)
 all_coverages$read_lengths <- merge(data.frame(SRR_names), raw_sample_info, all.x = T, by.x = "SRR_names", by.y = "Run")[,3]
@@ -358,7 +358,7 @@ SRR_table_list_HET_OR_LOWLVL_potautocor_validated <- list()
 #threshold <- 0.05
 # Load files into list of data.frames
 for(i in SRR_names){
-  filepath <- file.path("vcf_consensus-dups/",paste(i,"_annotated.txt",sep=""))
+  filepath <- file.path("vcf_map20/",paste(i,"_annotated.txt",sep=""))
   SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T)
   # remove positions (deletion eg. at 3107)
   SRR_table_list[[i]] <- SRR_table_list[[i]][!(SRR_table_list[[i]]$Pos==3107),]
@@ -825,7 +825,6 @@ get_SRRs_from_Snumbs <- function(Snumb_path){  # See S1d_lineage_tree.png (label
     print(x)
       SRR_path <- paste(SRR_path, SRR_names[x])
   }
-  
   return(SRR_path)
 }
 
@@ -836,11 +835,9 @@ print(SRR_path)
 for (i in SRR_names){
   print(i)
   SRR_table_list[[i]]  <- merge(SRR_table_list[[i]], barplot_lims, by.x = "Pos", by.y = "Position", all = T)
-}
-
-for (i in SRR_names){
-  print(i)
   SRR_table_list_HET_OR_LOWLVL_validated[[i]]  <- merge(SRR_table_list_HET_OR_LOWLVL_validated[[i]], barplot_lims, by.x = "Pos", by.y = "Position", all = T)
+  SRR_table_list_HET_OR_LOWLVL_nofilt[[i]]  <- merge(x = SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
+  SRR_table_list_HET_OR_LOWLVL[[i]]  <- merge(x = SRR_table_list_HET_OR_LOWLVL[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
 }
 
 # function to return monotonic values for second y axis transformation (coverage)
@@ -854,8 +851,6 @@ f <- function(y){
   return(mono_y)
 }
 #f(0.8)
-
-
 
   ## Combine figures by lineage ##
 
@@ -913,7 +908,6 @@ for (p in paths){
       geom_line(data = depths_qfilt, aes(Pos, (log2(depths_qfilt[[i]]))/(log2(third_y_lim_maxcoverage_qfilt))), alpha=0.7, size = 0.15) +
       coord_cartesian(ylim = c(0, 1))
     
-    
   }
 
 # combine all the plots in the lineage path: stack on top of each other.
@@ -942,10 +936,11 @@ for (p in paths){
 # Unfiltered as some variants seem to switch filter status between generations
 
 # add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
-for (i in SRR_names){
-  print(i)
-  SRR_table_list_HET_OR_LOWLVL_nofilt[[i]]  <- merge(x = SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
-}
+# ^ ALREADY DONE - JUST BEFORE LARGE EXPLORATORY PLOTS
+#for (i in SRR_names){
+#  print(i)
+#  SRR_table_list_HET_OR_LOWLVL_nofilt[[i]]  <- merge(x = SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
+#}
 
 #print("length of SRR_table_list_HET_OR_LOWLVL_nofilt:")
 #print(length(SRR_table_list_HET_OR_LOWLVL_nofilt))
@@ -958,8 +953,6 @@ for (i in SRR_names){
 
 
 ## Combine figures by lineage ##
-
-
 
 # For each path specified (per line in lineage_paths.txt): 
 #   for each SRR in lineage path: 
@@ -1032,7 +1025,7 @@ for (p in paths){
 }
 
 
-remove(SRR_table_list_HET_OR_LOWLVL_nofilt)
+#remove(SRR_table_list_HET_OR_LOWLVL_nofilt)
 
 
 
@@ -1042,24 +1035,14 @@ remove(SRR_table_list_HET_OR_LOWLVL_nofilt)
 # Filtered
 
 # add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
-for (i in SRR_names){
-  print(i)
-  SRR_table_list_HET_OR_LOWLVL[[i]]  <- merge(x = SRR_table_list_HET_OR_LOWLVL[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
-}
-
-#print("length of SRR_table_list_HET_OR_LOWLVL:")
-#print(length(SRR_table_list_HET_OR_LOWLVL))
-#print("structure of SRR 80 in SRR_table_list_HET_OR_LOWLVL[[SRR 80]]")
-#print(str(SRR_table_list_HET_OR_LOWLVL[["SRR7245880"]]))
-#print(nrow(SRR_table_list_HET_OR_LOWLVL[["SRR7245880"]]$Pos))
-#print(levels(SRR_table_list_HET_OR_LOWLVL[["SRR7245880"]]$Filter))
-
-
-
+# ^ ALREADY DONE JUST BEFORE LARGE EXPLORATORY PLOTS
+#for (i in SRR_names){
+#  print(i)
+#  SRR_table_list_HET_OR_LOWLVL[[i]]  <- merge(x = SRR_table_list_HET_OR_LOWLVL[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
+#  #SRR_table_list[[i]]  <- merge(x = SRR_table_list[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
+#}
 
 ## Combine figures by lineage ##
-
-
 
 # For each path specified (per line in lineage_paths.txt): 
 #   for each SRR in lineage path: 
@@ -1264,7 +1247,7 @@ for (p in paths){
     ggtitle(plot_title) +
     scale_x_continuous(breaks = lin_mut_load_change$Generation, labels = lin_mut_load_change$Generation_labs) +
     expand_limits(y = c(0,0.01)) +
-    geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red")+
+    geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red") +
     labs(y = "Allele Frequency")
   
   # save plot
@@ -1274,22 +1257,76 @@ for (p in paths){
   print("n reset")
 }
 
-  ## Plot positions_of_interest that occur in more than one lineage on one graph
+  ## Plot all validated variants that occur in more than one lineage on one graph ##
 ## With all validated variant calls that occur in more than one lineage
-#n=0
-#for p in paths
-#for (pos in all_lineages_validated$Pos){print(pos)}
-#  n=n+1
-#  print(SRR_name)
-#  mut_load_change$SRR[n] <- SRR_name
-#  mut_load_change$Generation[n] <- SRR_lineage_generation$generation[SRR_names == SRR_name]
-#  mut_load_change$Generation_labs[n] <- SRR_lineage_generation$generation_axis_labs[SRR_names == SRR_name]
-#  mut_load_change$VariantLevel[n] <- SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR_name]]$Var
-#  mut_load_change$Coverage[n] <- depths_qfilt[[SRR_name]][pos_of_interest]
-#  mut_load_change$Pos[n] <- pos_of_interest
-#  mut_load_change$Lineage <- p[[1]]
-#  mut_load_change$Lineage_group <- paste(SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==SRR_name])
-#}
+# First make table like lin_mut_load_change but with all validated positions, 
+#if they're validated in the lineage. (Find positions which are valid in more than one lineage afterwards.)
+# "SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage"
+
+
+lin_mut_load_change_val <- data.frame(matrix(nrow = 0, ncol = 8))
+next_row <- data.frame(matrix(nrow = 1, ncol = 8))
+colnames(lin_mut_load_change_val) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage")
+colnames(next_row) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage")
+n=0
+for (p in paths){
+  if (p[[1]] == "#"){
+    print("skipping comment line...")
+    next
+  } 
+  #if (exists("lin_mut_load_change")){remove(lin_mut_load_change)}
+  SRRs_in_path <- list()
+  index=0
+  at.positions = F
+  
+  for (string in p){
+    print(string)
+    index=index+1
+    print(index)
+    print(at.positions)
+    # skip lineage name
+    if (index==1){
+      next
+    }
+    # From lineage_paths.txt: add SRR to list, until the positions of variants of interest are listed
+    # instead. This is indicated by "VARIANTS_OF_INTEREST" instead of SRR name, 
+    # and followed by the positions of variants of interest. eg.:
+    # LINEAGE_PATH_NAME SRR1 SRR2 SRR3 VARIANTS_OF_INTEREST 1495 12788
+    if (string == "VARIANTS_OF_INTEREST") {
+      print("Reached VARIANTS_OF_INTEREST for this lineage")
+      at.positions <- T
+      print(paste("n =",n))
+      next
+    }
+    paste(string, at.positions)
+    if (at.positions == F){
+      SRRs_in_path <- c(SRRs_in_path, string)
+    }
+    if (at.positions == T){
+      break
+    }
+  }
+  print(paste("n=",n))
+  for (pos in all_lineages_validated$Pos){
+    print(paste("Position: ", pos, "Lineage: ", p[[1]]))
+    for (SRR_name in SRRs_in_path){
+      #if (pos %in% SRR_table_list_HET_OR_LOWLVL_validated[[SRR_name]]$Pos){
+      n=n+1
+      print(SRR_name)
+      next_row$SRR <- SRR_name
+      next_row$Generation <- SRR_lineage_generation$generation[SRR_names == SRR_name]
+      next_row$Generation_labs <- SRR_lineage_generation$generation_axis_labs[SRR_names == SRR_name]
+      next_row$VariantLevel <- SRR_table_list_HET_OR_LOWLVL_validated[[SRR_name]]$VariantLevel[pos + 1]
+      next_row$Coverage <- depths_qfilt[[SRR_name]][pos]
+      next_row$Pos <- pos
+      next_row$Lineage <- p[[1]]
+      next_row$Lineage_group <- SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==SRR_name]
+      lin_mut_load_change_val <- rbind(lin_mut_load_change, next_row)
+      #}
+    }
+  }
+
+}
 
 # With any variants chosen in lineage_paths.txt that occur in more than one lineage
 cross_lineage_positions_interest <- unique(lin_mut_load_change[ ,c('Pos', 'Lineage')]) %>% filter(!str_detect(Lineage, 'LUDWIG')) %>% count(Pos) #%>% filter(n>=2)
