@@ -1269,18 +1269,18 @@ for (pos_of_interest in unique(cross_lineage_positions_interest$Pos)){
   mut_plot <- ggplot(data = cross_lineage_positions_interest[cross_lineage_positions_interest$Pos == pos_of_interest, ], 
                      aes(x=Generation,y=VariantLevel,group=Lineage,color=Lineage_group)) +
     geom_line() +
-    scale_colour_manual(values=lineage_cols, name="Lineage") + #, breaks=colnames(lineage_cols)) +
+    scale_colour_manual(values=lineage_cols, name="Lineage") +
     geom_text_repel(aes(label = Coverage), size = 3.5, show.legend = FALSE) +
-    geom_point() + #aes(colour=lin_col)) +
+    geom_point() +
     theme_minimal() +
     theme(plot.background = element_rect(fill = "white", colour = "white"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           axis.line = element_line(colour = "black"), text = element_text(size=15), legend.text = element_text(size = 9), legend.title = element_text(size = 10)) +
     ggtitle(plot_title) +
     scale_x_continuous(breaks = lin_mut_load_change$Generation, labels = lin_mut_load_change$Generation_labs) +
     expand_limits(y = c(0,0.01)) +
-    geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red")+
-    labs(y = "Allele Frequency") 
-  
+    geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red") +
+    labs(y = "Allele Frequency")
+    
   # save plot
   file_string <- paste0("results/pos_", pos_of_interest, "_lins_", c(cross_lineages$lineages), ".png")
   ggsave(file=file_string, plot=mut_plot)
@@ -1375,7 +1375,7 @@ for (p in paths){
 
 # filter lin_mut_load_change_lin_val for positions of any validated mutations that occur in more than one lineage.
 cross_lineage_positions_lin_val <- unique(lin_mut_load_change_lin_val %>% 
-  filter(!str_detect(Lineage, 'LUDWIG')) %>% select(Pos, Lineage)) %>% count(Pos) #%>% filter(n>=2)
+  filter(!str_detect(Lineage, 'LUDWIG')) %>% drop_na(VariantLevel) %>% select(Pos, Lineage)) %>% count(Pos) #%>% filter(n>=2)
 cross_lineage_positions_lin_val <- merge(
   (lin_mut_load_change_lin_val %>% filter(!str_detect(Lineage, 'LUDWIG'))), 
   cross_lineage_positions_lin_val, by = 'Pos') %>% filter(n>=2)
@@ -1383,7 +1383,7 @@ cross_lineage_positions_lin_val <- merge(
 # Remove NA position in Pos
 #lin_mut_load_change_lin_val <- lin_mut_load_change_lin_val[!is.na(lin_mut_load_change_lin_val$Pos), ]
 # Convert allele frequency (VariantLevel) NAs to 0.00s for plotting
-#lin_mut_load_change_lin_val[is.na(lin_mut_load_change_lin_val)] <- 0
+cross_lineage_positions_lin_val[is.na(cross_lineage_positions_lin_val)] <- 0
 
 # Plot
 # for each lineage validated position that occurs more than once: 
@@ -1399,15 +1399,16 @@ for (pos in unique(cross_lineage_positions_lin_val$Pos)){
     geom_line() +
     scale_colour_manual(values=lineage_cols, name="Lineage") + #, breaks=colnames(lineage_cols)) +
     geom_text_repel(aes(label = Coverage), size = 3.5, show.legend = FALSE) +
-    geom_point() + #aes(colour=lin_col)) +
+    geom_point() +  
     theme_minimal() +
     theme(plot.background = element_rect(fill = "white", colour = "white"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-          axis.line = element_line(colour = "black"), text = element_text(size=15), legend.text = element_text(size = 9), legend.title = element_text(size = 10)) +
+               axis.line = element_line(colour = "black"), text = element_text(size=15), legend.text = element_text(size = 9), legend.title = element_text(size = 10)) +
+    
     ggtitle(plot_title) +
     scale_x_continuous(breaks = lin_mut_load_change_lin_val$Generation, labels = lin_mut_load_change_lin_val$Generation_labs) +
     expand_limits(y = c(0,0.01)) +
-    geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red")+
-    labs(y = "Allele Frequency") 
+    geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red") +
+    labs(y = "Allele Frequency")
   
   # save plot
   file_string <- paste0("results/pos_", pos, "_lins_", c(cross_lineages$lineages), ".png")
@@ -1416,7 +1417,6 @@ for (pos in unique(cross_lineage_positions_lin_val$Pos)){
   print("n reset")
   
 }
-
 
 
 ####################### Replicate correlation plot #######################
