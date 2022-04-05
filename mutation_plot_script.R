@@ -175,6 +175,7 @@ colnames(depths_qfilt_bplot_data) <- c("Pos", "SRRs", "read_depths")
 
 
 fold_coverage <- (mean(pre_multiqc$sequence_lengths)/16569)*mean(all_coverages_qfilt$numreads)
+fold_coverage
 mean(all_coverages$meandepth)
 
   ## pre map and base quality filtering ##
@@ -245,7 +246,6 @@ mean_mapq_hist <- ggplot(data = all_coverages, aes(meanmapq)) +
   scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   scale_x_continuous(labels = scales::comma, breaks = c(16,18,20,22,24,26,28,30,32)) +
   theme_bw()
-
 
 
  # filtered read plots: coverage (x axis: SRR), no.reads, base quality, mapping quality
@@ -592,6 +592,7 @@ variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_
   #No.transversions = sapply(table, myfunc)
   #print(No.transversions)
   #No.Strand.Bias.Per.SRR <- 
+  Mean.Coverage <- 
   No.Variants.Per.SRR <- sapply(SRR_table_list_HET_OR_LOWLVL_nofilt, nrow)
   No.Variants <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_nofilt, nrow))
   No.Positions <- nrow(all_variants)
@@ -1282,7 +1283,7 @@ for (pos_of_interest in unique(cross_lineage_positions_interest$Pos)){
     labs(y = "Allele Frequency")
     
   # save plot
-  file_string <- paste0("results/pos_", pos_of_interest, "_across_lineages", c(cross_lineages$lineages), ".png")
+  file_string <- paste0("results/pos_", pos_of_interest, "_across_lineages.png")
   ggsave(file=file_string, plot=mut_plot)
   n=0
   print("n reset")
@@ -1350,6 +1351,7 @@ for (p in paths){
       break
     }
   }
+  last_SRR <- SRRs_in_path[length(SRRs_in_path)]
   print(paste("n=",n))
   for (pos in all_lineages_validated$Pos){
     print(paste("Position:", pos, "Lineage:", p[[1]]))
@@ -1365,7 +1367,7 @@ for (p in paths){
         next_row$Coverage <- depths_qfilt[[SRR_name]][pos]
         next_row$Pos <- pos
         next_row$Lineage <- p[[1]]
-        next_row$Lineage_group <- SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==SRR_name]
+        next_row$Lineage_group <- SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==last_SRR]
         lin_mut_load_change_lin_val <- rbind(lin_mut_load_change_lin_val, next_row)
       #}
     }
@@ -1384,12 +1386,16 @@ cross_lineage_positions_lin_val <- merge(
 # Convert allele frequency (VariantLevel) NAs to 0.00s for plotting
 cross_lineage_positions_lin_val[is.na(cross_lineage_positions_lin_val)] <- 0
 
-# Plot
+pdf("results/validated_pos_across_lineages.pdf", onefile = TRUE)
+#par(mfrow=c(3,2))
+plot_list <- list()
 # for each lineage validated position that occurs more than once: 
+n=0
 for (pos in unique(cross_lineage_positions_lin_val$Pos)){
   # Plot for new variant position
+  n=n+1
   cross_lineages <- unique(cross_lineage_positions_lin_val[ ,c('Pos', 'Lineage')]) %>% filter(Pos == pos)
-  print(c(pos, cross_lineages$Lineage))
+  #print(c(pos, cross_lineages$Lineage))
   # Plot ALL interesting variant positions on one graph per lineage
   lin_mut_load_change_lin_val[is.na(lin_mut_load_change_lin_val)] <- 0
   plot_title <- paste0("Position: ", pos, " across lineages")
@@ -1397,26 +1403,42 @@ for (pos in unique(cross_lineage_positions_lin_val$Pos)){
                      aes(x=Generation,y=VariantLevel,group=Lineage,color=Lineage_group)) +
     geom_line() +
     scale_colour_manual(values=lineage_cols, name="Lineage") + #, breaks=colnames(lineage_cols)) +
-    geom_text_repel(aes(label = Coverage), size = 3.5, show.legend = FALSE) +
-    geom_point() +  
+    geom_text_repel(aes(label = Coverage), size = 3, show.legend = FALSE, segment.color = "black", segment.alpha = 0.5, segment.size = 0.25) +
+    #geom_point() +  
     theme_minimal() +
     theme(plot.background = element_rect(fill = "white", colour = "white"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                axis.line = element_line(colour = "black"), text = element_text(size=15), legend.text = element_text(size = 9), legend.title = element_text(size = 10)) +
-    
     ggtitle(plot_title) +
     scale_x_continuous(breaks = lin_mut_load_change_lin_val$Generation, labels = lin_mut_load_change_lin_val$Generation_labs) +
     expand_limits(y = c(0,0.01)) +
     geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red") +
     labs(y = "Allele Frequency")
-  lins <- toString(cross_lineages$Lineage)
-  str_replace_all(lins, ", ", "_")
-  # save plot
-  file_string <- paste0("results/validated_pos_", pos, "_across_lins", c(cross_lineages$Lineage), ".png")
-  ggsave(file=file_string, plot=mut_plot)
-  n=0
-  print("n reset")
+  print(mut_plot)
+  plot_list[[((n-1)%%6 + 1)]] <- mut_plot
+  #if (n %% 6 == 0){
+  #  plotem <- ggarrange(plots = plot_list, nrow = 3, ncol = 2)
+  #  print(plotem)
+  #  plot_list <- list()
+  #}
+  #else if (n == length(unique(cross_lineage_positions_lin_val$Pos))){
+  #  plotem <- ggarrange(plots = plot_list, nrow = 3, ncol = 2)
+  #  print(plotem)
+  #}
   
+  # save plot
+  #file_string <- paste0("results/validated_pos_", pos, "_across_lins.png")
+  #ggsave(file=file_string, plot=mut_plot)
+  
+  #print(mut_plot)
+  #n=0
+  #print("n reset")
 }
+dev.off()
+
+length(plot_list)
+#arranged_plot_list <- marrangeGrob(plot_list, nrow = 3, ncol = 2)
+#file_string <- "results/validated_pos_across_lins.pdf"
+#ggsave(file=file_string, plot=arranged_plot_list)
 
 
 ####################### Replicate correlation plot #######################
