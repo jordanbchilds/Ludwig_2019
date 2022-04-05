@@ -1282,7 +1282,7 @@ for (pos_of_interest in unique(cross_lineage_positions_interest$Pos)){
     labs(y = "Allele Frequency")
     
   # save plot
-  file_string <- paste0("results/pos_", pos_of_interest, "_lins_", c(cross_lineages$lineages), ".png")
+  file_string <- paste0("results/pos_", pos_of_interest, "_across_lineages", c(cross_lineages$lineages), ".png")
   ggsave(file=file_string, plot=mut_plot)
   n=0
   print("n reset")
@@ -1318,8 +1318,7 @@ for (p in paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
     next
-  } 
-  #if (exists("lin_mut_load_change")){remove(lin_mut_load_change)}
+  }
   SRRs_in_path <- list()
   index=0
   at.positions = F
@@ -1409,9 +1408,10 @@ for (pos in unique(cross_lineage_positions_lin_val$Pos)){
     expand_limits(y = c(0,0.01)) +
     geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red") +
     labs(y = "Allele Frequency")
-  
+  lins <- toString(cross_lineages$Lineage)
+  str_replace_all(lins, ", ", "_")
   # save plot
-  file_string <- paste0("results/pos_", pos, "_lins_", c(cross_lineages$lineages), ".png")
+  file_string <- paste0("results/validated_pos_", pos, "_across_lins", c(cross_lineages$Lineage), ".png")
   ggsave(file=file_string, plot=mut_plot)
   n=0
   print("n reset")
