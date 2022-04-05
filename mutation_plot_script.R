@@ -112,7 +112,7 @@ pre_plots <- ggarrange(plots = pre_plots, nrow = 2, align = "hv")
 ggsave(file="results/pre_plots.png", plot = pre_plots, width = 8, height = 8, units = "in")
 
 
-  #####################  Coverage plots and stats  ###################### (TODO)
+  #####################  Coverage plots and stats  ######################
 ## x axis as sample and as pos.
 depths_max <- lapply(depths[,3:ncol(depths)], max)
 depths_qfilt_max <- lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)
@@ -831,7 +831,7 @@ get_SRRs_from_Snumbs <- function(Snumb_path){  # See S1d_lineage_tree.png (label
 SRR_path <- get_SRRs_from_Snumbs(Snumb_path)
 print(SRR_path)
 
-# add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
+## add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
 for (i in SRR_names){
   print(i)
   SRR_table_list[[i]]  <- merge(SRR_table_list[[i]], barplot_lims, by.x = "Pos", by.y = "Position", all = T)
@@ -1117,9 +1117,6 @@ for (p in paths){
 
 
 
-
-
-
   ###############  Position-specific mutation load plots  #####################
   #####################  for variants of interest  ############################
 
@@ -1173,13 +1170,6 @@ for (p in paths){
       print(paste("n=",n))
       pos_of_interest <- as.numeric(string)
       print(paste0("Plotting position: ", pos_of_interest, ", for lineage path: ", p[[1]]))
-      
-      # Check to see if lin_mut_load_change has been made, if not make (allows nrow to be set from length(SRRs_in_path))
-      # Create table of all VARIANTS_OF_INTEREST per lineage
-      #if (!exists("lin_mut_load_change")){
-      #  lin_mut_load_change <- data.frame(matrix(nrow = 0, ncol = 7))
-      #  colnames(lin_mut_load_change) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "VariantLevel", "Coverage")
-      #}
       
       # make new data frame for new variant position
       mut_load_change <- data.frame(matrix(nrow = length(SRRs_in_path), ncol = 8))
@@ -1257,16 +1247,71 @@ for (p in paths){
   print("n reset")
 }
 
+
+#########  Mutation load plots: each single position of interest expansion for multiple lineages on one plot  ################
+
+# With any positions of interest chosen in lineage_paths.txt that occur in more than one lineage
+cross_lineage_positions_interest <- unique(lin_mut_load_change[ ,c('Pos', 'Lineage')]) %>% 
+  filter(!str_detect(Lineage, 'LUDWIG')) %>% count(Pos) #%>% filter(n>=2)
+cross_lineage_positions_interest <- merge((lin_mut_load_change %>% filter(!str_detect(Lineage, 'LUDWIG'))), 
+                                          cross_lineage_positions_interest, by = 'Pos') %>% filter(n>=2)
+nrow(cross_lineage_positions_interest)
+nrow(lin_mut_load_change)
+
+for (pos_of_interest in unique(cross_lineage_positions_interest$Pos)){
+  # Plot for new variant position
+  #mut_load_change[is.na(mut_load_change)] <- 0
+  cross_lineages <- unique(cross_lineage_positions_interest[ ,c('Pos', 'Lineage')]) %>% filter(Pos == pos_of_interest)
+  print(c(pos_of_interest, cross_lineages$Lineage))
+  # Plot ALL interesting variant positions on one graph per lineage
+  mut_load_change[is.na(mut_load_change)] <- 0
+  plot_title <- paste0("Position: ", pos_of_interest, " across lineages")
+  mut_plot <- ggplot(data = cross_lineage_positions_interest[cross_lineage_positions_interest$Pos == pos_of_interest, ], 
+                     aes(x=Generation,y=VariantLevel,group=Lineage,color=Lineage_group)) +
+    geom_line() +
+    scale_colour_manual(values=lineage_cols, name="Lineage") + #, breaks=colnames(lineage_cols)) +
+    geom_text_repel(aes(label = Coverage), size = 3.5, show.legend = FALSE) +
+    geom_point() + #aes(colour=lin_col)) +
+    theme_minimal() +
+    theme(plot.background = element_rect(fill = "white", colour = "white"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          axis.line = element_line(colour = "black"), text = element_text(size=15), legend.text = element_text(size = 9), legend.title = element_text(size = 10)) +
+    ggtitle(plot_title) +
+    scale_x_continuous(breaks = lin_mut_load_change$Generation, labels = lin_mut_load_change$Generation_labs) +
+    expand_limits(y = c(0,0.01)) +
+    geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red")+
+    labs(y = "Allele Frequency") 
+  
+  # save plot
+  file_string <- paste0("results/pos_", pos_of_interest, "_lins_", c(cross_lineages$lineages), ".png")
+  ggsave(file=file_string, plot=mut_plot)
+  n=0
+  print("n reset")
+  
+}
+
+
+
+# png("myplot.png")  # opens file to write to
+# plot somthing
+# dev.off()
+
+# multiple plots into one file
+# pdf()
+
+###############  Mutation load plots across lineages #####################
+#####################  for ALL LINEAGE VALIDATED ############################
+
+
   ## Plot all validated variants that occur in more than one lineage on one graph ##
 ## With all validated variant calls that occur in more than one lineage
 # First make table like lin_mut_load_change but with all validated positions, 
-#if they're validated in the lineage. (Find positions which are valid in more than one lineage afterwards.)
+#if they're validated in the lineage, then filter for positions which are valid in more than one lineage afterwards.
 # "SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage"
 
-
-lin_mut_load_change_val <- data.frame(matrix(nrow = 0, ncol = 8))
+# Create table:
+lin_mut_load_change_lin_val <- data.frame(matrix(nrow = 0, ncol = 8))
 next_row <- data.frame(matrix(nrow = 1, ncol = 8))
-colnames(lin_mut_load_change_val) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage")
+colnames(lin_mut_load_change_lin_val) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage")
 colnames(next_row) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage")
 n=0
 for (p in paths){
@@ -1308,41 +1353,48 @@ for (p in paths){
   }
   print(paste("n=",n))
   for (pos in all_lineages_validated$Pos){
-    print(paste("Position: ", pos, "Lineage: ", p[[1]]))
+    print(paste("Position:", pos, "Lineage:", p[[1]]))
+    n=0
     for (SRR_name in SRRs_in_path){
-      #if (pos %in% SRR_table_list_HET_OR_LOWLVL_validated[[SRR_name]]$Pos){
-      n=n+1
-      print(SRR_name)
-      next_row$SRR <- SRR_name
-      next_row$Generation <- SRR_lineage_generation$generation[SRR_names == SRR_name]
-      next_row$Generation_labs <- SRR_lineage_generation$generation_axis_labs[SRR_names == SRR_name]
-      next_row$VariantLevel <- SRR_table_list_HET_OR_LOWLVL_validated[[SRR_name]]$VariantLevel[pos + 1]
-      next_row$Coverage <- depths_qfilt[[SRR_name]][pos]
-      next_row$Pos <- pos
-      next_row$Lineage <- p[[1]]
-      next_row$Lineage_group <- SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==SRR_name]
-      lin_mut_load_change_val <- rbind(lin_mut_load_change, next_row)
+      #if (pos %in% (SRR_table_list_HET_OR_LOWLVL_validated[[SRR_name]] %>% drop_na(VariantLevel) %>% select(Pos))){
+        n=n+1
+        print(SRR_name)
+        next_row$SRR <- SRR_name
+        next_row$Generation <- n-1#as.numeric(SRR_lineage_generation$generation[SRR_names == SRR_name])
+        next_row$Generation_labs <- SRR_lineage_generation$generation_axis_labs[SRR_names == SRR_name]
+        next_row$VariantLevel <- SRR_table_list[[SRR_name]]$VariantLevel[pos+1]
+        next_row$Coverage <- depths_qfilt[[SRR_name]][pos]
+        next_row$Pos <- pos
+        next_row$Lineage <- p[[1]]
+        next_row$Lineage_group <- SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==SRR_name]
+        lin_mut_load_change_lin_val <- rbind(lin_mut_load_change_lin_val, next_row)
       #}
     }
   }
-
 }
 
-# With any variants chosen in lineage_paths.txt that occur in more than one lineage
-cross_lineage_positions_interest <- unique(lin_mut_load_change[ ,c('Pos', 'Lineage')]) %>% filter(!str_detect(Lineage, 'LUDWIG')) %>% count(Pos) #%>% filter(n>=2)
-cross_lineage_positions_interest <- merge((lin_mut_load_change %>% filter(!str_detect(Lineage, 'LUDWIG'))), cross_lineage_positions_interest, by = 'Pos') %>% filter(n>=2)
-nrow(cross_lineage_positions_interest)
-nrow(lin_mut_load_change)
+# filter lin_mut_load_change_lin_val for positions of any validated mutations that occur in more than one lineage.
+cross_lineage_positions_lin_val <- unique(lin_mut_load_change_lin_val %>% 
+  filter(!str_detect(Lineage, 'LUDWIG')) %>% select(Pos, Lineage)) %>% count(Pos) #%>% filter(n>=2)
+cross_lineage_positions_lin_val <- merge(
+  (lin_mut_load_change_lin_val %>% filter(!str_detect(Lineage, 'LUDWIG'))), 
+  cross_lineage_positions_lin_val, by = 'Pos') %>% filter(n>=2)
 
-for (pos_of_interest in unique(cross_lineage_positions_interest$Pos)){
-      # Plot for new variant position
-      #mut_load_change[is.na(mut_load_change)] <- 0
-  cross_lineages <- unique(cross_lineage_positions_interest[ ,c('Pos', 'Lineage')]) %>% filter(Pos == pos_of_interest)
-  print(c(pos_of_interest, cross_lineages$Lineage))
+# Remove NA position in Pos
+#lin_mut_load_change_lin_val <- lin_mut_load_change_lin_val[!is.na(lin_mut_load_change_lin_val$Pos), ]
+# Convert allele frequency (VariantLevel) NAs to 0.00s for plotting
+#lin_mut_load_change_lin_val[is.na(lin_mut_load_change_lin_val)] <- 0
+
+# Plot
+# for each lineage validated position that occurs more than once: 
+for (pos in unique(cross_lineage_positions_lin_val$Pos)){
+  # Plot for new variant position
+  cross_lineages <- unique(cross_lineage_positions_lin_val[ ,c('Pos', 'Lineage')]) %>% filter(Pos == pos)
+  print(c(pos, cross_lineages$Lineage))
   # Plot ALL interesting variant positions on one graph per lineage
-  mut_load_change[is.na(mut_load_change)] <- 0
-  plot_title <- paste0("Position: ", pos_of_interest, " across lineages")
-  mut_plot <- ggplot(data = cross_lineage_positions_interest[cross_lineage_positions_interest$Pos == pos_of_interest, ], 
+  lin_mut_load_change_lin_val[is.na(lin_mut_load_change_lin_val)] <- 0
+  plot_title <- paste0("Position: ", pos, " across lineages")
+  mut_plot <- ggplot(data = cross_lineage_positions_lin_val[cross_lineage_positions_lin_val$Pos == pos, ], 
                      aes(x=Generation,y=VariantLevel,group=Lineage,color=Lineage_group)) +
     geom_line() +
     scale_colour_manual(values=lineage_cols, name="Lineage") + #, breaks=colnames(lineage_cols)) +
@@ -1352,13 +1404,13 @@ for (pos_of_interest in unique(cross_lineage_positions_interest$Pos)){
     theme(plot.background = element_rect(fill = "white", colour = "white"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           axis.line = element_line(colour = "black"), text = element_text(size=15), legend.text = element_text(size = 9), legend.title = element_text(size = 10)) +
     ggtitle(plot_title) +
-    scale_x_continuous(breaks = lin_mut_load_change$Generation, labels = lin_mut_load_change$Generation_labs) +
+    scale_x_continuous(breaks = lin_mut_load_change_lin_val$Generation, labels = lin_mut_load_change_lin_val$Generation_labs) +
     expand_limits(y = c(0,0.01)) +
     geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red")+
     labs(y = "Allele Frequency") 
   
   # save plot
-  file_string <- paste0("results/pos_", pos_of_interest, "_lins_", c(cross_lineages$lineages), ".png")
+  file_string <- paste0("results/pos_", pos, "_lins_", c(cross_lineages$lineages), ".png")
   ggsave(file=file_string, plot=mut_plot)
   n=0
   print("n reset")
