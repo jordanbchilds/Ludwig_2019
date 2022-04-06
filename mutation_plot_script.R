@@ -1,16 +1,13 @@
 
 
-  ## NOTE: this script should be called via the bash script "plot_mutations.sh" ##
+  ## NOTE: this script should be called via the bash script "plot_mutations.sh" 
+   # Or working directory should be set manually.
 
 # set working directory
 #args <- commandArgs(trailingOnly = T)
 #print(args)
 #setwd(args[1])
 setwd("/home/thomas/Documents/projects/Research_proj/Ludwig_2019/")
-  
-
-
-
 
 
   ## Load packages ##
@@ -28,19 +25,34 @@ lapply(packages, FUN = function(i) {
   }
 )
 
-
-#BiocManager::install("ComplexHeatmap")
+if (!require("ComplexHeatmap")){
+  BiocManager::install("ComplexHeatmap")
+  library("ComplexHeatmap")
+}
 library("ComplexHeatmap")
 
 
+      #################  Data  ##################
+  # Controls for which vcf/ directory and which post-alignment files in alignment_stats/ 
+  # are imported. Allows simpler comparison between datasets eg. calls from reads aligned 
+  # to rCRS or a consensus sequence of parent clones, duplicates or removed duplicates etc.
+vcfdir <- "vcf_consensus-dups/"
+# files made using post_alignment_QC.sh will have the same string attached to the end of the following files (alignment_stats/):
+# "depths", "depths_qfilt", "all_coverages", "all_coverages_qfilt", "mean_coverage", "mean_coverage_qfilt"
+# the "string", then ".txt". This is typically the bam dir name eg. "bam_consensus-nodups".
+# Make sure to add a preceding "_". eg. "_bam_c"
+append_string <- "_bam_c"
+
   ## Read SRR files ##
-filenames <- list.files("vcf_map20/", pattern="*_annotated.txt")
+filenames <- list.files(vcfdir, pattern="*_annotated.txt")
 # Create list of data frame names without the ".txt" part 
 SRR_names <-substr(filenames,1,10)
 
   ## Read coverage files ##
-depths <- read.table("alignment_stats/depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
-depths_qfilt <- read.table("alignment_stats/depths_qfilt.txt", sep = "\t", header = F, stringsAsFactors = T)
+file_string <- paste0("alignment_stats/depths_qfilt", append_string, ".txt")  # temporarily filtered depths file as well - depths_qfilt.
+depths <- read.table(file_string, sep = "\t", header = F, stringsAsFactors = T)
+file_string <- paste0("alignment_stats/depths_qfilt", append_string, ".txt")
+depths_qfilt <- read.table(file_string, sep = "\t", header = F, stringsAsFactors = T)
 colnames(depths_qfilt) <- c("chr", "Pos", SRR_names)
 colnames(depths) <- c("chr", "Pos", SRR_names)
 
@@ -58,10 +70,10 @@ generation_axis_labs <- c("bulk","bulk","G1","G1","G1","G1","G1","G1","G1","G1",
 SRR_lineage_generation <- data.frame(SRR_names,lineages,generation,generation_axis_labs)
 
 lineage_cols <- c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="yellow", "F4"="grey", "B5"="burlywood4", "B11"="palevioletred2", "A9"="lightseagreen", "D3"="palegreen1", "C7"="lightgoldenrod", "C4"="pink2","C10"="cyan", "B9"="plum1","G10"="steelblue2", "D6"="springgreen4","C9"="red", "mix"="darkgreen")
-#merge
 
 
-  ####################  Pre-alignment plots and tables #########################
+  ######################   Pre-alignment   #########################
+  #####################  Plots and tables  #########################
 
 # table of all sequencing runs in Ludwig paper - only TF1 bulk ATAc-seq needed
 raw_sample_info <- read.csv("data/SraRunTable_1.csv", header = T)
@@ -69,7 +81,6 @@ raw_sample_info <- read.csv("data/SraRunTable_1.csv", header = T)
 # raw sequencing information
 pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt", header = T) 
 colnames(pre_multiqc) <- c("SRR_sample", "percent_dup", "percent_gc", "sequence_lengths", "percent_fails", "num_seqs")
-
 
 median.default(pre_multiqc$num_seqs)
 min(pre_multiqc$num_seqs)
@@ -80,9 +91,7 @@ max(pre_multiqc$percent_dup)
 mean(pre_multiqc$percent_gc)
 sd(pre_multiqc$percent_gc)
 
-# see post for meanbaseq
-
-
+# see post-alignment for meanbaseq
 # histogram of estimated number of duplicated sequences in raw data
 pre_dup_hist <- ggplot(data = pre_multiqc, aes(percent_dup)) +
   geom_histogram(fill = "dodgerblue3", colour = "black", binwidth = 2) +
@@ -112,6 +121,7 @@ pre_plots <- ggarrange(plots = pre_plots, nrow = 2, align = "hv")
 ggsave(file="results/pre_plots.png", plot = pre_plots, width = 8, height = 8, units = "in")
 
 
+  #########################  POST-ALIGNMENT  ############################
   #####################  Coverage plots and stats  ######################
 ## x axis as sample and as pos.
 depths_max <- lapply(depths[,3:ncol(depths)], max)
@@ -136,15 +146,18 @@ for (i in SRR_names){
 
 # overall alignment rate for each clone
 percent_alignment <- read.table("alignment_stats/alignment_and_duplicate_summary.txt", sep = " ", header = T, skip = 1, nrows = 69)
+
 mean(percent_alignment$Overall_alignment_rate)
 min(percent_alignment$Overall_alignment_rate)
 
-
 # summary statistics for coverages (before and after filtering for mapping and base quality):
 # information included (column names): "X.rname", "startpos","endpos","numreads","covbases","coverage","meandepth","meanbaseq","meanmapq","SRRs","read_lengths","calculated_mean_depth","calculated_sd_depth" and min and max depths for qfilt
-all_coverages_qfilt <- read.csv("alignment_stats/all_coverages_qfilt.txt", header = T, sep = "\t")
+file_string <- paste0("alignment_stats/all_coverages_qfilt", append_string, ".txt")
+all_coverages_qfilt <- read.csv(file_string, header = T, sep = "\t")
 all_coverages_qfilt$SRRs <- SRR_names
-all_coverages <- read.csv("alignment_stats/all_coverages_qfilt.txt", header = T, sep = "\t")
+
+file_string <- paste0("alignment_stats/all_coverages_qfilt", append_string, ".txt")  # temporarily also filtered version
+all_coverages <- read.csv(file_string, header = T, sep = "\t")
 all_coverages$SRRs <- SRR_names
 df_SRR_names <- data.frame(SRR_names)
 all_coverages$read_lengths <- merge(data.frame(SRR_names), raw_sample_info, all.x = T, by.x = "SRR_names", by.y = "Run")[,3]
@@ -186,10 +199,7 @@ mean(all_coverages_qfilt$meanbaseq)
 mean(all_coverages_qfilt$meanmapq)
 mean(all_coverages$meanmapq)
 
-
-
 # coverage plot for all bases, all samples
-
 yax <- c(1,2,4,8,16)
 yax <- 2^yax
 
@@ -204,8 +214,6 @@ pos_coverage_all_plot <- ggplot(depths_qfilt_bplot_data) +
   labs(x= "Mitochondrial genome position", y = "log2(Read depth)")
 
 ggsave(file="results/genome_coverage_plot.png", plot=pos_coverage_all_plot, width = 8, height = 4, units = "in")
-
-
 
 # filtered read histograms: coverage, no.reads, base quality, mapping quality
 mean_coverage_hist_qfilt <- ggplot(data = all_coverages_qfilt, aes(meandepth)) +
@@ -358,7 +366,7 @@ SRR_table_list_HET_OR_LOWLVL_potautocor_validated <- list()
 #threshold <- 0.05
 # Load files into list of data.frames
 for(i in SRR_names){
-  filepath <- file.path("vcf_map20/",paste(i,"_annotated.txt",sep=""))
+  filepath <- file.path(vcfdir,paste0(i,"_annotated.txt"))
   SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T)
   # remove positions (deletion eg. at 3107)
   SRR_table_list[[i]] <- SRR_table_list[[i]][!(SRR_table_list[[i]]$Pos==3107),]
@@ -432,6 +440,7 @@ file_string <- paste0("results/",p[[1]],"_all_variants.csv")
 write.csv(all_variants_in_lineage,file = file_string, quote = F)
 print("table of bulk variants in lineage path saved in 'results/'")
 }
+
 
      ##################  LINEAGE VALIDATION  ###########################
 
@@ -674,8 +683,6 @@ all_variants_HET_OR_LOWLVL_nofilt$OurPos <- all_variants_HET_OR_LOWLVL_nofilt$Po
 all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs <- merge(all_variants_HET_OR_LOWLVL_nofilt, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
 all_pos_HET_OR_LOWLVL_nofilt_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Pos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$OurPos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Ludwig_variant_positions)
 
-
-
 # List of Ludwig converted variant positions
 Ludwig_pos <-  c("182","309","824","849","1412","1495","1797","1972","2110","2818","3174","3911","4038","4114","4215","4447","4513","5008","5564","5863","6076","6963","7075","7790","8003","8207","8922","10372","11185","11404","11712","12062","12254","12790","12839","13289","13413","13709","14437","15089","15489","15641","15798","16252")
 rCRS_Ludwig_pos <- c("182","309","822","847","1410","1493","1795","1970","2108","2816","3173","3910","4037","4413","4214","4446","4512","5007","5563","5862","6075","6962","7074","7789","8002","8206","8921","10371","11184","11403","11711","12061","12253","12789","12838","13288","13412","13708","14436","15088","15488","15640","15797","16250")
@@ -683,7 +690,6 @@ Ludwig_positions <- data.frame(Ludwig_pos,rCRS_Ludwig_pos)
 
 # add column of converted positions to Ludwig_variants
 Ludwig_variants <- merge(Ludwig_positions, Ludwig_variants, by.x = "Ludwig_pos", by.y = "Ludwig_variant_positions")
-
 
 # Extract rCRS Ludwig variants in our data
 HET_OR_LOWLVL_nofilt_Ludwig_variants <-  data.frame(rCRS_Ludwig_pos)
@@ -698,7 +704,6 @@ for (SRR in SRR_names){
   SRR_pos_level <- data.frame(SRR_table_list[[SRR]]$Pos,SRR_table_list[[SRR]]$VariantLevel)
   colnames(SRR_pos_level) <- c("Pos", SRR)
   our_Ludwig_variants_nofilt <- merge(our_Ludwig_variants_nofilt, SRR_pos_level, by.x="rCRS_Ludwig_pos", by.y = "Pos", all.x=T)
-  
 }
 
 
@@ -809,28 +814,31 @@ pca_plot <- ggplot(data = pca_df, aes(PC1, PC2)) +
   geom_point()
 
 
-########################   Mutation Plots   ############################
+######   Function to get SRR numbers from S00-- numbers in metadata   ##########
 
-barplot_lims <- data.frame(0:16569, rep(1,16570))
-colnames(barplot_lims) <- c("Position", "ylimit")
-
-  # get SRRs for lineage_paths.txt from S00__ number labels on lineage tree (S1d_lineage_tree.png)
+# get SRRs for lineage_paths.txt from S00__ number labels on lineage tree (S1d_lineage_tree.png)
 Snumb_path <- list("bulk", "S0014", "S0028", "S0034", "S0049")  # add Snumbs here. S MUST BE CAPITALIZED. S000 and S0001 not recognised - use "bulk" instead.
 
 get_SRRs_from_Snumbs <- function(Snumb_path){  # See S1d_lineage_tree.png (labelled with S#### sample names). Get list of SRRs to place in lineage_paths.txt (Don't forget to choose and add a name in front of the path list).
   Snumbs_all <- c("bulk","bulk","S0003","S0004","S0005","S0006","S0007","S0008","S0009","S0010","S0011","S0012","S0013","S0014","S0015","S0016","S0017","S0018","S0019","S0020","S0021","S0022","S0023","S0024","S0025","S0026","S0027","S0028","S0029","S0030","S0031","S0032","S0033","S0034","S0035","S0036","S0037","S0038","S0039","S0040","S0041","S0042","S0043","S0044","S0045","S0046","S0047","S0048","S0049","S0050","S0051","S0052","S0053","S0054","S0055","S0056","S0057","S0058","S0059","S0060","S0061","S0062","S0063","S0064","S0065","S0066","S0067","S0068","S0069")
   SRR_path <- list()
-    i <- match(Snumb_path, Snumbs_all)
-    print(typeof(i))
-    for (x in i){
+  i <- match(Snumb_path, Snumbs_all)
+  print(typeof(i))
+  for (x in i){
     print(x)
-      SRR_path <- paste(SRR_path, SRR_names[x])
+    SRR_path <- paste(SRR_path, SRR_names[x])
   }
   return(SRR_path)
 }
 
 SRR_path <- get_SRRs_from_Snumbs(Snumb_path)
 print(SRR_path)
+
+
+######################   Exploratory Mutation Plots   ##########################
+
+barplot_lims <- data.frame(0:16569, rep(1,16570))
+colnames(barplot_lims) <- c("Position", "ylimit")
 
 ## add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
 for (i in SRR_names){
