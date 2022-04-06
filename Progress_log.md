@@ -424,3 +424,5 @@ per sample, per mutation position - what is statistically informative? worth loo
 - [ ] het in consensus lower maybe 0.90
 - [ ] remove na position in lin\_mut\_load\_change\_lin\_val (?) - lineage mut plots
 - [ ] COMPARE effect of dups, and consensus sequence on STRAND BIAS 
+- [ ] why in supposedly validated mutation load lineage plots in some samples the AF doesn't reach threshold
+
