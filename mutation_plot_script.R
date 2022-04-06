@@ -31,9 +31,13 @@ if (!require("ComplexHeatmap")){
 }
 library("ComplexHeatmap")
 
+###########  Which sections to run  ############
+exploratory_plots <- FALSE
+print(paste0("Make large exploratory plots: ", exploratory_plots))
 
       #################  Data  ##################
   # Controls for which vcf/ directory and which post-alignment files in alignment_stats/ 
+
   # are imported. Allows simpler comparison between datasets eg. calls from reads aligned 
   # to rCRS or a consensus sequence of parent clones, duplicates or removed duplicates etc.
 vcfdir <- "vcf_consensus-dups/"
@@ -814,7 +818,7 @@ pca_plot <- ggplot(data = pca_df, aes(PC1, PC2)) +
   geom_point()
 
 
-######   Function to get SRR numbers from S00-- numbers in metadata   ##########
+############ Function to get SRR numbers from S00-- numbers in metadata ##########
 
 # get SRRs for lineage_paths.txt from S00__ number labels on lineage tree (S1d_lineage_tree.png)
 Snumb_path <- list("bulk", "S0014", "S0028", "S0034", "S0049")  # add Snumbs here. S MUST BE CAPITALIZED. S000 and S0001 not recognised - use "bulk" instead.
@@ -834,13 +838,7 @@ get_SRRs_from_Snumbs <- function(Snumb_path){  # See S1d_lineage_tree.png (label
 SRR_path <- get_SRRs_from_Snumbs(Snumb_path)
 print(SRR_path)
 
-
-######################   Exploratory Mutation Plots   ##########################
-
-barplot_lims <- data.frame(0:16569, rep(1,16570))
-colnames(barplot_lims) <- c("Position", "ylimit")
-
-## add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
+## IMPORTANT: add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
 for (i in SRR_names){
   print(i)
   SRR_table_list[[i]]  <- merge(SRR_table_list[[i]], barplot_lims, by.x = "Pos", by.y = "Position", all = T)
@@ -848,6 +846,15 @@ for (i in SRR_names){
   SRR_table_list_HET_OR_LOWLVL_nofilt[[i]]  <- merge(x = SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
   SRR_table_list_HET_OR_LOWLVL[[i]]  <- merge(x = SRR_table_list_HET_OR_LOWLVL[[i]], y = barplot_lims, by.x = "Pos", by.y = "Position", all = T)
 }
+
+
+######################   Exploratory Mutation Plots   ##########################
+
+# only run whole section if exporatory_plots is TRUE:
+if (exploratory_plots) {
+  
+barplot_lims <- data.frame(0:16569, rep(1,16570))
+colnames(barplot_lims) <- c("Position", "ylimit")
 
 # function to return monotonic values for second y axis transformation (coverage)
 f <- function(y){
@@ -1124,6 +1131,7 @@ for (p in paths){
   ggsave(file=file_string, plot=lab_lineage_grob, width = 3600, height = px_height, units = "px")
 }
 
+}  #(if (exploratory_plots is TRUE){}) bracket
 
 
   ###############  Position-specific mutation load plots  #####################
