@@ -79,15 +79,16 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 # TODO
 - [x] Restructure project into folders, refactor code accordingly
 - [x] Easier download of data/selection of samples
-- [ ] Check script comments
+- [x] Check script comments
 - [ ] rename project?
 - [x] Mark duplicates
      - [ ] Optical duplicates
 - [x] Create consenus sequence
 - [x] Re-align to consensus instead of ref
 - [ ] Compare genome coverage, no. variants, overlap of variants, strand bias for:
-     - [ ] duplicates vs no dups
-     - [ ] aligned to reference vs aligned to consensus
+     - [x] duplicates vs no dups
+     - [x] aligned to reference vs aligned to consensus
+     - [ ] STRAND BIAS
 - [ ] Replace mutserve variant caller:
      - [ ] Research joint variant callers: just groups or lineage/relationship metatdata
      - [ ] raw pileup calls - only quality filtering, no sequencing error adjustments
@@ -99,12 +100,13 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 - [ ] Cheatsheet of useful bash and slurm commands
 - [x] make group_SRRs file
 - [x] extract SRX numbers for prefetch into group__SRX.txt
-- [ ] baseq 20 too low? Especially when av baseq is high ~31. See spread of baseqs per position and compare between baseq 20 and 30: 1 in 100 vs 1 in 1000. baseq 25.23 = 3 in 1000 (Q = -10log10(0.003)). proportion of wrong calls per genomic position = Pr(wrong base)\*coverage/16569?
+- [ ] baseq 20 too low? Representes quality before alignment, not recalibrated, so increasing threshold dfsafdsa. Especially when av baseq is high ~31. See spread of baseqs per position and compare between baseq 20 and 30: 1 in 100 vs 1 in 1000. baseq 25.23 = 3 in 1000 (Q = -10log10(0.003)). proportion of wrong calls per genomic position = Pr(wrong base)\*coverage/16569?
 - [ ] Add validation_groups.txt creation
 - [ ] lower threshold for Heteroplasmic when creating consensus, remove HET\_orLOWLVL filters when plotting with consensus aligned data.
 - [x] Plot for multiple positions within lineage/same positions in different lineages
 - [ ] Look at plots for suspicious looking 
 - [ ] Find out why variant calls are missing between bulk replicates when they aren't in LUDWIG - mutserve vs raw read no.s
+- [ ] List known NextSeq sequencing error locations on reference sequences and compare to calls - combined lineage mutation load plots could help visualise if generation associated with sequencing runs - see metadata.
 
 Questions (add answers to research and reasoning)
 - Mark known low level seq error patterns, statistically compare autocorrelation between potential seq error and not
