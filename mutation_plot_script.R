@@ -839,6 +839,8 @@ SRR_path <- get_SRRs_from_Snumbs(Snumb_path)
 print(SRR_path)
 
 ## IMPORTANT: add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
+barplot_lims <- data.frame(0:16569, rep(1,16570))
+colnames(barplot_lims) <- c("Position", "ylimit")
 for (i in SRR_names){
   print(i)
   SRR_table_list[[i]]  <- merge(SRR_table_list[[i]], barplot_lims, by.x = "Pos", by.y = "Position", all = T)
@@ -850,12 +852,9 @@ for (i in SRR_names){
 
 ######################   Exploratory Mutation Plots   ##########################
 
-# only run whole section if exporatory_plots is TRUE:
+# only run whole section if exploratory_plots is TRUE:
 if (exploratory_plots) {
   
-barplot_lims <- data.frame(0:16569, rep(1,16570))
-colnames(barplot_lims) <- c("Position", "ylimit")
-
 # function to return monotonic values for second y axis transformation (coverage)
 f <- function(y){
   log_max <- log2(third_y_lim_maxcoverage_qfilt)
