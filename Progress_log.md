@@ -426,3 +426,5 @@ per sample, per mutation position - what is statistically informative? worth loo
 - [ ] COMPARE effect of dups, and consensus sequence on STRAND BIAS 
 - [ ] why in supposedly validated mutation load lineage plots in some samples the AF doesn't reach threshold
 
+## Thurs 7th April
+- [ ] Modify pipeline to work outside of rocket.hpc and slurm on a typical linux system

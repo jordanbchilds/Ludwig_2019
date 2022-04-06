@@ -112,6 +112,7 @@ Most of the programs used in this pipeline are already installed as a SLURM modu
 - [x] arguments to control which parts of mutation\_plot\_script.R are ran - large plots take a relatively long time and disk space.
 - [ ] Watch talks from Conor and Jordan
 - [ ] Find potential alternative datasets: look lineage tracing, short distance between generations.
+- [ ] Research calling deletions
 
 ## Questions (add answers to research and reasoning)
 - Mark known low level seq error patterns, statistically compare autocorrelation between potential seq error and not
