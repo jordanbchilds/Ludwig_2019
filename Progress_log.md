@@ -438,5 +438,7 @@ per sample, per mutation position - what is statistically informative? worth loo
 - [ ] Put individual pos plots into folder or one pdf
 - [ ] extract bcftools calls and depths
 - [ ] fix G2 label in G3
-- [ ] Positions 16172,4,5,6,7 close together suspicious
-- [ ] 
+
+NOTES
+- Positions 16172,4,5,6,7 close together suspicious
+- G3 spikes which ones
