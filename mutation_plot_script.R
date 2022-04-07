@@ -381,7 +381,7 @@ for(i in SRR_names){
   # no strand bias filter to see if variants are filtered differently in different samples across lineage paths
   SRR_table_list_HET_OR_LOWLVL_nofilt[[i]] <- subset(SRR_table_list[[i]], Type ==2)
   # Lineage_validated created below 
-  }
+}
 
 
   #################### Variant calling stats ########################
@@ -399,17 +399,17 @@ colnames(all_variants) <- "Pos"
 for (SRR in SRR_names) {
   SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
   colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
-  all_variants <- merge(all_variants, SRR_pos_level, by = "Pos", all = TRUE) 
+  all_variants <- merge(all_variants, SRR_pos_level, by = "Pos", all = TRUE)
 }
 all_variants <- all_variants[!duplicated(all_variants$Pos), ]
 
-   ####  all_variants_in_path
+
+   ####  all_variants_in_path  ####
 # merge to list all variants in lineage path
 # replace position with variant level.
 # if min variant level is < eg. 0.95 change filter to FIXED_IN_BULK.
 
 # Produce table of the variant levels in each sample of all variants found in the lineage path
-
 for (p in paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
@@ -423,7 +423,7 @@ for (p in paths){
     # Skip Lineage path name (1st in character vector of paths[[p]] )
     n=n+1
     print(SRR)
-    print(typeof(SRR))
+    #print(typeof(SRR))
     if (n==1){
       next
     }
@@ -433,12 +433,10 @@ for (p in paths){
       print("Reached VARIANTS_OF_INTEREST for this lineage")
       break
     }
-    
     SRR_pos_level <- data.frame(SRR_table_list[[SRR]]$Pos, SRR_table_list[[SRR]]$VariantLevel)
     print(colnames(SRR_pos_level))
     colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
     all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = T)
-    
   }
 file_string <- paste0("results/",p[[1]],"_all_variants.csv")
 write.csv(all_variants_in_lineage,file = file_string, quote = F)
@@ -449,9 +447,15 @@ print("table of bulk variants in lineage path saved in 'results/'")
      ##################  LINEAGE VALIDATION  ###########################
 
 # Repeat to produce table for only unfiltered heteroplasmic or low level variants (ie. incl strand bias), and another table for lineage validated.
-
+## CHECK ## validation_groups.txt:
+  # - does not include LUDWIG
+  # - does not include "mix" samples
+  # - (for lineage mutation load plots:) all lineages start with the two parent "bulks" SRR7245880 and 81.
 validation_paths <- list()
-validation_paths <- as.list(strsplit(readLines("validation_groups.txt"), " "))
+#validation_paths <- as.list(strsplit(readLines("validation_groups.txt"), " "))
+
+# Testing using lineage paths: better validation through each path, rather than whole lineage group.
+validation_paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 all_variants_in_lineages <- list()
 validated_per_lineage <- list()
@@ -464,6 +468,9 @@ for (p in validation_paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
     next
+  }
+  if (str_detect(p[[1]], 'LUDWIG')){
+    print(paste0("skipping LUDWIG line: ", p[[1]]))
   }
   all_variants_in_lineage_HET_OR_LOWLVL_nofilt <- data.frame(matrix(ncol = 1))
   colnames(all_variants_in_lineage_HET_OR_LOWLVL_nofilt) <- "Pos"
@@ -523,7 +530,6 @@ for (p in validation_paths){
   #all_lineages_pot_autocor_validated <- merge(all_lineages_pot_autocor_validated, potential_autocorrelation, by = "Pos", all = T)
   #all_lineages_pot_autocor_validated <- all_lineages_pot_autocor_validated[,1:3]
   print("stage 8")
-
 }
 
 # write table of all lineage validated variants from any lineage
@@ -537,6 +543,7 @@ all_lineages_pot_autocor_validated <- all_lineages_pot_autocor_validated[!duplic
 file_string <- paste0("results/all_lineages_pot_valid_by_autocorrelation.csv")
 write.csv(all_lineages_validated,file = file_string, quote = F)
 
+# Create SRR_table equivalents for validated and potentially autocorrelated.
 all_lineages_validated_pos <- data.frame(all_lineages_validated$Pos)
 colnames(all_lineages_validated_pos) <- "Pos"
 all_lineages_pot_autocor_validated_pos <- data.frame(all_lineages_pot_autocor_validated$Pos)
@@ -548,8 +555,7 @@ for(i in SRR_names) {
   #SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- SRR_table_list_HET_OR_LOWLVL_validated[[i]][,1:18] %>% filter(drop_na())
   #SRR_table_list_HET_OR_LOWLVL_validated[[i]] %>% subset(SRR_table_list_HET_OR_LOWLVL_validated[[i]], Filter !="NA")
   SRR_table_list_HET_OR_LOWLVL_potautocor_validated[[i]] <- merge(all_lineages_pot_autocor_validated_pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], by.x = "Pos", by.y = "Pos")
-  
-  print(nrow(SRR_table_list_HET_OR_LOWLVL_potautocor_validated[[i]]))
+  #print(nrow(SRR_table_list_HET_OR_LOWLVL_potautocor_validated[[i]]))
   }
 
 #SRR_table_list_HET_OR_LOWLVL_validated[[i]][!is.na(SRR_table_list_HET_OR_LOWLVL_validated[[i]]$ID),]
@@ -605,7 +611,7 @@ variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_
   #No.transversions = sapply(table, myfunc)
   #print(No.transversions)
   #No.Strand.Bias.Per.SRR <- 
-  Mean.Coverage <- 
+  #Mean.Coverage <- 
   No.Variants.Per.SRR <- sapply(SRR_table_list_HET_OR_LOWLVL_nofilt, nrow)
   No.Variants <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_nofilt, nrow))
   No.Positions <- nrow(all_variants)
@@ -615,8 +621,12 @@ variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_
   No.Potential.AutoCor.Valid.Variants.per.SRR <- sapply(SRR_table_list_HET_OR_LOWLVL_potautocor_validated, nrow)
   No.Potential.AutoCor.Valid.Variants <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_potautocor_validated, nrow))
   No.Potential.AutoCor.Valid.Postions <- nrow(all_lineages_pot_autocor_validated)
+  No.Variants.Per.SRR.PASS.FILTERS <- sapply(SRR_table_list_HET_OR_LOWLVL, nrow)
+  No.Variants.PASS <- sum(sapply(SRR_table_list_HET_OR_LOWLVL, nrow))
+  No.Variants.Per.SRR.STRAND.BIAS <- No.Variants.Per.SRR - No.Variants.Per.SRR.PASS.FILTERS
+  No.Variants.STRAND.BIAS <- No.Variants - No.Variants.PASS
   
-  variant_summaries <- data.frame(No.Variants, No.Positions, No.Validated.Variants, No.Validated.Positions, No.Potential.AutoCor.Valid.Variants, No.Potential.AutoCor.Valid.Postions)
+  variant_summaries <- data.frame(No.Variants, No.Positions, No.Validated.Variants, No.Validated.Positions, No.Potential.AutoCor.Valid.Variants, No.Potential.AutoCor.Valid.Postions, No.Variants.STRAND.BIAS)
   print(variant_summaries)
   file_string <- paste0("results/variant_summaries.csv")
   write.csv(variant_summaries, file = file_string, quote = F)
@@ -821,7 +831,7 @@ pca_plot <- ggplot(data = pca_df, aes(PC1, PC2)) +
 ############ Function to get SRR numbers from S00-- numbers in metadata ##########
 
 # get SRRs for lineage_paths.txt from S00__ number labels on lineage tree (S1d_lineage_tree.png)
-Snumb_path <- list("bulk", "S0014", "S0028", "S0034", "S0049")  # add Snumbs here. S MUST BE CAPITALIZED. S000 and S0001 not recognised - use "bulk" instead.
+Snumb_path <- list("bulk", "bulk", "S0008", "S0030", "S0037", "S0052", "S0060")  # add Snumbs here. S MUST BE CAPITALIZED. S000 and S0001 not recognised - use "bulk" instead.
 
 get_SRRs_from_Snumbs <- function(Snumb_path){  # See S1d_lineage_tree.png (labelled with S#### sample names). Get list of SRRs to place in lineage_paths.txt (Don't forget to choose and add a name in front of the path list).
   Snumbs_all <- c("bulk","bulk","S0003","S0004","S0005","S0006","S0007","S0008","S0009","S0010","S0011","S0012","S0013","S0014","S0015","S0016","S0017","S0018","S0019","S0020","S0021","S0022","S0023","S0024","S0025","S0026","S0027","S0028","S0029","S0030","S0031","S0032","S0033","S0034","S0035","S0036","S0037","S0038","S0039","S0040","S0041","S0042","S0043","S0044","S0045","S0046","S0047","S0048","S0049","S0050","S0051","S0052","S0053","S0054","S0055","S0056","S0057","S0058","S0059","S0060","S0061","S0062","S0063","S0064","S0065","S0066","S0067","S0068","S0069")
@@ -832,6 +842,7 @@ get_SRRs_from_Snumbs <- function(Snumb_path){  # See S1d_lineage_tree.png (label
     print(x)
     SRR_path <- paste(SRR_path, SRR_names[x])
   }
+  print(SRR_path)
   return(SRR_path)
 }
 
@@ -1264,7 +1275,7 @@ for (p in paths){
 }
 
 
-#########  Mutation load plots: each single position of interest expansion for multiple lineages on one plot  ################
+#########  Mutation load plots: each single position of interest across multiple lineages on one plot  ################
 
 # With any positions of interest chosen in lineage_paths.txt that occur in more than one lineage
 cross_lineage_positions_interest <- unique(lin_mut_load_change[ ,c('Pos', 'Lineage')]) %>% 
@@ -1314,9 +1325,9 @@ for (pos_of_interest in unique(cross_lineage_positions_interest$Pos)){
 # multiple plots into one file
 # pdf()
 
-###############  Mutation load plots across lineages #####################
-#####################  for ALL LINEAGE VALIDATED ############################
 
+#################  Mutation load plots across lineages ######################
+#####################  for ALL LINEAGE VALIDATED ############################
 
   ## Plot all validated variants that occur in more than one lineage on one graph ##
 ## With all validated variant calls that occur in more than one lineage
@@ -1450,7 +1461,7 @@ for (pos in unique(cross_lineage_positions_lin_val$Pos)){
 }
 dev.off()
 
-length(plot_list)
+#length(plot_list)
 #arranged_plot_list <- marrangeGrob(plot_list, nrow = 3, ncol = 2)
 #file_string <- "results/validated_pos_across_lins.pdf"
 #ggsave(file=file_string, plot=arranged_plot_list)
@@ -1459,7 +1470,7 @@ length(plot_list)
 ####################### Replicate correlation plot #######################
 
 # combine AF of replicates
-bulk_replicates_all_nofilt <- all_variants_in_lineages$Bulks
+bulk_replicates_all_nofilt <- merge(SRR_table_list_HET_OR_LOWLVL_nofilt$SRR7245880[, c("Pos", "VariantLevel")], SRR_table_list_HET_OR_LOWLVL_nofilt$SRR7245881[, c("Pos", "VariantLevel")], by = "Pos", all = T)
 colnames(bulk_replicates_all_nofilt) <- c("Pos", "SRR7245880", "SRR7245881")
 bulk_replicates_all_nofilt[is.na(bulk_replicates_all_nofilt)] <- 0
 
@@ -1479,8 +1490,6 @@ bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(sqrt(SRR
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
 ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
-
-
 
 
 #Fig 3?
