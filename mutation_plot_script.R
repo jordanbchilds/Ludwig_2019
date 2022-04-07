@@ -532,7 +532,7 @@ for (p in validation_paths){
 }
 
 # write table of all lineage validated variants from any lineage
-all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos), ]
+all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos), ]  # potential removal of variant levels on repeated SRRs?
 file_string <- paste0("results/all_variants_lineage_validated.csv")
 write.csv(all_lineages_validated,file = file_string, quote = F)
 
@@ -1161,6 +1161,9 @@ for (p in paths){
     print("skipping comment line...")
     next
   } 
+  if (str_detect(p[[1]], 'LUDWIG')){
+    print(paste0("skipping LUDWIG line: ", p[[1]]))
+  }
   #if (exists("lin_mut_load_change")){remove(lin_mut_load_change)}
   SRRs_in_path <- list()
   index=0
@@ -1207,7 +1210,7 @@ for (p in paths){
         mut_load_change$SRR[n] <- SRR_name
         mut_load_change$Generation[n] <- n-1
         mut_load_change$Generation_labs[n] <- paste(SRR_lineage_generation$generation_axis_labs[SRR_lineage_generation$SRR_names==SRR_name])
-        mut_load_change$VariantLevel[n] <- SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]
+        mut_load_change$VariantLevel[n] <- SRR_table_list[[SRR_name]]$VariantLevel[which(SRR_table_list[[SRR_name]]$Pos == pos_of_interest)][1] #SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]
         mut_load_change$Coverage[n] <- depths_qfilt[[SRR_name]][pos_of_interest]
         mut_load_change$Pos[n] <- pos_of_interest
         mut_load_change$Lineage <- p[[1]]
@@ -1345,6 +1348,9 @@ for (p in paths){
     print("skipping comment line...")
     next
   }
+  if (str_detect(p[[1]], 'LUDWIG')){
+    print(paste0("skipping LUDWIG line: ", p[[1]]))
+  }
   SRRs_in_path <- list()
   index=0
   at.positions = F
@@ -1388,7 +1394,7 @@ for (p in paths){
         next_row$SRR <- SRR_name
         next_row$Generation <- n-1#as.numeric(SRR_lineage_generation$generation[SRR_names == SRR_name])
         next_row$Generation_labs <- SRR_lineage_generation$generation_axis_labs[SRR_names == SRR_name]
-        next_row$VariantLevel <- SRR_table_list[[SRR_name]]$VariantLevel[pos+1]
+        next_row$VariantLevel <- SRR_table_list[[SRR_name]]$VariantLevel[which(SRR_table_list[[SRR_name]]$Pos == pos)][1] #SRR_table_list[[SRR_name]]$VariantLevel[pos+1]
         next_row$Coverage <- depths_qfilt[[SRR_name]][pos]
         next_row$Pos <- pos
         next_row$Lineage <- p[[1]]
@@ -1439,7 +1445,7 @@ for (pos in unique(cross_lineage_positions_lin_val$Pos)){
     geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red") +
     labs(y = "Allele Frequency")
   print(mut_plot)
-  plot_list[[((n-1)%%6 + 1)]] <- mut_plot
+  #plot_list[[((n-1)%%6 + 1)]] <- mut_plot
   #if (n %% 6 == 0){
   #  plotem <- ggarrange(plots = plot_list, nrow = 3, ncol = 2)
   #  print(plotem)
