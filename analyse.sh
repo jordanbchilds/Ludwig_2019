@@ -13,6 +13,8 @@ module load SAMtools/1.12-GCC-10.2.0;
 module load Bowtie2/2.3.4.2-foss-2018b;
 module load parallel/20200522-GCCcore-10.2.0
 
+#TODO use bamdir variable, same as in post alignment, especially for alignment_and_summary_stats.txt
+bamdir="bam_c"
 mkdir bam_c/;
 
 
@@ -95,8 +97,8 @@ locale;
 
 # Copy stats from slurm outfile (stout) to alignment stats
 cp slurm-${SLURM_JOB_ID}.out alignment_stats/alignment_stdout.txt
-echo "Reference: ${ref} " >> alignment_stats/alignment_and_duplicate_summary.txt
-echo 'SRR Overall_alignment_rate Total_reads_bowtie2 Total_reads_markdup Total_duplicates Estimated_unique_lib_size' >> alignment_stats/alignment_and_duplicate_summary.txt
+echo "Reference: ${ref} " >> alignment_stats/alignment_and_duplicate_summary_${bam}.txt
+echo 'SRR Overall_alignment_rate Total_reads_bowtie2 Total_reads_markdup Total_duplicates Estimated_unique_lib_size' >> alignment_stats/alignment_and_duplicate_summary${bam}.txt
 
 for rt in "${rts[@]}"
 do
