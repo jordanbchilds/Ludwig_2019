@@ -453,8 +453,7 @@ print("table of bulk variants in lineage path saved in 'results/'")
   # - (for lineage mutation load plots:) all lineages start with the two parent "bulks" SRR7245880 and 81.
 validation_paths <- list()
 #validation_paths <- as.list(strsplit(readLines("validation_groups.txt"), " "))
-
-# Testing using lineage paths: better validation through each path, rather than whole lineage group.
+# Use lineage paths: better validation through each path, rather than whole lineage group.
 validation_paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 all_variants_in_lineages <- list()
