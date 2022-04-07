@@ -1,0 +1,5 @@
+dataset,No.Variants,No.Positions,No.Validated.Variants,No.Validated.Positions,No.Potential.AutoCor.Valid.Variants,No.Potential.AutoCor.Valid.Postions
+map20 (hg38 with dups - masters),2211,533,1273,108,1752,175
+consensus-nodups (consensus with no duplicates),10054,4081,879,73,5484,1007
+c (consensus with dups),49927,8418,2142,113,42980,4289
+hg38nodup (hg38 with no duplicates),9478,3892,843,77,5132,954
