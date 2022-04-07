@@ -419,12 +419,24 @@ per sample, per mutation position - what is statistically informative? worth loo
   - [x] section titles and spacing
   - [x] use a variable to choose vcf folder and alignment\_stats/ files
   - [ ] use a variable to choose results/ folder
-- [ ] find cause of odd G2 lable in G3 in plots - easiest to check by lineage
-- [ ] if ^ not solved reconstruct SRR\_lineage\_generation and check lineage\_paths.txt SRRs
-- [ ] het in consensus lower maybe 0.90
+- [x] find cause of odd G2 lable in G3 in plots - easiest to check by lineage
+- [ ] then fix: if ^ not solved reconstruct SRR\_lineage\_generation and check lineage\_paths.txt SRRs
 - [ ] remove na position in lin\_mut\_load\_change\_lin\_val (?) - lineage mut plots
 - [ ] COMPARE effect of dups, and consensus sequence on STRAND BIAS 
-- [ ] why in supposedly validated mutation load lineage plots in some samples the AF doesn't reach threshold
+- [ ] X why in supposedly validated mutation load lineage plots in some samples the AF doesn't reach threshold
+- [x] Improve lineage validation- if mutation occurs more than once in the lineage path, rather than whole lineage eg. B3\_shortest\_upper instead of over all B3. 
+- [x] Removed bulks and mix as lineages from lineage\_paths.txt 
+- [x] add A9 lineage to all analyses
 
 ## Thurs 7th April
+- [x] why in supposedly validated mutation load lineage plots in some samples the AF doesn't reach threshold
+- [x] fixed VariantLevel selection when plotting mutation load plots!!! Many fewer missing calls
+- [x] fix Bulks and A9 in all\_variants\_in\_lineage
 - [ ] Modify pipeline to work outside of rocket.hpc and slurm on a typical linux system
+  - [ ] SLURM module downloads, version
+- [ ] het in consensus lower maybe 0.90
+- [ ] Put individual pos plots into folder or one pdf
+- [ ] extract bcftools calls and depths
+- [ ] fix G2 label in G3
+- [ ] Positions 16172,4,5,6,7 close together suspicious
+- [ ] 
