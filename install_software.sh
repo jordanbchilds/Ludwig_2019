@@ -3,29 +3,57 @@
 # Additional packages are used in this pipeline which are already installed as modules on the Newcastle University HPC, and are loaded as modules using SLURM. To run the pipeline on a more general Linux system, these need to be downloaded and installed:
 
 mkdir ./software/
-cd ./software/
-
 # export ./software/bin/ to path 
 
-  ## Samtools ##
-wget https://github.com/samtools/samtools/releases/download/1.12/samtools-1.12.tar.bz2
-tar -xvf samtools-1.12.tar.bz2
-rm samtools-1.12.tar.bz2
 
-prefix="`pwd`"
-cd ./samtools-1.12
-./configure --prefix=$prefix
+#### Samtools ####
 
-make
-make install
+if [ -f "software/samtools-1.12/samtools" ]; then 
+  echo "samtools is installed";
+else
+  echo "samtools is not installed. Downloading...";
+  wget https://github.com/samtools/samtools/releases/download/1.12/samtools-1.12.tar.bz2
+  tar -xvf samtools-1.12.tar.bz2
+  rm samtools-1.12.tar.bz2
+  
+  prefix="`pwd`"
+  cd ./software/samtools-1.12
+  ./configure --prefix=$prefix
+  
+  make
+  make install
+  # symlink to ../bin/
+  
+  export PATH=`pwd`/bin/:$PATH;
+  cd ../../
+fi
 
-# symlink to ../bin/
 
-export PATH=`pwd`/bin/:$PATH;
+#### fastqc ####
 
-#  ## fastq ##
-#
-#chmod +x ./${EXECUTABLE}
+if [ -f software/bin/fastqc/fastqc ]; then
+  echo "samtools is already installed"
+else
+  echo "fastqc is not installed" 
+  cd ./software/bin
+  wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
+  unzip fastqc_v0.11.9.zip 
+  rm fastqc_v0.11.9.zip 
+  mv FastQC/* .
+  
+  chmod 755 fastqc
+  #chmod +x ./${EXECUTABLE} 
+  export PATH=`pwd`/bin/:$PATH;
+  
+  cd ../../
+fi
+
+
+#### multiqc ####
+
+#if [-f software/m]
+
+
 #
 #
 #  ## Mutserve ##
