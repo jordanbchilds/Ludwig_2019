@@ -43,9 +43,9 @@ mkdir data
 
 
 # superseries (with all Ludwig data, including RNA-seq, scATAC, scRNA, difference cell lines etc...): 
-gse='GSE115218';
+#gse='GSE115218';
 # subseries with bulk ATAC-seq TF1 cells:
-#gse='GSE115208';
+gse='GSE115208';
 
 # parse.py gets list of SRA sequence names from GSE series of "Human lineage tracing enabled by mitochondrial mutations and single cell genomics"
 
@@ -85,7 +85,7 @@ for j in ${types[@]}
 do
 
   grep $j data/SraRunTable.txt | cut -d ',' -f 1 > data/group_${j}_SRRs.txt; 
-  # table is comma separated but has some commas within strings in one "cell": delete everything before "SRX", then everything after the first comma.
+  # table is comma separated but has some commas within strings in one "cell": delete everything before "SRX", then everything after the first comma to get the SRX number for prefetch
   grep $j data/SraRunTable.txt | sed s/.*SRX/SRX/g | sed s/\,.*//g > data/group_${j}_SRXs.txt;  
  
   # prefetch using SRX numbers TODO don't prefetch if fastq file present
