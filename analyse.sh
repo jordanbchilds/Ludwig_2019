@@ -13,13 +13,16 @@ module load SAMtools/1.12-GCC-10.2.0;
 module load Bowtie2/2.3.4.2-foss-2018b;
 module load parallel/20200522-GCCcore-10.2.0
 
-#TODO use bamdir variable, same as in post alignment, especially for alignment_and_summary_stats.txt
-bamdir="bam_c"
-mkdir bam_c/;
+export PATH=`pwd`/software/bin/:$PATH
 
+#TODO use bamdir variable, same as in post alignment, especially for alignment_and_summary_stats.txt
+bamdir="bam"
+j=B11
+
+mkdir $bamdir
 
 # read bulk ATAC-seq from TF1 cells into array
-readarray -t rts < data/group_SRP149534_SRRs.txt;
+readarray -t rts < data/group_${j}_SRRs.txt;
 
 
   ## build indices and set reference genome ##
@@ -59,7 +62,7 @@ do
  echo ${rt};
  #echo Number of reads: $(cat fastq/${rt}.fastq|wc -l)/4|bc
 
- if [ -f "bam_c/${rt}.bam.bai" ]; then
+ if [ -f "${bamdir}/${rt}.bam.bai" ]; then
   echo "${rt} already aligned";
  else 
    
@@ -77,13 +80,13 @@ do
 
 # samtools markdup: -s print basic stats, -r will REMOVE duplicates, 
 
-  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq.gz | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - bam_c/${rt}.bam
+  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq.gz 2> alignment_stats/alignment_stdout.txt | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - ${bamdir}/${rt}.bam 
 # To align without marking dups, change the first samtools sort in pipe to index by coordinates (remove -n argument) and immediatelyoutput bam for indexing below.
 # TODO add removal of optical duplicates with -d _ : what distance for Nextseq?
 
   # index sorted bam files:
   echo "Index"; 
-  samtools index -@ 8 bam_c/${rt}.bam ;
+  samtools index -@ 8 ${bamdir}/${rt}.bam ;
 
  fi
 done
@@ -97,8 +100,8 @@ locale;
 
 # Copy stats from slurm outfile (stout) to alignment stats
 cp slurm-${SLURM_JOB_ID}.out alignment_stats/alignment_stdout.txt
-echo "Reference: ${ref} " >> alignment_stats/alignment_and_duplicate_summary_${bam}.txt
-echo 'SRR Overall_alignment_rate Total_reads_bowtie2 Total_reads_markdup Total_duplicates Estimated_unique_lib_size' >> alignment_stats/alignment_and_duplicate_summary${bam}.txt
+echo "Reference: ${ref} " >> alignment_stats/alignment_and_duplicate_summary_${bamdir}.txt
+echo 'SRR Overall_alignment_rate Total_reads_bowtie2 Total_reads_markdup Total_duplicates Estimated_unique_lib_size' >> alignment_stats/alignment_and_duplicate_summary_${bamdir}.txt
 
 for rt in "${rts[@]}"
 do
@@ -107,7 +110,7 @@ do
  markdup_total_reads=`grep -A 41 "$rt" alignment_stats/alignment_stdout.txt | grep "READ:" | cut -d " " -f 2`;
  total_duplicates=`grep -A 41 "$rt" alignment_stats/alignment_stdout.txt | grep "DUPLICATE TOTAL:" | cut -d " " -f 3`;
  unique_lib_size=`grep -A 41 "$rt" alignment_stats/alignment_stdout.txt | grep "ESTIMATED_LIBRARY_SIZE" | cut -d " " -f 2`; 
- echo "$rt $overall_alignment $bowtie2_total_reads $markdup_total_reads $total_duplicates $unique_lib_size" >> alignment_stats/alignment_and_duplicate_summary.txt 
+ echo "$rt $overall_alignment $bowtie2_total_reads $markdup_total_reads $total_duplicates $unique_lib_size" >> alignment_stats/alignment_and_duplicate_summary_${bamdir}.txt 
 done
 
 

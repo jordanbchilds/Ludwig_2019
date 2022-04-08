@@ -11,10 +11,12 @@ module load Java/11.0.2;
 module load BCFtools/1.10.2-foss-2019b;
 module load SAMtools/1.12-GCC-10.2.0; 
 
+export PATH=`pwd`/software/bin/:$PATH
+
 mkdir vcf_consensus-nodups/
 
   ## check if mutserve is installed
-if [ -f "mutserve/mutserve" ]; then 
+if [ -f "software/bin/mutserve" ]; then 
   echo "mutserve already installed";
 else
   echo "installing mutserve...";
