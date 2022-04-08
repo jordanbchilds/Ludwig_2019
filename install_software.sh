@@ -9,8 +9,9 @@ mkdir ./software/
 # uname -v 
 #linuxOS=
 
-if [ -f software/sratoolkit*/bin ]; then
-
+if [ -f ./software/sratoolkit*/bin/prefetch ]; then
+  echo "sratoolkit already installed"
+else
   # SRAtoolkit must be configured interactively: when installing on rocket do not submit this as a batch job, but run on a login terminal or interactive node (srun)
   # To do this, execute this file **configure_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM) by reading, then pasting and executing all commands below. When prompted interactively set default configuration by inputting: "f","y","o","x","y","o".
      
@@ -21,13 +22,12 @@ if [ -f software/sratoolkit*/bin ]; then
     
   # MAKE SURE to execute from the root dir of the project "Ludwig_2019/", (not "Ludwig_2019/scripts/")
   
-  cd software
+  cd ./software
   
   # Download and extract NCBI SRA-toolkit: Ubuntu Lixux 64 bit archetecture version 2.11
   wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.0/sratoolkit.2.11.0-ubuntu64.tar.gz;
   tar -xzvf sratoolkit.2.11.0-ubuntu64.tar.gz;
   rm sratoolkit.2.11.0-ubuntu64.tar.gz;
-  
   # Export to shell PATH variable
   export PATH=$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
   
@@ -104,7 +104,7 @@ fi
 
   ## Bowtie2 ##
 
-if [ -f software/bin/bowtie2]; then
+if [ -f software/bin/bowtie2 ]; then
   echo "bowtie2 is already installed"
 else
   echo "bowtie2 is not installed" 
@@ -158,6 +158,28 @@ else
   cd ../../
 fi
 #!/bin/bash
+
+
+   ### bcftools ###
+
+if [ -f "software/bcftools-1.10.2/bcftools" ]; then 
+  echo "bcftools is installed";
+else
+  echo "bcftools is not installed. Downloading...";
+  cd software/
+  wget https://github.com/samtools/bcftools/releases/download/1.10.2/bcftools-1.10.2.tar.bz2
+  tar -xvf bcftools-1.10.2.tar.bz2
+  rm bcftools-1.10.2.tar.bz2
+  prefix="`pwd`"
+  cd ./bcftools-1.10.2
+  ./configure --prefix=$prefix
+  
+  make
+  make install
+  # symlink to ../bin/ 
+  export PATH=`pwd`/bin/:$PATH;
+  cd ../../
+fi
 
 
 
