@@ -16,7 +16,7 @@ module load parallel/20200522-GCCcore-10.2.0
 export PATH=`pwd`/software/bin/:$PATH
 
 #TODO use bamdir variable, same as in post alignment, especially for alignment_and_summary_stats.txt
-bamdir="bam"
+bamdir="bam_hg38nodups"
 j=B11
 
 mkdir $bamdir
@@ -67,7 +67,7 @@ do
  else 
    
   echo "Aligning ${rt} to ${ref} reference genome...";
-
+  echo ${rt} >> alignment_stats/alignment_stdout.txt
 # bowtie2 parameters: 
 # -p 8 cores, -1 forward and -2 reverse read, -x ref, --local alignment (soft-clipping allowed), very sensitive (-L 20: 20 bp substrings in multiseed, -i s,1,0.50: shorter intervals between seed substrings, -D 20 -R 3: see manual), -t: time to align in stout,  out? -X 2000???.
 
@@ -80,7 +80,7 @@ do
 
 # samtools markdup: -s print basic stats, -r will REMOVE duplicates, 
 
-  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq.gz 2> alignment_stats/alignment_stdout.txt | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - ${bamdir}/${rt}.bam 2> alignment_stats/alignment_stdout.txt 
+  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq.gz 2>> alignment_stats/alignment_stdout.txt | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - ${bamdir}/${rt}.bam 2>> alignment_stats/alignment_stdout.txt 
 # To align without marking dups, change the first samtools sort in pipe to index by coordinates (remove -n argument) and immediatelyoutput bam for indexing below.
 # TODO add removal of optical duplicates with -d _ : what distance for Nextseq?
 
