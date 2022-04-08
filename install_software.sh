@@ -12,18 +12,18 @@ if [ -f "software/samtools-1.12/samtools" ]; then
   echo "samtools is installed";
 else
   echo "samtools is not installed. Downloading...";
+  cd software/
   wget https://github.com/samtools/samtools/releases/download/1.12/samtools-1.12.tar.bz2
   tar -xvf samtools-1.12.tar.bz2
   rm samtools-1.12.tar.bz2
   
   prefix="`pwd`"
-  cd ./software/samtools-1.12
+  cd ./samtools-1.12
   ./configure --prefix=$prefix
   
   make
   make install
-  # symlink to ../bin/
-  
+  # symlink to ../bin/ 
   export PATH=`pwd`/bin/:$PATH;
   cd ../../
 fi
@@ -31,60 +31,72 @@ fi
 
 #### fastqc ####
 
-if [ -f software/bin/fastqc/fastqc ]; then
+if [ -f software/bin/fastqc ]; then
   echo "samtools is already installed"
 else
   echo "fastqc is not installed" 
-  cd ./software/bin
+  cd ./software
   wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
   unzip fastqc_v0.11.9.zip 
   rm fastqc_v0.11.9.zip 
-  mv FastQC/* .
-  
-  chmod 755 fastqc
+  chmod 755 FastQC/fastqc
   #chmod +x ./${EXECUTABLE} 
-  export PATH=`pwd`/bin/:$PATH;
-  
-  cd ../../
+  mv FastQC/* bin/
+  export PATH=`pwd`/bin/:$PATH; 
+  cd ../
 fi
 
 
 #### multiqc ####
 
-#if [-f software/m]
+if [ -f software/MultiQC ]; then
+  echo "multiqc is already installed"
+else
+  echo "multiqc is not installed. Downloading..."
+  cd software
+  git clone https://github.com/ewels/MultiQC.git
+  python MultiQC/setup.py install
+  chmod 755 MultiQC/multiqc 
+  export PATH=`pwd`/bin/:$PATH;
+  cd ../
+fi
 
 
-#
-#
-#  ## Mutserve ##
-#
-#set -e
-#
-#NAME="Mutserve"
-#VERSION="v2.0.0-rc12"
-#GITHUB_USER="seppinho"
-#GITHUB_REPO="mutserve"
-#EXECUTABLE="mutserve"
-#ZIP="mutserve.zip"
-#
-#INSTALLER_URL=https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/${VERSION}/${ZIP}
-#
-#echo "Installing ${NAME} ${VERSION}..."
-#
-#echo "Downloading ${NAME} from ${INSTALLER_URL}..."
-#curl -fL ${INSTALLER_URL} -o ${ZIP}
-#
-## execute installer
-#unzip ./${ZIP}
-#
-## change mod for executables
-#chmod +x ./${EXECUTABLE}
-#
-## remove installer
-#rm ./${ZIP}
-#
-#echo ""
-#GREEN='\033[0;32m'
-#NC='\033[0m'
-#echo -e "${GREEN}${NAME} ${VERSION} installation completed. ${NC}"
-#echo ""
+  ## Mutserve ##
+
+if [ -f software/Mutserve/mutserve ]; then
+  echo "Mutserve is already installed"
+else
+  echo "Mutserve is not installed. Installing..."
+  cd software/bin/
+  set -e
+  
+  NAME="Mutserve"
+  VERSION="v2.0.0-rc12"
+  GITHUB_USER="seppinho"
+  GITHUB_REPO="mutserve"
+  EXECUTABLE="mutserve"
+  ZIP="mutserve.zip"
+  
+  INSTALLER_URL=https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/${VERSION}/${ZIP}
+  
+  echo "Installing ${NAME} ${VERSION}..."
+  
+  echo "Downloading ${NAME} from ${INSTALLER_URL}..."
+  curl -fL ${INSTALLER_URL} -o ${ZIP}
+  
+  # execute installer
+  unzip ./${ZIP}
+  
+  # change mod for executables
+  chmod +x ./${EXECUTABLE}
+  
+  # remove installer
+  rm ./${ZIP}
+  echo ""
+  GREEN='\033[0;32m'
+  NC='\033[0m'
+  echo -e "${GREEN}${NAME} ${VERSION} installation completed. ${NC}"
+  echo ""
+  cd ../../
+fi
