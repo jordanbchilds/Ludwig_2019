@@ -49,7 +49,7 @@ fi
 
 #### multiqc ####
 
-if [ -f software/MultiQC ]; then
+if [ -f software/MultiQC/setup.py ]; then
   echo "multiqc is already installed"
 else
   echo "multiqc is not installed. Downloading..."
@@ -62,9 +62,26 @@ else
 fi
 
 
+  ## Bowtie2 ##
+
+if [ -f software/bin/bowtie2]; then
+  echo "bowtie2 is already installed"
+else
+  echo "bowtie2 is not installed" 
+  cd ./software
+  wget "https://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.3.4.2/bowtie2-2.3.4.2-linux-x86_64.zip"
+  unzip "bowtie2-2.3.4.2-linux-x86_64.zip"
+  rm "bowtie2-2.3.4.2-linux-x86_64.zip"
+  mv bowtie2-2.3.4.2-linux-x86_64/* bin/
+  #chmod +x ./${EXECUTABLE} 
+  export PATH=`pwd`/bin/:$PATH; 
+  cd ../
+fi
+
+
   ## Mutserve ##
 
-if [ -f software/Mutserve/mutserve ]; then
+if [ -f software/bin/mutserve ]; then
   echo "Mutserve is already installed"
 else
   echo "Mutserve is not installed. Installing..."
