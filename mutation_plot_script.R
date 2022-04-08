@@ -4,17 +4,17 @@
    # Or working directory should be set manually.
 
 # set working directory
-#args <- commandArgs(trailingOnly = T)
-#print(args)
-#setwd(args[1])
-setwd("/home/thomas/Documents/projects/Research_proj/Ludwig_2019/")
+args <- commandArgs(trailingOnly = T)
+print(args)
+setwd(args[1])
+#setwd("/home/thomas/Documents/projects/Research_proj/Ludwig_2019/")
 
 
   ## Load packages ##
 # Check if packages are installed, install to .R_local_lib in working directory if needed.
-#local_lib_path <- paste0(args[1],"/.R_local_lib/")
-#print(local_lib_path)
-#.libPaths(c(local_lib_path, .libPaths()))
+local_lib_path <- paste0(args[1],"/.R_local_lib/")
+print(local_lib_path)
+.libPaths(c(local_lib_path, .libPaths()))
 
 packages <- c("tidyr","tidyverse","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize", "reshape2","cowplot", "data.table", "dplyr")
 lapply(packages, FUN = function(i) {
@@ -42,12 +42,12 @@ print(paste0("Make large exploratory plots: ", exploratory_plots))
   # Controls for which vcf/ directory and which post-alignment files in alignment_stats/ 
   # are imported. Allows simpler comparison between datasets eg. calls from reads aligned 
   # to rCRS or a consensus sequence of parent clones, duplicates or removed duplicates etc.
-vcfdir <- "vcf_consensus-dups/"
+vcfdir <- "vcf_bam_hg38nodups/"
 # files made using post_alignment_QC.sh will have the same string attached to the end of the following files (alignment_stats/):
 # "depths", "depths_qfilt", "all_coverages", "all_coverages_qfilt", "mean_coverage", "mean_coverage_qfilt"
 # the "string", then ".txt". This is typically the bam dir name eg. "bam_consensus-nodups".
 # Make sure to add a preceding "_". eg. "_bam_c"
-append_string <- "_bam_c"
+append_string <- "_bam_hg38nodups"
 
   ## Read SRR files ##
 filenames <- list.files(vcfdir, pattern="*_annotated.txt")

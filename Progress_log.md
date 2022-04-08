@@ -453,7 +453,16 @@ NOTES
 
 ## Friday 8th April
  - [ ] Modify to work outside of slurm
-   - [ ] multiqc
-   - [ ] sratools - ubuntu vs redhat/centos
-   - [x] mutserve
- - [x] Run test up to post\_alignment.sh
+   - [ ] Downloads
+     - [x] bowtie2
+     - [x] multiqc
+     - [ ] sratools - ubuntu vs redhat/centos
+     - [x] mutserve
+     - [x] bcftools
+   - [x] QC.sh
+   - [x] analyse.sh
+   - [ ] variant\_call.sh
+   - [ ] plot\_mutations.sh
+ - [x] Successfully run test up to post\_alignment.sh on my laptop
+ - [ ] Meet and run with Jordan
+
