@@ -80,7 +80,7 @@ do
 
 # samtools markdup: -s print basic stats, -r will REMOVE duplicates, 
 
-  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq.gz 2> alignment_stats/alignment_stdout.txt | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - ${bamdir}/${rt}.bam 
+  bowtie2 -p 8 -1 fastq/${rt}_1.fastq.gz -2 fastq/${rt}_2.fastq.gz -x ${ref} --local --sensitive -t --un-gz fastq/${rt}_unmapped.fastq.gz 2> alignment_stats/alignment_stdout.txt | samtools view --threads 8 - -h -u | samtools sort --threads 8 -n - -u | samtools fixmate --threads 8 -m -u - - | samtools sort --threads 8 - -u | samtools markdup --threads 8 -s - ${bamdir}/${rt}.bam 2> alignment_stats/alignment_stdout.txt 
 # To align without marking dups, change the first samtools sort in pipe to index by coordinates (remove -n argument) and immediatelyoutput bam for indexing below.
 # TODO add removal of optical duplicates with -d _ : what distance for Nextseq?
 
