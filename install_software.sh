@@ -56,7 +56,6 @@ else
   cd software
   git clone https://github.com/ewels/MultiQC.git
   python MultiQC/setup.py install
-  chmod 755 MultiQC/multiqc 
   export PATH=`pwd`/bin/:$PATH;
   cd ../
 fi

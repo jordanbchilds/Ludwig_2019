@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# SRAtoolkit must be configured interactively. To do this, execute this file **configure_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM) by reading, then pasting and executing all commands below. When prompted interactively set default configuration by inputting: "f","y","o","x","y","o".
+# SRAtoolkit must be configured interactively: when installing on rocket do not submit this as a batch job, but run on a login terminal or interactive node (srun)
+# To do this, execute this file **configure_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM) by reading, then pasting and executing all commands below. When prompted interactively set default configuration by inputting: "f","y","o","x","y","o".
  
 
     ## Download and configure sra toolkit ##
