@@ -42,12 +42,13 @@ print(paste0("Make large exploratory plots: ", exploratory_plots))
   # Controls for which vcf/ directory and which post-alignment files in alignment_stats/ 
   # are imported. Allows simpler comparison between datasets eg. calls from reads aligned 
   # to rCRS or a consensus sequence of parent clones, duplicates or removed duplicates etc.
-vcfdir <- "vcf_bam_hg38nodups/"
-# files made using post_alignment_QC.sh will have the same string attached to the end of the following files (alignment_stats/):
+vcfdir <- "vcf_consensus-nodups/"
+files made using post_alignment_QC.sh will have the same string attached to the end of the following files (alignment_stats/):
 # "depths", "depths_qfilt", "all_coverages", "all_coverages_qfilt", "mean_coverage", "mean_coverage_qfilt"
 # the "string", then ".txt". This is typically the bam dir name eg. "bam_consensus-nodups".
 # Make sure to add a preceding "_". eg. "_bam_c"
-append_string <- "_bam_hg38nodups"
+append_string <- "_bam_cnodup"
+  
 
   ## Read SRR files ##
 filenames <- list.files(vcfdir, pattern="*_annotated.txt")
@@ -1291,11 +1292,12 @@ cross_lineage_positions_interest <- merge((lin_mut_load_change %>% filter(!str_d
 nrow(cross_lineage_positions_interest)
 nrow(lin_mut_load_change)
 
+pdf("results/selected_pos_of_intrest_across_lineages.pdf", onefile = TRUE)
 for (pos_of_interest in unique(cross_lineage_positions_interest$Pos)){
   # Plot for new variant position
   #mut_load_change[is.na(mut_load_change)] <- 0
   cross_lineages <- unique(cross_lineage_positions_interest[ ,c('Pos', 'Lineage')]) %>% filter(Pos == pos_of_interest)
-  print(c(pos_of_interest, cross_lineages$Lineage))
+  #print(c(pos_of_interest, cross_lineages$Lineage))
   # Plot ALL interesting variant positions on one graph per lineage
   mut_load_change[is.na(mut_load_change)] <- 0
   plot_title <- paste0("Position: ", pos_of_interest, " across lineages")
@@ -1315,13 +1317,12 @@ for (pos_of_interest in unique(cross_lineage_positions_interest$Pos)){
     labs(y = "Allele Frequency")
     
   # save plot
-  file_string <- paste0("results/pos_", pos_of_interest, "_across_lineages.png")
-  ggsave(file=file_string, plot=mut_plot)
+  #file_string <- paste0("results/pos_", pos_of_interest, "_across_lineages.png")
+  #ggsave(file=file_string, plot=mut_plot)
   n=0
-  print("n reset")
-  
+  print(mut_plot)
 }
-
+dev.off()
 
 
 # png("myplot.png")  # opens file to write to
@@ -1509,3 +1510,10 @@ ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, he
 #  heatmap_ludwig_variants, comparison_plots,
 #  labels = "AUTO", ncol = 1
 #)
+
+
+
+  #############  BCFtools  pileups  ###################
+# First compare AFs of variants called with current pipeline: ie. extract AF and allele depths (F and R) of all positions in the lineage called by mutserve.
+# 
+for i in 

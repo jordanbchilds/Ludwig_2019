@@ -85,7 +85,12 @@ do
   else 
     
     echo "Creating mpileup for ${rt}...";
-    samtools view ${bamdir}/${rt}.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref ${ref} -q 18 -Q 20 --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,INFO/AD,INFO/ADF,INFO/ADR --threads 8 -Ov --output bcf_out_${bamdir}/${rt}_mpileup.vcf;
+    samtools view ${bamdir}/${rt}.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref ${ref} -q 18 -Q 20 --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,FORMAT/RPB,INFO/AD,INFO/ADF,INFO/ADR,INFO/SP --threads 8 -Ov --output bcftools_out_${bamdir}/${rt}_mpileup.vcf;
+    # separate final column with AD, ADF, ADR and SP info into separate columns: replace ";" separator with tabs (\t) 
+    sed "s/;/\t/g" -i bcftools_out/${rt}_mpileup.vcf
+    # replace "-" in #headers row with tab separated names of columns
+    sed "s/INFO    FORMAT  -/INFO    FORMAT  AD	ADF	ADR	SP/g" bcftools_out/${rt}_mpileup.vcf
+    #grep
     echo "Calling point mutations (bcftools call) for ${rt}...";
     #bgzip -i -c bcf_out_${bamdir}/${rt}_mpileup.vcf --threads 8 | bcftools call - --multiallelic-caller --keep-alts --skip-variants indels --regions chrM -Ov --ploidy 1 --output bcf_out_${bamdir}/${rt}_calls.vcf;
   fi
