@@ -433,8 +433,16 @@ per sample, per mutation position - what is statistically informative? worth loo
 - [x] fixed VariantLevel selection when plotting mutation load plots!!! Many fewer missing calls
 - [x] fix Bulks and A9 in all\_variants\_in\_lineage
 - [ ] Modify pipeline to work outside of rocket.hpc and slurm on a typical linux system
-  - [ ] SLURM module downloads, version
+  - [x] install software script
+    - [x] samtools
+    - [x] fastqc
+  - [x] get SLURM module versions
+  - [x] prefetch_files.sh
+  - [ ] QC.sh
+  - [x] post_alignment.sh
+  - [ ] analyse.sh
 - [ ] het in consensus lower maybe 0.90
+- [x] Modify SraRunTable.txt for easier selection of runs - add keyword column
 - [ ] Put individual pos plots into folder or one pdf
 - [ ] extract bcftools calls and depths
 - [ ] fix G2 label in G3
@@ -442,3 +450,19 @@ per sample, per mutation position - what is statistically informative? worth loo
 NOTES
 - Positions 16172,4,5,6,7 close together suspicious
 - G3 spikes which ones
+
+## Friday 8th April
+ - [ ] Modify to work outside of slurm
+   - [ ] Downloads
+     - [x] bowtie2
+     - [x] multiqc
+     - [ ] sratools - ubuntu vs redhat/centos
+     - [x] mutserve
+     - [x] bcftools
+   - [x] QC.sh
+   - [x] analyse.sh
+   - [ ] variant\_call.sh
+   - [ ] plot\_mutations.sh
+ - [x] Successfully run test up to post\_alignment.sh on my laptop
+ - [ ] Meet and run with Jordan
+

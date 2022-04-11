@@ -11,6 +11,10 @@ module load FastQC/0.11.8-Java-1.8.0_144;
 module load parallel/20200522-GCCcore-10.2.0;
 module load MultiQC/1.7-foss-2018b-Python-3.6.6;
 
+export PATH=`pwd`/software/bin/:$PATH
+
+python software/MultiQC/setup.py install
+
 mkdir fastQC_results;
 
 
@@ -69,8 +73,8 @@ do
   for i in ${group_SRRs[@]}
   do
     echo ${i}
-    find fastq/${i}_1.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
-    find fastq/${i}_2.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+    #find fastq/${i}_1.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
+    #find fastq/${i}_2.fastq.gz | parallel --jobs 8 "fastqc --noextract --outdir fastQC_results/ {}" ;
     
     cp fastQC_results/${i}_1_fastqc.zip tmp_multiqc/${i}_1_fastqc.zip 
     cp fastQC_results/${i}_2_fastqc.zip tmp_multiqc/${i}_2_fastqc.zip 
@@ -79,7 +83,7 @@ do
   # run multiqc
   multiqc tmp_multiqc/*_fastqc.zip -f -n group_${j}_multiQC_report -o multiQC/
 
-  rm -r tmp_multiqc/
+  #rm -r tmp_multiqc/
 done
 
 # Revert to system locale environment variables
