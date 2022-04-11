@@ -16,8 +16,8 @@ export PATH=`pwd`/software/bin/:$PATH
 
 
 # set dir and group
-bamdir="bam_cnodups"
-j="SRP149534"
+bamdir="bam_hg38nodups"
+j="B11"
 
 
 mkdir vcf_${bamdir}/
@@ -30,6 +30,7 @@ else
   echo "Mutserve is not installed, installing mutserve...";
   source install_software.sh;
 fi
+
 
   ## Variant call
 # read bulk ATAC-seq from TF1 cells into array
@@ -68,7 +69,6 @@ do
 done
 
 
-
 # get read depth for allele on each strand using bcftools
 # mpileup includes all reads in FORMAT/ADF for example, (mapq and baseq filters only apply to genotype calling), so the filtered bam file must be piped to bcftools pileup
 
@@ -88,9 +88,12 @@ do
   else 
     
     echo "Creating mpileup for ${rt}...";
-    samtools view ${bamdir}/${rt}.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref ${ref} -q 18 -Q 20 --skip-indels --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,INFO/AD,INFO/ADF,INFO/ADR --threads 8 -Ov --output mpileups_${bamdir}/${rt}_mpileup.vcf;
+    samtools view ${bamdir}/${rt}.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref ${ref} -q 18 -Q 20 --skip-indels --annotate FORMAT/SP,FORMAT/AD,FORMAT/ADF,FORMAT/ADR --threads 8 -Ou | bcftools norm -m -any -Ov --output mpileups_${bamdir}/${rt}_mpileup.vcf 
+#- | bcftools query -f '%CHROM\t%POS\t%REF\t%DP\t%RO\t%AO\t%ALT\t%SAF\t%SAR\t%SRF\t%SRR\n' --output mpileups_${bamdir}/${rt}_mpileup.vcf 
+#FORMAT/AD,FORMAT/ADF,FORMAT/ADR,
     # separate final column with AD, ADF, ADR and SP info into separate columns: replace ";" separator with tabs (\t) 
     #sed "s/;/\t/g" -i mpileups_${bamdir}/${rt}_mpileup.vcf
+    grep -v -P '\t<\*>' mpileups_${bamdir}/${rt}_mpileup.vcf > mpileups_${bamdir}/${rt}_mpileup_nodels.vcf
     # replace "-" in #headers row with tab separated names of columns
     #sed "s/INFO    FORMAT  -/INFO    FORMAT  AD	ADF	ADR	SP/g" -i mpileups_${bamdir}/${rt}_mpileup.vcf
     #grep
