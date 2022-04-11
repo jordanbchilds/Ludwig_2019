@@ -4,17 +4,17 @@
    # Or working directory should be set manually.
 
 # set working directory
-args <- commandArgs(trailingOnly = T)
-print(args)
-setwd(args[1])
-#setwd("/home/thomas/Documents/projects/Research_proj/Ludwig_2019/")
+#args <- commandArgs(trailingOnly = T)
+#print(args)
+#setwd(args[1])
+setwd("/home/thomas/Documents/projects/Research_proj/Ludwig_2019/")
 
 
   ## Load packages ##
 # Check if packages are installed, install to .R_local_lib in working directory if needed.
-local_lib_path <- paste0(args[1],"/.R_local_lib/")
-print(local_lib_path)
-.libPaths(c(local_lib_path, .libPaths()))
+#local_lib_path <- paste0(args[1],"/.R_local_lib/")
+#print(local_lib_path)
+#.libPaths(c(local_lib_path, .libPaths()))
 
 packages <- c("tidyr","tidyverse","ggplot2","gridExtra","ggrepel","egg","grid","BiocManager", "circlize", "reshape2","cowplot", "data.table", "dplyr")
 lapply(packages, FUN = function(i) {
@@ -43,12 +43,11 @@ print(paste0("Make large exploratory plots: ", exploratory_plots))
   # are imported. Allows simpler comparison between datasets eg. calls from reads aligned 
   # to rCRS or a consensus sequence of parent clones, duplicates or removed duplicates etc.
 vcfdir <- "vcf_consensus-nodups/"
-files made using post_alignment_QC.sh will have the same string attached to the end of the following files (alignment_stats/):
+# files made using post_alignment_QC.sh will have the same string attached to the end of the following files (alignment_stats/):
 # "depths", "depths_qfilt", "all_coverages", "all_coverages_qfilt", "mean_coverage", "mean_coverage_qfilt"
 # the "string", then ".txt". This is typically the bam dir name eg. "bam_consensus-nodups".
 # Make sure to add a preceding "_". eg. "_bam_c"
 append_string <- "_bam_cnodup"
-  
 
   ## Read SRR files ##
 filenames <- list.files(vcfdir, pattern="*_annotated.txt")
@@ -359,9 +358,7 @@ fig2_plots <- ggarrange(plots = fig2_plots, nrow = 2, align = "v")
 ggsave(file="results/fig2_plots.png", plot=fig2_plots, width = 12, height = 8, units = "in")
 
 
-
-
-  #######################  VARIANT DATAFRAMES  ####################
+  #########################  VARIANT DATAFRAMES  ############################
 
 SRR_table_list <- list()  # All 
 SRR_table_list_PASS <- list()  # Filtered
@@ -1515,5 +1512,22 @@ ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, he
 
   #############  BCFtools  pileups  ###################
 # First compare AFs of variants called with current pipeline: ie. extract AF and allele depths (F and R) of all positions in the lineage called by mutserve.
-# 
-for i in 
+# all_variants in lineage
+bcfdir <- paste0("mpileups", append_string)
+for(i in SRR_names){
+  filepath <- file.path(bcfdir,paste0(i,"_mpileup.vcf"))
+  bcf_SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T, comment.char = "#")
+}
+
+
+for (all_variants_in_lineage in all_variants_in_lineages){
+  for (pos in all_variants_in_lineage){
+    bcf_all_variants_in_lineage <- 
+    bcf_all_variants_in_lineage[pos]
+  }
+}
+
+# vcf format of bcftools mpileup (tab separated)
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  SRR7245880.bam
+# mutserve format (tab separated)
+#ID      Filter  Pos     Ref     Variant VariantLevel    MajorBase       MajorLevel      MinorBase       MinorLevel      Coverage            CoverageFWD     CoverageREV     Type
