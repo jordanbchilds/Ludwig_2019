@@ -15,7 +15,10 @@ module load SAMtools/1.12-GCC-10.2.0;
 export PATH=`pwd`/software/bin/:$PATH
 
 
-bamdir="bam_hg38nodups"
+# set dir and group
+bamdir="bam_cnodups"
+j="SRP149534"
+
 
 mkdir vcf_${bamdir}/
 
@@ -30,7 +33,6 @@ fi
 
   ## Variant call
 # read bulk ATAC-seq from TF1 cells into array
-j="B11"
 readarray -t rts < data/group_${j}_SRRs.txt;
 
 if test -f "nuc/parent_consensus.fa"; then
