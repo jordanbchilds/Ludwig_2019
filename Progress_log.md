@@ -466,3 +466,12 @@ NOTES
  - [x] Successfully run test up to post\_alignment.sh on my laptop
  - [ ] Meet and run with Jordan
 
+## Monday 11th and Tuesday 12th April
+ - [x] save all individual plots into multi-page PDFs
+ - [ ] Variant call again with mapping quality higher
+ - [x] Improve output of pileup: delete no alt/indel positions, output F,R,total reads for ref and alt alleles
+ - [x] Read pileups into R for small test group
+ - [x] Reformate pileups into mutserve-like table
+ - [ ] Run Rscript for test group
+ - [x] re-run pileups for all samples
+ - [ ] 
