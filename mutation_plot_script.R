@@ -42,7 +42,7 @@ print(paste0("Make large exploratory plots: ", exploratory_plots))
   # Controls for which vcf/ directory and which post-alignment files in alignment_stats/ 
   # are imported. Allows simpler comparison between datasets eg. calls from reads aligned 
   # to rCRS or a consensus sequence of parent clones, duplicates or removed duplicates etc.
-vcfdir <- "vcf_consensus-nodups/"
+vcfdir <- "vcf_consensus-nodups"
 # files made using post_alignment_QC.sh will have the same string attached to the end of the following files (alignment_stats/):
 # "depths", "depths_qfilt", "all_coverages", "all_coverages_qfilt", "mean_coverage", "mean_coverage_qfilt"
 # the "string", then ".txt". This is typically the bam dir name eg. "bam_consensus-nodups".
@@ -1170,12 +1170,15 @@ for (p in paths){
   SRRs_in_path <- list()
   index=0
   at.positions = F
+  # open dev for PDF for lineage:
+  file_string <- paste0("results/",p[[1]],"_selected_pos_of_interest.pdf")
+  pdf(file_string, onefile = TRUE)
 
   for (string in p){
     print(string)
     index=index+1
-    print(index)
-    print(at.positions)
+    #print(index)
+    #print(at.positions)
 # skip lineage name
     if (index==1){
       next
@@ -1189,7 +1192,7 @@ for (p in paths){
     if (string == "VARIANTS_OF_INTEREST") {
       print("Reached VARIANTS_OF_INTEREST for this lineage")
       at.positions <- T
-      print(paste("n =",n))
+      #print(paste("n =",n))
       n=0
       next
     }
@@ -1200,12 +1203,12 @@ for (p in paths){
     if (at.positions == T){
       print(paste("n=",n))
       pos_of_interest <- as.numeric(string)
-      print(paste0("Plotting position: ", pos_of_interest, ", for lineage path: ", p[[1]]))
+      #print(paste0("Plotting position: ", pos_of_interest, ", for lineage path: ", p[[1]]))
       
       # make new data frame for new variant position
       mut_load_change <- data.frame(matrix(nrow = length(SRRs_in_path), ncol = 8))
       colnames(mut_load_change) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage")
-      print(paste("SRRs_in_path: ", SRRs_in_path))
+      #print(paste("SRRs_in_path: ", SRRs_in_path))
       for (SRR_name in SRRs_in_path){
         n=n+1
         print(SRR_name)
@@ -1240,11 +1243,12 @@ for (p in paths){
         labs(y = "Allele Frequency")
       
       # save plot
+      print(mut_plot)
       file_string <- paste0("results/",p[[1]],"_pos_",pos_of_interest, ".png")
-      ggsave(file=file_string, plot=mut_plot)
+      #ggsave(file=file_string, plot=mut_plot)
       n=0
-      print("n reset")
-      print(lin_mut_load_change)
+      #print("n reset")
+      #print(lin_mut_load_change)
       # Append mut_load_change (for one position) to lin_mut_load_change (all positions_of_interest, all lineages)
       lin_mut_load_change <- rbind(lin_mut_load_change, mut_load_change)
       }
@@ -1272,10 +1276,12 @@ for (p in paths){
     labs(y = "Allele Frequency")
   
   # save plot
+  print(mut_plot)
   file_string <- paste0("results/",p[[1]],"_ALL_pos_of_interest.png")
-  ggsave(file=file_string, plot=mut_plot)
+  #ggsave(file=file_string, plot=mut_plot)
   n=0
-  print("n reset")
+  #print("n reset")
+  dev.off()
 }
 
 
@@ -1513,12 +1519,50 @@ ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, he
   #############  BCFtools  pileups  ###################
 # First compare AFs of variants called with current pipeline: ie. extract AF and allele depths (F and R) of all positions in the lineage called by mutserve.
 # all_variants in lineage
-bcfdir <- paste0("mpileups", append_string)
+setwd("/home/thomas/Documents/projects/Research_proj/pipeline_test/Ludwig_2019/")
+bcfdir <- paste0("mpileups_bam_hg38nodups")#, append_string)
+
+SRR_names <- c("SRR7245880", "SRR7245881","SRR7245883")
+bcf_mpileups <- list()  # All 
+
 for(i in SRR_names){
-  filepath <- file.path(bcfdir,paste0(i,"_mpileup.vcf"))
-  bcf_SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T, comment.char = "#")
+  filepath <- file.path(bcfdir,paste0(i,"_mpileup_nodels.vcf"))
+  bcf_mpileups[[i]] <- read.table(filepath, sep = "\t", header = F, stringsAsFactors = T, comment.char = "#") 
+  colnames(bcf_mpileups[[i]]) <- c("CHROM", "Pos", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "V10")
+  bcf_mpileups[[i]] <- bcf_mpileups[[i]] %>% separate(col = "V10", into = c("Phred-scaled-GT-likelihoods", "STRAND_BIAS_pval", "ADF", "ADR", "AD"), sep = ":")
+  bcf_mpileups[[i]] <- bcf_mpileups[[i]] %>% separate(col = "ADF", into = c("ref_ADF","alt_ADF"), sep = ",")
+  bcf_mpileups[[i]] <- bcf_mpileups[[i]] %>% separate(col = "ADR", into = c("ref_ADR","alt_ADR"), sep = ",")
+  bcf_mpileups[[i]] <- bcf_mpileups[[i]] %>% separate(col = "AD", into = c("ref_AD","alt_AD"), sep = ",")
+  bcf_mpileups[[i]] <- bcf_mpileups[[i]][,c(1:11,16,12,14,17,13,15)]
+  bcf_mpileups[[i]]$Depth <- as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD)
+  
 }
 
+bcf_SRR_table_list <- list()
+for (i in SRR_names){
+  bcf_SRR_table_list[[i]] <- data.frame(bcf_mpileups[[i]]$Pos)
+  bcf_SRR_table_list[[i]]$FILTER <- bcf_mpileups[[i]]$FILTER
+  bcf_SRR_table_list[[i]]$Ref <- bcf_mpileups[[i]]$REF
+  bcf_SRR_table_list[[i]]$Variant <- bcf_mpileups[[i]]$ALT
+  bcf_SRR_table_list[[i]]$Variant_AD <- bcf_mpileups[[i]]$alt_AD
+  bcf_SRR_table_list[[i]]$Variant_ADF <- bcf_mpileups[[i]]$alt_ADF
+  bcf_SRR_table_list[[i]]$Variant_ADR <- bcf_mpileups[[i]]$alt_ADR
+  bcf_SRR_table_list[[i]]$Coverage <- as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD)
+  bcf_SRR_table_list[[i]]$VariantLevel <- as.numeric(bcf_mpileups[[i]]$alt_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
+  bcf_SRR_table_list[[i]]$Ref_AD <- bcf_mpileups[[i]]$ref_AD
+  bcf_SRR_table_list[[i]]$Ref_ADF <- bcf_mpileups[[i]]$ref_ADF
+  bcf_SRR_table_list[[i]]$Ref_ADR <- bcf_mpileups[[i]]$ref_ADR
+  bcf_SRR_table_list[[i]]$RefLevel <- as.numeric(bcf_mpileups[[i]]$ref_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
+  #apply(bcf_mpileups[[i]], 1, FUN = bcf_mpileups[[i]]["ref_AD"]+bcf_mpileups[[i]]["alt_AD"])
+  #    as.data.frame(as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD))
+  
+  
+  #if (bcf_mpileups[[i]]$FILTER >= 5){
+  #  bcf_SRR_table_list[[i]]$FILTER
+  #}
+  
+}
+ 
 
 for (all_variants_in_lineage in all_variants_in_lineages){
   for (pos in all_variants_in_lineage){
