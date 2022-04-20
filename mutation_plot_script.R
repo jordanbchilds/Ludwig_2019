@@ -475,7 +475,7 @@ for (SRR in SRR_names) {
   #all_variants <- all_variants[!duplicated(all_variants$Pos), ]
   #all_variants <- merge(all_variants$Pos, SRR_pos_level$Pos, by = "Pos", all = TRUE)
 }
-#all_variants <- all_variants[!duplicated(all_variants$Pos), ]
+all_variants <- all_variants[!duplicated(all_variants)]
 
 
    ####  all_variants_in_path  ####
@@ -510,7 +510,7 @@ for (p in paths){
     SRR_pos_level <- data.frame(SRR_table_list[[SRR]]$Pos, SRR_table_list[[SRR]]$VariantLevel)
     print(colnames(SRR_pos_level))
     colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
-    all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = T)
+    all_variants_in_lineage <- merge(all_variants_in_lineage,SRR_pos_level, by = "Pos", all = TRUE)
   }
 file_string <- paste0("results/",p[[1]],"_all_variants.csv")
 write.csv(all_variants_in_lineage,file = file_string, quote = F)
@@ -532,12 +532,12 @@ validation_paths <- as.list(strsplit(readLines("lineage_paths.txt"), " "))
 
 all_variants_in_lineages <- list()
 validated_per_lineage <- list()
-potential_autocor_poses <- c()
-all_lineages_validated_poses <- c()
-all_lineages_validated <- data.frame(matrix(ncol = 1)) 
-colnames(all_lineages_validated) <- "Pos"
-all_lineages_pot_autocor_validated <- data.frame(matrix(ncol = 1))
-colnames(all_lineages_pot_autocor_validated) <- "Pos"
+all_potential_autocor_poses <- c()
+all_validated_poses <- c()
+#all_lineages_validated <- data.frame(matrix(ncol = 1)) 
+#colnames(all_lineages_validated) <- "Pos"
+#all_potential_autocor_poses <- data.frame(matrix(ncol = 1))
+#colnames(all_potential_autocor_poses) <- "Pos"
 for (p in validation_paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
@@ -599,43 +599,46 @@ for (p in validation_paths){
   
   # Add new lineage validated mutations to table with all lineage mutations, same for potentially validated with autocorrelation
   #all_lineages_validated <- merge(all_lineages_validated, lineage_validated, by.x = "Pos", by.y = "Pos", all = T) 
-  all_lineages_validated <- unique(c(all_lineages_validated_poses, c(lineage_validated$Pos)))
+  all_validated_poses <- unique(c(all_validated_poses, c(lineage_validated$Pos)))
+  #file_string <- paste0("results/",p[[1]],"_lineage_validated.csv")
+  #write.csv(all_, file = file_string, quote = F)
   print("stage 7.5")
-  potential_autocor_poses <- unique(c(potential_autocor_poses, c(potential_autocorrelation$Pos)))
-  #all_lineages_pot_autocor_validated <- merge(all_lineages_pot_autocor_validated, potential_autocorrelation, by = "Pos", all = T)
-  #all_lineages_pot_autocor_validated <- all_lineages_pot_autocor_validated[,1:3]
+  all_potential_autocor_poses <- unique(c(all_potential_autocor_poses, c(potential_autocorrelation$Pos)))
+  #all_potential_autocor_poses <- merge(all_potential_autocor_poses, potential_autocorrelation, by = "Pos", all = T)
+  #all_potential_autocor_poses <- all_potential_autocor_poses[,1:3]
   print("stage 8")
 }
 
 # write table of all lineage validated variants from any lineage
 #all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos), ]  # potential removal of variant levels on repeated SRRs?
-#file_string <- paste0("results/all_variants_lineage_validated.csv")
-#write.csv(all_lineages_validated,file = file_string, quote = F)
-all_lineages_validated <- subset(all_variants, Pos %in% all_lineages_validated)
-all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos), ]
-file_string <- paste0("results/all_lineages_pot_valid_by_autocorrelation.csv")
-write.csv(all_lineages_validated,file = file_string, quote = F)
+file_string <- paste0("results/all_variants_lineage_validated.csv")
+write.csv(all_validated_poses,file = file_string, quote = F) 
+#all_lineages_validated <- subset(all_variants, Pos %in% all_lineages_validated)
+#all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos), ]
 
 # write table of variants which could potentially be validated with autocorrelation (present in more than one sample, not necessarily any with an AF>0.01)
-all_lineages_pot_autocor_validated <- subset(all_variants, Pos %in% potential_autocor_poses)
-all_lineages_pot_autocor_validated <- all_lineages_pot_autocor_validated[!duplicated(all_lineages_pot_autocor_validated$Pos), ]
-file_string <- paste0("results/all_lineages_pot_valid_by_autocorrelation.csv")
-write.csv(all_lineages_validated,file = file_string, quote = F)
+#all_potential_autocor_poses <- subset(all_variants, Pos %in% potential_autocor_poses)
+#all_potential_autocor_poses <- all_potential_autocor_poses[!duplicated(all_potential_autocor_poses$Pos), ]
+file_string <- paste0("results/all_variants_pot_valid_by_autocorrelation.csv")
+write.csv(all_potential_autocor_poses,file = file_string, quote = F)
 
 # Create SRR_table equivalents for validated and potentially autocorrelated.
-all_lineages_validated_pos <- data.frame(all_lineages_validated$Pos)
-colnames(all_lineages_validated_pos) <- "Pos"
-all_lineages_pot_autocor_validated_pos <- data.frame(all_lineages_pot_autocor_validated$Pos)
-colnames(all_lineages_pot_autocor_validated_pos) <- "Pos"
+all_lineages_validated_poses_df <- data.frame(all_lineages_validated_poses)
+colnames(all_lineages_validated_poses_df) <- "Pos"
+all_potential_autocor_poses_df <- data.frame(all_potential_autocor_poses)
+colnames(all_potential_autocor_poses_df) <- "Pos"
 # lineage validated, 
 for(i in SRR_names) {
-  SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- merge(all_lineages_validated_pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], by.x = "Pos", by.y = "Pos")
+  SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- merge(all_lineages_validated_poses_df, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], by.x = "Pos", by.y = "Pos")
+  print(nrow(SRR_table_list_HET_OR_LOWLVL_validated[[i]]))
+  # Don't remove duplicates in $Pos - due to multiallelic pileups
+  #SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- SRR_table_list_HET_OR_LOWLVL_validated[[i]][!duplicated(SRR_table_list_HET_OR_LOWLVL_validated[[i]]$Pos), ]
   print(nrow(SRR_table_list_HET_OR_LOWLVL_validated[[i]]))
   #SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- SRR_table_list_HET_OR_LOWLVL_validated[[i]][,1:18] %>% filter(drop_na())
   #SRR_table_list_HET_OR_LOWLVL_validated[[i]] %>% subset(SRR_table_list_HET_OR_LOWLVL_validated[[i]], Filter !="NA")
-  SRR_table_list_HET_OR_LOWLVL_potautocor_validated[[i]] <- merge(all_lineages_pot_autocor_validated_pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], by.x = "Pos", by.y = "Pos")
+  SRR_table_list_HET_OR_LOWLVL_potautocor_validated[[i]] <- merge(all_potential_autocor_poses_df, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], by.x = "Pos", by.y = "Pos")
   #print(nrow(SRR_table_list_HET_OR_LOWLVL_potautocor_validated[[i]]))
-  }
+}
 
 #SRR_table_list_HET_OR_LOWLVL_validated[[i]][!is.na(SRR_table_list_HET_OR_LOWLVL_validated[[i]]$ID),]
 
@@ -693,13 +696,13 @@ variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_
   #Mean.Coverage <- 
   No.Variants.Per.SRR <- sapply(SRR_table_list_HET_OR_LOWLVL_nofilt, nrow)
   No.Variants <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_nofilt, nrow))
-  No.Positions <- nrow(all_variants)
+  No.Positions <- length(all_variants)
   No.Validated.Variants.Per.SRR <- sapply(SRR_table_list_HET_OR_LOWLVL_validated, nrow)
   No.Validated.Variants <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_validated, nrow))
-  No.Validated.Positions <- nrow(all_lineages_validated)
+  No.Validated.Positions <- length(all_validated_poses)
   No.Potential.AutoCor.Valid.Variants.per.SRR <- sapply(SRR_table_list_HET_OR_LOWLVL_potautocor_validated, nrow)
   No.Potential.AutoCor.Valid.Variants <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_potautocor_validated, nrow))
-  No.Potential.AutoCor.Valid.Postions <- nrow(all_lineages_pot_autocor_validated)
+  No.Potential.AutoCor.Valid.Postions <- nrow(all_potential_autocor_poses)
   No.Variants.Per.SRR.PASS.FILTERS <- sapply(SRR_table_list_HET_OR_LOWLVL, nrow)
   No.Variants.PASS <- sum(sapply(SRR_table_list_HET_OR_LOWLVL, nrow))
   No.Variants.Per.SRR.STRAND.BIAS <- No.Variants.Per.SRR - No.Variants.Per.SRR.PASS.FILTERS
