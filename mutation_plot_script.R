@@ -1584,14 +1584,14 @@ colnames(bulk_replicates_all_nofilt) <- c("Pos", "SRR7245880", "SRR7245881")
 bulk_replicates_all_nofilt[is.na(bulk_replicates_all_nofilt)] <- 0
 
 
-bulk_replicates_Ludwigs_nofilt <- data.frame(our_Ludwig_variants_nofilt$SRR7245880, our_Ludwig_variants_nofilt$SRR7245881)
-colnames(bulk_replicates_Ludwigs_nofilt) <- c("Bulk_SRR7245880", "Bulk_SRR7245881")
-bulk_replicates_Ludwigs_nofilt[is.na(bulk_replicates_Ludwigs_nofilt)] <- 0
+#bulk_replicates_Ludwigs_nofilt <- data.frame(our_Ludwig_variants_nofilt$SRR7245880, our_Ludwig_variants_nofilt$SRR7245881)
+#colnames(bulk_replicates_Ludwigs_nofilt) <- c("Bulk_SRR7245880", "Bulk_SRR7245881")
+#bulk_replicates_Ludwigs_nofilt[is.na(bulk_replicates_Ludwigs_nofilt)] <- 0
 
 # plot sqrt AF
 bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(sqrt(SRR7245880),sqrt(SRR7245881))) +
   geom_point() +
-  geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
+  #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
   labs(x ="sqrt(AF) of Bulk replicate SRR7245880", y ="sqrt(AF) of Bulk replicate SRR7245881") +
   scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
@@ -1616,13 +1616,33 @@ ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, he
 # for each nucleotide ACGT (solves multiallelic problem of more than one AF per genomic position)
 # (weighted?) supporting reads over total reads
 
-AF_vector <- function(SRR_table, base){
-  mt_vector <- rep(0,16569) 
-  base_positions <- SRR_table$Pos[which(SRR_table$Variant == base)]
-  for (pos in base_positions){
-    mt_vector[pos] <- SRR_table[SRR_table$Variant == base & SRR_table$Pos == pos, "VariantLevel"]
-  }
+AF_vectors <- function(SRR_table, base){
+  #mt_vectors <- data.frame()
+  #colnames(mt_vectors) <- c("A","C","G","T")
+  #for (base in c("A","C","G","T")){
+    mt_vector <- rep(0,16569)
+    for (pos in SRR_table$Pos[which(SRR_table$Variant == base)]){
+      print(c("Pos = ",pos))
+      print(SRR_table$Pos[pos])
+        mt_vector[pos] <- SRR_table[SRR_table$Variant == base & SRR_table$Pos == pos, "Variant_AD"]
+    }
+    for (pos in SRR_table$Pos[which(SRR_table$Ref == base)]){
+      print(c("ref pos = ", pos))
+      print(SRR_table$Pos[pos])
+      mt_vector[pos] <- SRR_table[SRR_table$Ref == base & SRR_table$Pos == pos, "Ref_AD"][1]
+    }
+    #mt_vectors[[base]] <- mt_vector
   return(mt_vector)
+}
+
+
+vector_list <- list()
+for (SRR in SRR_table_list){
+  vectorsA <- AF_vectors(SRR, "A")
+  vectorsC <- AF_vectors(SRR, "C")
+  vectorsG <- AF_vectors(SRR, "G")
+  vectorsT <- AF_vectors(SRR, "T")
+  vector_list[[deparse(substitute(SRR))]] <- data.frame(a=vectorsA, c=vectorsC, g=vectorsG, t=vectorsT)
 }
 
   ## Test AF_vector ##
