@@ -15,39 +15,74 @@ module load parallel/20200522-GCCcore-10.2.0
 
 export PATH=`pwd`/software/bin/:$PATH
 
-#TODO use bamdir variable, same as in post alignment, especially for alignment_and_summary_stats.txt
-bamdir="bam_hg38nodups"
-j=B11
+
+  ## Parse Arguments ##
+
+POSITIONAL_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+  -b|--bam-directory)
+    bamdir="$2"
+    shift # past argument
+    shift # past value
+  ;;
+
+  -r|--reference)
+    ref="$2"
+    shift # past argument
+    shift # past value 
+  ;;
+
+  -g|--group-name)
+    g="$2"
+    shift # past argument
+    shift # past value 
+  ;;
+
+  -*|--*)
+    echo "Unknown option $1"
+    exit 1
+  ;; 
+
+  *)
+    POSITIONAL_ARGS+=("$1") # save positional arg
+    shift # past argument
+  ;;
+
+  esac
+done
 
 mkdir $bamdir
 
 # read bulk ATAC-seq from TF1 cells into array
-readarray -t rts < data/group_${j}_SRRs.txt;
+echo "Using group name (-g|--group-name): \"${g}\" to read SRR names from data/group_${g}_SRRs.txt"
+if test -f "data/group_${g}_SRRs.txt"; then
+  readarray -t rts < data/group_${g}_SRRs.txt;
+else
+  echo "Error: data/group_${g}_SRRs.txt could not be found. Make sure --group|-g is correct, and the file exists.  can be created manually (Line separated list of SRR names) or using a keyword with prefetch_files.sh. Exiting..."
+  exit 1
+fi
 
 
   ## build indices and set reference genome ##
 
-if test -f "nuc/parent_consensus.1.bt2"; then
-  ref="nuc/parent_consensus"
-  echo "Parent clone consensus sequence available and indexed: nuc/parent_consensus.1.bt2"
-elif test -f "nuc/parent_consensus.fa"; then
-  echo "parent clone consensus fasta available, indexing..."
-  bowtie2-build --threads 8 nuc/parent_consensus.fa nuc/parent_consensus; 
-  echo "bowtie2 referenece indices built"
-  ref="nuc/parent_consensus"
- 
-elif test -f "nuc/hg38.1.bt2"; then
-  echo "bowtie2-build reference indices already built";
-  ref="nuc/hg38"
+if test -f "${ref}.1.bt2"; then
+  echo "Reference indexes (${ref}.1.bt2 etc.) found."
+elif test -f "${ref}.fa"; then
+  echo "Reference fasta file found but not indexed, indexing..."
+  bowtie2-build --threads 8 ${ref}.fa ${ref}; 
+  echo "bowtie2 reference indices built"
 else
-  echo "building reference indices..."
-  bowtie2-build --threads 8 nuc/hg38.fa nuc/hg38;
-  ref="nuc/hg38" 
+  echo "Error: Fasta of reference sequence and its indexes (base file name: \"${ref}\") could not be found. Make sure --ref|-r is correct and the reference fasta file (.fa) has been downloaded. Exiting..."
+  exit
 fi
 
 # tmp change ref
 #ref="nuc/hg38"
  
+
+
 #locale;
 #export LANG=en_GB.utf8
 #export LC_ALL="en_GB.utf8" 
