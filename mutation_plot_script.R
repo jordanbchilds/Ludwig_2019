@@ -1366,7 +1366,7 @@ for (p in paths){
     labs(y = "Allele Frequency")
   
   # save plot
-  print(mut_plot)
+  #print(mut_plot)
   file_string <- paste0("results/",p[[1]],"_ALL_pos_of_interest.png")
   #ggsave(file=file_string, plot=mut_plot)
   n=0
@@ -1492,12 +1492,15 @@ for (p in paths){
         n=n+1
         print(SRR_name)
         next_row$SRR <- SRR_name
-        next_row$Generation <- n-1#as.numeric(SRR_lineage_generation$generation[SRR_names == SRR_name])
+        next_row$Generation <- n-1  #as.numeric(SRR_lineage_generation$generation[SRR_names == SRR_name])
         next_row$Generation_labs <- SRR_lineage_generation$generation_axis_labs[SRR_names == SRR_name]
+        print("Stage 2")
         next_row$VariantLevel <- SRR_table_list[[SRR_name]]$VariantLevel[which(SRR_table_list[[SRR_name]]$Pos == pos)][1] #SRR_table_list[[SRR_name]]$VariantLevel[pos+1]
         next_row$Coverage <- depths_qfilt[[SRR_name]][pos]
+        print("Stage 3")
         next_row$Pos <- pos
         next_row$Lineage <- p[[1]]
+        print("Stage 4")
         next_row$Lineage_group <- SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==last_SRR]
         lin_mut_load_change_lin_val <- rbind(lin_mut_load_change_lin_val, next_row)
       #}
@@ -1605,4 +1608,81 @@ ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, he
 #  heatmap_ludwig_variants, comparison_plots,
 #  labels = "AUTO", ncol = 1
 #)
+
+
+  #####################  Vectors of allele read proportions ########################
+
+# for each nucleotide ACGT (solves multiallelic problem of more than one AF per genomic position)
+# (weighted?) supporting reads over total reads
+
+AF_vector <- function(SRR_table, base){
+  mt_vector <- rep(0,16569) 
+  base_positions <- SRR_table$Pos[which(SRR_table$Variant == base)]
+  for (pos in base_positions){
+    mt_vector[pos] <- SRR_table[SRR_table$Variant == base & SRR_table$Pos == pos, "VariantLevel"]
+  }
+  return(mt_vector)
+}
+
+  ## Test AF_vector ##
+#> SRR_table_list$SRR7245880[SRR_table_list$SRR7245880$Pos == 50,]
+# Pos Filter Ref Variant Variant_AD Variant_ADF Variant_ADR Coverage VariantLevel Ref_AD Ref_ADF Ref_ADR  RefLevel Type ylimit
+#56  50   PASS   T       G          2           2           0     2112 0.0009469697   2110    2110       0 0.9990530    2      1
+#57  50   PASS   T       A          1           1           0     2111 0.0004737091   2110    2110       0 0.9995263    2      1
+
+SRR_880_Gs <- AF_vectorise(SRR_table_list$SRR7245880, "G")
+SRR_880_As <- AF_vectorise(SRR_table_list$SRR7245880, "A")
+SRR_880_Gs[50]
+#[1] 0.0009469697
+SRR_880_As[50]
+#0.0004737091
+
+
+## return vectors for each lineage
+
+for (p in paths){
+  if (p[[1]] == "#"){
+    print("skipping comment line...")
+    next
+  }
+  if (str_detect(p[[1]], 'LUDWIG')){
+    print(paste0("skipping LUDWIG line: ", p[[1]]))
+  }
+  SRRs_in_path <- list()
+  index=0
+  at.positions = F
+  
+  for (string in p){
+    print(string)
+    index=index+1
+    print(index)
+    print(at.positions)
+    # skip lineage name
+    if (index==1){
+      next
+    }
+    # From lineage_paths.txt: add SRR to list, until the positions of variants of interest are listed
+    # instead. This is indicated by "VARIANTS_OF_INTEREST" instead of SRR name, 
+    # and followed by the positions of variants of interest. eg.:
+    # LINEAGE_PATH_NAME SRR1 SRR2 SRR3 VARIANTS_OF_INTEREST 1495 12788
+    if (string == "VARIANTS_OF_INTEREST") {
+      print("Reached VARIANTS_OF_INTEREST for this lineage")
+      at.positions <- T
+      print(paste("n =",n))
+      next
+    }
+    paste(string, at.positions)
+    if (at.positions == F){
+      SRRs_in_path <- c(SRRs_in_path, string)
+    }
+    if (at.positions == T){
+      break
+    }
+  }
+  last_SRR <- SRRs_in_path[length(SRRs_in_path)]
+  
+  #for (SRR in SRRs_in_path){
+    
+  }
+}
 
