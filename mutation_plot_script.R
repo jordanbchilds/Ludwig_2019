@@ -1255,6 +1255,7 @@ for (p in paths){
   } 
   if (str_detect(p[[1]], 'LUDWIG')){
     print(paste0("skipping LUDWIG line: ", p[[1]]))
+    next
   }
   #if (exists("lin_mut_load_change")){remove(lin_mut_load_change)}
   SRRs_in_path <- list()
@@ -1366,7 +1367,7 @@ for (p in paths){
     labs(y = "Allele Frequency")
   
   # save plot
-  #print(mut_plot)
+  print(mut_plot)
   file_string <- paste0("results/",p[[1]],"_ALL_pos_of_interest.png")
   #ggsave(file=file_string, plot=mut_plot)
   n=0
@@ -1683,6 +1684,5 @@ for (p in paths){
   
   #for (SRR in SRRs_in_path){
     
-  }
 }
 
