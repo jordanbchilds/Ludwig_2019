@@ -33,10 +33,12 @@ if (!require("ComplexHeatmap")){
 library("ComplexHeatmap")
 
 
-    ###########  Options  ############
+  #########################  Options  ##########################
+
 # Change boolian to choose
 use_pileups <- TRUE
 exploratory_plots <- FALSE
+Ludwig_comparison <- FALSE
 print(paste0("Make large exploratory plots: ", exploratory_plots))
 
 ## Which DATA
@@ -64,8 +66,8 @@ SRR_names <-substr(filenames,1,10)
      #############  BCFtools  pileups  ###################
  # First compare AFs of variants called with current pipeline: ie. extract AF and allele depths (F and R) of all positions in the lineage called by mutserve.
 # all_variants in lineage
-
-bcf_mpileups <- list()  # All 
+if (use_pileups == TRUE){
+  bcf_mpileups <- list()  # All 
 
 for(i in SRR_names){
   filepath <- file.path(bcfdir,paste0(i,"_mpileup_nodels.vcf"))
@@ -118,6 +120,7 @@ for (i in SRR_names){
 #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  SRR7245880.bam
 # mutserve format (tab separated)
 #ID      Filter  Pos     Ref     Variant VariantLevel    MajorBase       MajorLevel      MinorBase       MinorLevel      Coverage            CoverageFWD     CoverageREV     Type
+}
 
 
   ## Read coverage files ##
@@ -623,7 +626,7 @@ file_string <- paste0("results/all_variants_pot_valid_by_autocorrelation.csv")
 write.csv(all_potential_autocor_poses,file = file_string, quote = F)
 
 # Create SRR_table equivalents for validated and potentially autocorrelated.
-all_lineages_validated_poses_df <- data.frame(all_lineages_validated_poses)
+all_lineages_validated_poses_df <- data.frame(all_validated_poses)
 colnames(all_lineages_validated_poses_df) <- "Pos"
 all_potential_autocor_poses_df <- data.frame(all_potential_autocor_poses)
 colnames(all_potential_autocor_poses_df) <- "Pos"
@@ -702,11 +705,13 @@ variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_
   No.Validated.Positions <- length(all_validated_poses)
   No.Potential.AutoCor.Valid.Variants.per.SRR <- sapply(SRR_table_list_HET_OR_LOWLVL_potautocor_validated, nrow)
   No.Potential.AutoCor.Valid.Variants <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_potautocor_validated, nrow))
-  No.Potential.AutoCor.Valid.Postions <- nrow(all_potential_autocor_poses)
+  No.Potential.AutoCor.Valid.Postions <- length(all_potential_autocor_poses)
   No.Variants.Per.SRR.PASS.FILTERS <- sapply(SRR_table_list_HET_OR_LOWLVL, nrow)
   No.Variants.PASS <- sum(sapply(SRR_table_list_HET_OR_LOWLVL, nrow))
-  No.Variants.Per.SRR.STRAND.BIAS <- No.Variants.Per.SRR - No.Variants.Per.SRR.PASS.FILTERS
-  No.Variants.STRAND.BIAS <- No.Variants - No.Variants.PASS
+  No.Variants.Per.SRR.nofilt <- sapply(SRR_table_list_HET_OR_LOWLVL_nofilt, nrow)
+  No.Variants.nofilt <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_nofilt, nrow))
+  No.Variants.Per.SRR.STRAND.BIAS <- No.Variants.Per.SRR.nofilt - No.Variants.Per.SRR.PASS.FILTERS  # implement strand bias check and filter
+  No.Variants.STRAND.BIAS <- No.Variants.nofilt - No.Variants.PASS
   
   variant_summaries <- data.frame(No.Variants, No.Positions, No.Validated.Variants, No.Validated.Positions, No.Potential.AutoCor.Valid.Variants, No.Potential.AutoCor.Valid.Postions, No.Variants.STRAND.BIAS)
   print(variant_summaries)
@@ -740,7 +745,7 @@ variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_
 
 
    ###############  Comparison with Ludwig's variants  #################
-
+if (Ludwig_comparison == TRUE){
 # Ludwig's research aligned to the Hg19 mitochondrial genome, which has indels compared to rCRS. Positions off by 0,-2,-1,-2 in different parts of the chromosome. See converted positions below.
 # read in Ludwigs variants, and variant level in each sample
 Ludwig_variants <- read.csv("data/LUDWIG_TF1_clones_ATAC_alleleFrequencies.csv", header = T)
@@ -748,8 +753,8 @@ colnames(Ludwig_variants) <- c("Ludwig_variant_positions", SRR_names)
 Ludwig_variants$tobecombined_Pos <- Ludwig_variants$Ludwig_variant_positions
 
 # Combine with Ludwigs data (all unconverted variant positions: Hg19-rCRS)
-all_variants$OurPos <- all_variants$Pos
-all_variants_and_Ludwigs <- merge(all_variants, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
+all_variants_df <- data_frame(Pos=all_variants)
+all_variants_and_Ludwigs <- merge(all_variants_df, Ludwig_variants, by.x = "X1", by.y = "tobecombined_Pos", all = T)
 all_pos_and_Ludwigs <- data.frame(all_variants_and_Ludwigs$Pos, all_variants_and_Ludwigs$OurPos, all_variants_and_Ludwigs$Ludwig_variant_positions)
 
 # Repeat for differently filtered data
@@ -897,17 +902,19 @@ write.csv(Ludwig_pearson_by_pos,file = file_string, quote = F)
 #heatmap_ludwig_variants
 #dev.off()
 
+}  # for Ludwig_comparison == T
 
+  
 ##########################  PCA  ##########################################
 
-all_variants[is.na(all_variants)] <- 0
-all_variants <- all_variants[-71]
-t_all_variants <- data.frame(transpose(all_variants[-1]))
-rownames(t_all_variants) <- colnames(all_variants[-1])
-pca_all <- prcomp(t_all_variants)
-pca_df <- data.frame(pca_all$x)
-pca_plot <- ggplot(data = pca_df, aes(PC1, PC2)) +
-  geom_point()
+#all_variants[is.na(all_variants)] <- 0
+#all_variants <- all_variants[-71]
+#t_all_variants <- data.frame(transpose(all_variants[-1]))
+#rownames(t_all_variants) <- colnames(all_variants[-1])
+#pca_all <- prcomp(t_all_variants)
+#pca_df <- data.frame(pca_all$x)
+#pca_plot <- ggplot(data = pca_df, aes(PC1, PC2)) +
+#  geom_point()
 
 
 ############ Function to get SRR numbers from S00-- numbers in metadata ##########
@@ -1368,7 +1375,9 @@ for (p in paths){
 }
 
 
-#########  Mutation load plots: each single position of interest across multiple lineages on one plot  ################
+###################  Mutation load plots:  #########################
+#############  each single position of interest  ###################
+############  across multiple lineages on one plot  ################
 
 # With any positions of interest chosen in lineage_paths.txt that occur in more than one lineage
 cross_lineage_positions_interest <- unique(lin_mut_load_change[ ,c('Pos', 'Lineage')]) %>% 
@@ -1475,7 +1484,7 @@ for (p in paths){
   }
   last_SRR <- SRRs_in_path[length(SRRs_in_path)]
   print(paste("n=",n))
-  for (pos in all_lineages_validated$Pos){
+  for (pos in all_validated_poses){
     print(paste("Position:", pos, "Lineage:", p[[1]]))
     n=0
     for (SRR_name in SRRs_in_path){
