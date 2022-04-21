@@ -474,11 +474,15 @@ NOTES
  - [x] Reformate pileups into mutserve-like table
  - [ ] Run Rscript for test group
  - [x] re-run pileups for all samples
- - [ ] 
+
+## Wednesday 13th April
+ - [x] Research building own variant caller
+ - [x] Research and start argument parsing in bash scripts 
 
 ## Wednesday 20th April
-- [x] Variant analysis usable with massive mpileups - variant stats and lineage validation
-- [x] Run whole script with mpileups
-- [ ] Create vectors
-- [ ] Weight AFs?
-- [ ] Check plots are not affected by multiallelic sites
+ - [x] Variant analysis usable with massive mpileups - variant stats and lineage validation
+ - [x] Run whole script with mpileups
+ - [x] Create vectors
+ - [ ] Weight AFs?
+ - [ ] Check plots are not affected by multiallelic sites
+ - [x] implement argument parsing in analyse.sh
