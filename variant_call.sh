@@ -88,7 +88,7 @@ do
   else 
     
     echo "Creating mpileup for ${rt}...";
-    samtools view ${bamdir}/${rt}.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref ${ref} -q 18 -Q 30 --skip-indels --annotate FORMAT/SP,FORMAT/AD,FORMAT/ADF,FORMAT/ADR --threads 8 -Ou | bcftools norm -m -any -Ov --output mpileups_${bamdir}/${rt}_mpileup.vcf 
+    samtools view ${bamdir}/${rt}.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref ${ref} -q 18 -Q 30 --annotate FORMAT/SP,FORMAT/AD,FORMAT/ADF,FORMAT/ADR --threads 8 -Ou | bcftools norm -f ${ref} -m -any -Ov --output mpileups_${bamdir}/${rt}_mpileup.vcf 
 #- | bcftools query -f '%CHROM\t%POS\t%REF\t%DP\t%RO\t%AO\t%ALT\t%SAF\t%SAR\t%SRF\t%SRR\n' --output mpileups_${bamdir}/${rt}_mpileup.vcf 
 #FORMAT/AD,FORMAT/ADF,FORMAT/ADR,
     # separate final column with AD, ADF, ADR and SP info into separate columns: replace ";" separator with tabs (\t) 
