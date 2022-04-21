@@ -16,8 +16,8 @@ export PATH=`pwd`/software/bin/:$PATH
 
 
 # set dir and group
-bamdir="bam_hg38nodups"
-j="B11"
+bamdir="bam_cnodups"
+j="SRP149534"
 
 
 mkdir vcf_${bamdir}/
@@ -56,12 +56,12 @@ do
     
     # default settings: min heteroplasmy level=0.01, mapping quality=20, base quality=20, alignment quality=30
     echo "Calling variants for ${rt}...";
-    mutserve call ${bamdir}/${rt}.bam --threads 8 --baseQ 20 --mapQ 18 --level 0.001 --reference ${ref} --output vcf_${bamdir}/${rt}.vcf.gz ;
+    mutserve call ${bamdir}/${rt}.bam --threads 8 --baseQ 30 --mapQ 18 --level 0.001 --reference ${ref} --output vcf_${bamdir}/${rt}.vcf.gz ;
 
     gunzip vcf_${bamdir}/${rt}.vcf.gz
 
     echo "left aligning with bcftools";
-    bcftools norm vcf_${bamdir}/${rt}.vcf -f ${ref} --multiallelics +snps -o vcf_${bamdir}/${rt}_normalised.vcf -Ov
+    bcftools norm vcf_${bamdir}/${rt}.vcf -f ${ref} --multiallelics -any -o vcf_${bamdir}/${rt}_normalised.vcf -Ov
     
     echo "Annotating mutserve .txt output";
     mutserve annotate --input vcf_${bamdir}/${rt}.txt --annotation software/bin/rCRS_annotation_2020-08-20.txt --output vcf_${bamdir}/${rt}_annotated.txt
