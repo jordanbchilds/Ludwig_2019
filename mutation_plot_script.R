@@ -81,8 +81,10 @@ for(i in SRR_names){
   bcf_mpileups[[i]] <- bcf_mpileups[[i]][,c(1:11,16,12,14,17,13,15)]
   bcf_mpileups[[i]]$Depth <- as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD)
   #bcf_mpileups[[i]] <- bcf_mpileups[[i]] %>% separate(col = "INFO", into = c("raw_DP", "I16", "QS", "VDB", "SGB", "RDB"), sep = ";")
-  #print(range(bcf_mpileups[[i]]$STRAND_BIAS_pval))
+  #print(range(bcf_mpileups[[i]]$STRAND_BIAS_pval)
+    
 }
+  
 
 bcf_SRR_table_list <- list()
 for (i in SRR_names){
@@ -99,11 +101,16 @@ for (i in SRR_names){
   bcf_SRR_table_list[[i]]$Variant_AD <- bcf_mpileups[[i]]$alt_AD
   bcf_SRR_table_list[[i]]$Variant_ADF <- bcf_mpileups[[i]]$alt_ADF
   bcf_SRR_table_list[[i]]$Variant_ADR <- bcf_mpileups[[i]]$alt_ADR
-  bcf_SRR_table_list[[i]]$Coverage <- as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD)
-  bcf_SRR_table_list[[i]]$VariantLevel <- as.numeric(bcf_mpileups[[i]]$alt_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$Ref_AD <- bcf_mpileups[[i]]$ref_AD
   bcf_SRR_table_list[[i]]$Ref_ADF <- bcf_mpileups[[i]]$ref_ADF
   bcf_SRR_table_list[[i]]$Ref_ADR <- bcf_mpileups[[i]]$ref_ADR
+  bcf_SRR_table_list[[i]]$Coverage <- as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD)
+  
+  # Correct multiallelic allele depths (Coverage): sum of multiallelic allele depths plus ref allele depth
+  for (pos in bcf_SRR_table_list[[i]]$Pos[duplicated(bcf_SRR_table_list[[i]]$Pos)]){
+    bcf_SRR_table_list[[i]]$Coverage[which(bcf_SRR_table_list[[i]]$Pos == pos)] <- sum(as.numeric(c(bcf_SRR_table_list[[i]]$Variant_AD[which(bcf_SRR_table_list[[i]]$Pos == pos)], bcf_SRR_table_list[[i]]$Ref_AD[which(bcf_SRR_table_list[[i]]$Pos == pos)][1])))
+  }
+  bcf_SRR_table_list[[i]]$VariantLevel <- as.numeric(bcf_mpileups[[i]]$alt_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$RefLevel <- as.numeric(bcf_mpileups[[i]]$ref_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$Type <- 2
   #apply(bcf_mpileups[[i]], 1, FUN = bcf_mpileups[[i]]["ref_AD"]+bcf_mpileups[[i]]["alt_AD"])
@@ -551,18 +558,22 @@ for (p in validation_paths){
   if (str_detect(p[[1]], 'LUDWIG')){
     print(paste0("skipping LUDWIG line: ", p[[1]]))
   }
-  all_variants_in_lineage_HET_OR_LOWLVL_nofilt <- data.frame(matrix(ncol = 1))
-  colnames(all_variants_in_lineage_HET_OR_LOWLVL_nofilt) <- "Pos"
+  
+  n_alleles_in_SRR <- 0
+  for (base in c("A","C","G","T")){
+
   n=0
   print("stage 1")
+
+  all_variants_in_lineage_HET_OR_LOWLVL_nofilt <- data.frame(matrix(ncol = 1))
+  colnames(all_variants_in_lineage_HET_OR_LOWLVL_nofilt) <- "Pos"
   
   for (SRR in p){
     # Skip Lineage path name (1st in character vector of paths[[p]] )
     n=n+1
     print(SRR)
-    print(typeof(SRR))
     if (n==1){
-      
+      print(paste0("Lineage name: ", SRR))
       next
     }
     # stop where the variants of interest positions are listed on the line (for 
@@ -572,24 +583,48 @@ for (p in validation_paths){
       break
     }
     print("stage 2")
-    SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
-    print(colnames(SRR_pos_level))
-    colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
-    all_variants_in_lineage_HET_OR_LOWLVL_nofilt <- merge(all_variants_in_lineage_HET_OR_LOWLVL_nofilt, SRR_pos_level, by = "Pos", all = T)
-    print("stage 3")
+    print(base)
+    if (any(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Variant == base)){
+      SRR_table_1base <- SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]] %>% filter(Variant == base)
+      SRR_pos_level <- data.frame(SRR_table_1base$Pos, SRR_table_1base$VariantLevel)
+      #SRR_pos_level <- data.frame(Pos=unique(c(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos)), VariantLevel=rep(0,16570))
+      #for (pos in SRR_table_1base$Pos) {
+      #  SRR_pos_level$VariantLevel[SRR_pos_level$Pos == pos] <- SRR_table_1base$VariantLevel[SRR_table_1base$Pos == pos]
+      #  #[SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Variant == base & SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos == pos]
+      #}
+      print(colnames(SRR_pos_level))
+      colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+      all_variants_in_lineage_HET_OR_LOWLVL_nofilt <- merge(all_variants_in_lineage_HET_OR_LOWLVL_nofilt, SRR_pos_level, by = "Pos", all = T)
+    }
   }
+
+  ###  LINEAGE VALIDATION  ###
+  
+  # only keep variants which have at least one allele with an allele frequency > 0.01, and are present at least twice in the lineage
+  lineage_validated_1base <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt %>% filter_at(-1, any_vars(.>0.01))
+  lineage_validated_1base <- lineage_validated_1base[rowSums(!is.na(lineage_validated_1base[,-1]))>=2,]
+  
+  # Merge so the lineage validated of all four bases are in one multiallelic table
+  if (dim(lineage_validated_1base)[1] != 0) {
+    lineage_validated_1base$Base <- base
+    n_alleles_in_SRR <- n_alleles_in_SRR + 1
+    print(paste0("No. Duplicate rows: ", duplicated(lineage_validated_1base)))
+    if (n_alleles_in_SRR <= 1){  # difficult to create empty df for each lineage at the beginning without knowing length of lineage
+      lineage_validated <- lineage_validated_1base
+    }
+    else{
+      lineage_validated <- rbind(lineage_validated, lineage_validated_1base)
+    }
+  } 
+  } # end ACGT loop
+  
+  #should_be_no_dups_nrow <- nrow()
   print("stage 4")
   file_string <- paste0("results/",p[[1]],"_HET_nofilt_variants.csv")
   write.csv(all_variants_in_lineage_HET_OR_LOWLVL_nofilt,file = file_string, quote = F)
   print("table of variants in lineage path saved in 'results/'")
   all_variants_in_lineages[[ p[[1]] ]] <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt
-  print("stage 5")
   
-  ## LINEAGE VALIDATION ##
-  # only keep variants which have at least one allele with an allele frequency > 0.01, and are present at least twice in the lineage
-  lineage_validated <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt %>% filter_at(-1, any_vars(.>0.01))
-  lineage_validated <- lineage_validated[rowSums(!is.na(lineage_validated[,-1]))>=2,]
-  validated_per_lineage[[ p[[1]] ]] <- lineage_validated
   print("stage 6")
   
   file_string <- paste0("results/",p[[1]],"_lineage_validated_mutations.csv")
