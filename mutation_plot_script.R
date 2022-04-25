@@ -39,6 +39,7 @@ library("ComplexHeatmap")
 use_pileups <- TRUE
 exploratory_plots <- FALSE
 Ludwig_comparison <- FALSE
+position_specific_plots <- FALSE
 print(paste0("Make large exploratory plots: ", exploratory_plots))
 
 ## Which DATA
@@ -79,6 +80,7 @@ for(i in SRR_names){
   bcf_mpileups[[i]] <- bcf_mpileups[[i]] %>% separate(col = "AD", into = c("ref_AD","alt_AD"), sep = ",")
   bcf_mpileups[[i]] <- bcf_mpileups[[i]][,c(1:11,16,12,14,17,13,15)]
   bcf_mpileups[[i]]$Depth <- as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD)
+  #bcf_mpileups[[i]] <- bcf_mpileups[[i]] %>% separate(col = "INFO", into = c("raw_DP", "I16", "QS", "VDB", "SGB", "RDB"), sep = ";")
   #print(range(bcf_mpileups[[i]]$STRAND_BIAS_pval))
 }
 
@@ -1238,6 +1240,7 @@ for (p in paths){
   ###############  Position-specific mutation load plots  #####################
   #####################  for variants of interest  ############################
 
+if (position_specific_plots == TRUE) {
 #long_lineage_cols <- unique(df[, c("zone", "color.names")])
 #pos_of_interest <- 4769
 
@@ -1521,8 +1524,84 @@ cross_lineage_positions_lin_val <- merge(
 # Convert allele frequency (VariantLevel) NAs to 0.00s for plotting
 cross_lineage_positions_lin_val[is.na(cross_lineage_positions_lin_val)] <- 0
 
+# Calculate differences between generation 3 and the rest - spike in number and AF of alleles for some positions
+# general tests (mapping qualities, base qualities), position specific tests (depths, SP)
+gen3_poerpos_stats <- data.frame(Pos=lin_mut_load_change_lin_val$Pos)
+not_gen3_SRRs_stats <- data.frame(Pos=lin_mut_load_change_lin_val$Pos)
+gen3SRRs <- c()
+notgen3SRRs <- c()
+for (SRR_name in SRR_names){
+  if (SRR_lineage_generation$generation[which(SRR_lineage_generation$SRR_names == SRR_name)] == 3) {
+    gen3SRRs <- c(gen3SRRs, SRR_name)
+  }
+  else {
+    notgen3SRRs <- c(notgen3SRRs, SRR_name)
+  }
+}
+gen3_stats <- data.frame(SRR_names=gen3SRRs)
+mapqs <- c()
+baseqs <- c()
+meandepths <- c()
+for (SRR_name in gen3_stats$SRR_names){
+  # mapq
+  mapqs <- c(mapqs, all_coverages_qfilt$meanmapq[which(all_coverages_qfilt$SRRfile == SRR_name)])
+  baseqs <- c(baseqs, all_coverages_qfilt$meanbaseq[which(all_coverages_qfilt$SRRfile == SRR_name)])
+  meandepths <- c(meandepths, all_coverages_qfilt$meandepth[which(all_coverages_qfilt$SRRfile == SRR_name)])
+}
+gen3_stats[["mapq"]] <- mapqs
+gen3_stats[["baseq"]] <- baseqs
+gen3_stats[["meandepth"]] <- meandepths
+gen3_stats$isgen3 <- "Gen 3"
+
+notgen3_stats <- data.frame(SRR_names=notgen3SRRs)
+mapqs <- c()
+baseqs <- c()
+meandepths <- c()
+for (SRR_name in notgen3_stats$SRR_names){
+  # mapq
+  mapqs <- c(mapqs, all_coverages_qfilt$meanmapq[which(all_coverages_qfilt$SRRfile == SRR_name)])
+  baseqs <- c(baseqs, all_coverages_qfilt$meanbaseq[which(all_coverages_qfilt$SRRfile == SRR_name)])
+  meandepths <- c(meandepths, all_coverages_qfilt$meandepth[which(all_coverages_qfilt$SRRfile == SRR_name)])
+}
+notgen3_stats[["mapq"]] <- mapqs
+notgen3_stats[["baseq"]] <- baseqs
+notgen3_stats[["meandepth"]] <- meandepths
+notgen3_stats$isgen3 <- "not Gen 3"
+
+gen3_stats <- rbind(gen3_stats, notgen3_stats)
+
+wilcox.test(mapq ~ isgen3, data = gen3_stats)
+par(mfrow = c(2, 2))
+ggplot(gen3_stats, aes(isgen3, mapq)) +
+  geom_violin(trim = FALSE) +
+  geom_boxplot(width=0.1) +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=0.2, colour = "red")
+ggplot(gen3_stats, aes(isgen3, baseq)) +
+  geom_violin(trim = FALSE) +
+  geom_boxplot(width=0.1)+
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=0.2, colour = "red")
+ggplot(gen3_stats, aes(isgen3, meandepth)) +
+  geom_violin(trim = FALSE) +
+  geom_boxplot(width=0.1)+
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=0.2, colour = "red")
+ggplot(gen3_stats, aes(isgen3, meandepth)) +
+  geom_violin(trim = FALSE) +
+  geom_boxplot(width=0.1)+
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=0.2, colour = "red")
+
+for (pos in lin_mut_load_change$Pos){
+  # mapq
+  
+  # baseq
+  # depth
+  # soft-clipped
+  # Read-position bias
+  # mapping quality bias
+}
+
+
+# Plot:
 pdf("results/validated_pos_across_lineages.pdf", onefile = TRUE)
-#par(mfrow=c(3,2))
 plot_list <- list()
 # for each lineage validated position that occurs more than once: 
 n=0
@@ -1574,6 +1653,8 @@ dev.off()
 #arranged_plot_list <- marrangeGrob(plot_list, nrow = 3, ncol = 2)
 #file_string <- "results/validated_pos_across_lins.pdf"
 #ggsave(file=file_string, plot=arranged_plot_list)
+
+}  # if position_specific_plots == TRUE bracket
 
 
 ####################### Replicate correlation plot #######################
