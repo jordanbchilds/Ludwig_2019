@@ -486,3 +486,30 @@ NOTES
  - [ ] Weight AFs?
  - [ ] Check plots are not affected by multiallelic sites
  - [x] implement argument parsing in analyse.sh
+ - [ ] Check 54 from cnodups against Ludwig
+ - [ ] look at bulk replicates plot for pileups
+ - [ ] Test for no correlation between lineages? eg large spikes.
+
+## Thursday 21st April
+ - [ ] Compare mapping quality and other metrics of third generations against the rest - make table when making plots. 
+   - [ ] Discount alleles where depth exceeds twice the mean depth usually caused by artifacts
+   - [ ] test mean of g3 against the rest. Use difference to filter.
+ - [ ] apply BAQ when making pileup
+ - [ ] apply --ambig-reads drop when making pileups: reads that don't span all of a short tandem repeat region
+ - [ ] add name of allele to individual plots eg. actg del
+ - [ ] why homoplasmic alleles still present
+
+## Friday 22nd April
+ - [x] Restructure vectors
+ - [x] Research bcftools options, including BAQ and --ambig-reads
+ - [x] Compare mapping quality and other metrics of third generations against the rest - make table when making plots. 
+ - [x] apply BAQ when making pileup
+ - [x] apply --ambig-reads drop when making pileups: reads that don't span all of a short tandem repeat region
+ 
+## Monday 25th April
+ - [x] Correct extraction of allele depths from allele positions
+ - [ ] Exclude gen 3 and compare
+ - [ ] Correct plotting for multiallelics
+ - [ ] Compare results of BAQ and --ambig-reads
+ - [ ] Get full pilup with all positions not just mutations to add all reference depths to vectors for Jordan
+ - [ ] Send vectors to Jordan
