@@ -1703,13 +1703,14 @@ AF_vectors <- function(SRR_table, base){
   #for (base in c("A","C","G","T")){
     mt_vector <- rep(0,16569)
     for (pos in SRR_table$Pos[which(SRR_table$Variant == base)]){
-      print(c("Pos = ",pos))
-      print(SRR_table$Pos[pos])
+      print(paste0("Pos = ",pos))
+      print(SRR_table$Pos[which(SRR_table$Pos == pos)])
+      print(SRR_table$Pos[[pos]])
         mt_vector[pos] <- SRR_table[SRR_table$Variant == base & SRR_table$Pos == pos, "Variant_AD"]
     }
     for (pos in SRR_table$Pos[which(SRR_table$Ref == base)]){
-      print(c("ref pos = ", pos))
-      print(SRR_table$Pos[pos])
+      print(paste0("ref pos = ", pos))
+      print(SRR_table$Pos[which(SRR_table$Pos == pos)])
       mt_vector[pos] <- SRR_table[SRR_table$Ref == base & SRR_table$Pos == pos, "Ref_AD"][1]
     }
     #mt_vectors[[base]] <- mt_vector
@@ -1718,12 +1719,14 @@ AF_vectors <- function(SRR_table, base){
 
 
 vector_list <- list()
-for (SRR in SRR_table_list){
+for (SRR_name in SRR_names){
+  print(SRR_name)
+  SRR <- SRR_table_list[[SRR]]
   vectorsA <- AF_vectors(SRR, "A")
   vectorsC <- AF_vectors(SRR, "C")
   vectorsG <- AF_vectors(SRR, "G")
   vectorsT <- AF_vectors(SRR, "T")
-  vector_list[[deparse(substitute(SRR))]] <- data.frame(a=vectorsA, c=vectorsC, g=vectorsG, t=vectorsT)
+  vector_list[[deparse(substitute(SRR))]] <- data.frame(As=vectorsA, Cs=vectorsC, Gs=vectorsG, Ts=vectorsT)
 }
 
   ## Test AF_vector ##
