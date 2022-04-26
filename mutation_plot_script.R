@@ -37,6 +37,8 @@ library("ComplexHeatmap")
 
 # Change boolian to choose
 use_pileups <- TRUE
+pre_plots <- FALSE
+post_plots <- FALSE
 exploratory_plots <- FALSE
 Ludwig_comparison <- FALSE
 position_specific_plots <- FALSE
@@ -51,7 +53,7 @@ print(paste0("Make large exploratory plots: ", exploratory_plots))
 # "depths", "depths_qfilt", "all_coverages", "all_coverages_qfilt", "mean_coverage", "mean_coverage_qfilt"
 # the "append_string", then ".txt". This is typically the bam dir name eg. "bam_consensus-nodups".
 # Make sure to add a preceding "_". eg. "_bam_c"
-append_string <- "_bam_cnodups_BAQ"
+append_string <- "_bam_cnodups"
 vcfdir <- paste0("vcf", append_string)
 bcfdir <- paste0("mpileups", append_string)
 group_name <- "SRP149534"
@@ -74,8 +76,34 @@ SRR_names <- SRR_names$V1
 if (use_pileups == TRUE){
   bcf_mpileups <- list()  # All 
 
+  #######  Vectors of allele read proportions ######
+  # for each nucleotide ACGT (solves multiallelic problem of more than one AF per genomic position)
+  # (weighted?) supporting reads over total reads
+  
+# Create function. (Vectors themselves created when making bcf_SRR_table_lists below, so sites with no variants can be removed from large dfs)
+AF_vectors <- function(SRR_table, base){
+  #mt_vectors <- data.frame()
+  #colnames(mt_vectors) <- c("A","C","G","T")
+  #for (base in c("A","C","G","T")){
+  mt_vector <- rep(0,16569)
+  for (pos in SRR_table$Pos[which(SRR_table$Variant == base)]){
+    #print(paste0("Pos = ",pos))
+    #print(SRR_table$Pos[which(SRR_table$Pos == pos)])
+    mt_vector[pos] <- as.numeric(SRR_table[SRR_table$Variant == base & SRR_table$Pos == pos, "Variant_AD"])
+  }
+  for (pos in SRR_table$Pos[which(SRR_table$Ref == base)]){
+    #print(paste0("ref pos = ", pos))
+    #print(SRR_table$Pos[which(SRR_table$Pos == pos)])
+    mt_vector[pos] <- as.numeric(SRR_table[SRR_table$Ref == base & SRR_table$Pos == pos, "Ref_AD"][1])
+  }
+  #mt_vectors[[base]] <- mt_vector
+  return(mt_vector)
+}
+
+
+# Read in mpileups:
 for(i in SRR_names){
-  filepath <- file.path(bcfdir,paste0(i,"_mpileup.vcf"))
+  filepath <- file.path(paste0(bcfdir,"_BAQ"),paste0(i,"_mpileup.vcf"))
   bcf_mpileups[[i]] <- read.table(filepath, sep = "\t", header = F, stringsAsFactors = T, comment.char = "#") 
   colnames(bcf_mpileups[[i]]) <- c("CHROM", "Pos", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "V10")
   bcf_mpileups[[i]] <- bcf_mpileups[[i]] %>% separate(col = "V10", into = c("Phred-scaled-GT-likelihoods", "STRAND_BIAS_pval", "ADF", "ADR", "AD"), sep = ":")
@@ -89,8 +117,16 @@ for(i in SRR_names){
     
 }
   
+# Convert mpileups df into same format as Mutserve vcfs (SRR_table_list), and calculate VariantLevels, Coverages etc.
+# AND create vectors of reads supporting each base for every position
+
+# vcf format of bcftools mpileup (tab separated):
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  SRR7245880.bam
+# mutserve format (tab separated)
+#ID      Filter  Pos     Ref     Variant VariantLevel    MajorBase       MajorLevel      MinorBase       MinorLevel      Coverage            CoverageFWD     CoverageREV     Type
 
 bcf_SRR_table_list <- list()
+vector_list <- list()
 for (i in SRR_names){
   bcf_SRR_table_list[[i]] <- data.frame(bcf_mpileups[[i]]$Pos)
   colnames(bcf_SRR_table_list[[i]]) <- "Pos"
@@ -119,22 +155,22 @@ for (i in SRR_names){
   bcf_SRR_table_list[[i]]$Type <- 2
   #apply(bcf_mpileups[[i]], 1, FUN = bcf_mpileups[[i]]["ref_AD"]+bcf_mpileups[[i]]["alt_AD"])
   #    as.data.frame(as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD))
+  
+  # Create vectors, then remove massive number of variants with no supporting reads (all <*> sites)
+    vector_list[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]], "A"))
+    vector_list[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]], "C")
+    vector_list[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G")
+    vector_list[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T")
+    #vector_list[[deparse(substitute(SRR))]] <- data.frame(As=vectorsA, Cs=vectorsC, Gs=vectorsG, Ts=vectorsT)
+  
+  bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Variant_AD >= 1 ),]
+  bcf_mpileups[[i]] <- NULL
 
 }
 
-# for (all_variants_in_lineage in all_variants_in_lineages){
-#   for (pos in all_variants_in_lineage){
-#     bcf_all_variants_in_lineage <- 
-#       bcf_all_variants_in_lineage[pos]
-#   }
-# }
+}  # end if(use_pileups == T)
 
-# vcf format of bcftools mpileup (tab separated)
-#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  SRR7245880.bam
-# mutserve format (tab separated)
-#ID      Filter  Pos     Ref     Variant VariantLevel    MajorBase       MajorLevel      MinorBase       MinorLevel      Coverage            CoverageFWD     CoverageREV     Type
-}
-
+    ###############  Read additional files  #####################
 
   ## Read coverage files ##
 file_string <- paste0("alignment_stats/depths_qfilt", append_string, ".txt")  # temporarily filtered depths file as well - depths_qfilt.
@@ -161,6 +197,7 @@ lineage_cols <- c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="ye
   ######################   Pre-alignment   #########################
   #####################  Plots and tables  #########################
 
+if (pre_plots == TRUE) {
 # table of all sequencing runs in Ludwig paper - only TF1 bulk ATAc-seq needed
 raw_sample_info <- read.csv("data/SraRunTable_1.csv", header = T)
 
@@ -206,9 +243,12 @@ pre_plots <- list(pre_num_seqs_hist,pre_dup_hist)
 pre_plots <- ggarrange(plots = pre_plots, nrow = 2, align = "hv")
 ggsave(file="results/pre_plots.png", plot = pre_plots, width = 8, height = 8, units = "in")
 
+}  # end if (pre_plots <- TRUE)
 
   #########################  POST-ALIGNMENT  ############################
   #####################  Coverage plots and stats  ######################
+
+if (post_plots == TRUE) {
 ## x axis as sample and as pos.
 depths_max <- lapply(depths[,3:ncol(depths)], max)
 depths_qfilt_max <- lapply(depths_qfilt[,3:ncol(depths_qfilt)], max)
@@ -224,11 +264,8 @@ for (i in SRR_names){
     geom_line(data = depths_qfilt, aes(Pos, depths_qfilt[[i]])) +
     coord_trans(y="log2") +
     scale_y_continuous(trans='log2')
-  
 }
 
-
-    ###################### Post alignment quality ########################
 
 # overall alignment rate for each clone
 percent_alignment <- read.table("alignment_stats/alignment_and_duplicate_summary.txt", sep = " ", header = T, skip = 1, nrows = 69)
@@ -436,6 +473,8 @@ sample_reads_plot_qfilt
 fig2_plots <- list(pos_coverage_all_plot,sample_coverage_boxplot_qfilt)
 fig2_plots <- ggarrange(plots = fig2_plots, nrow = 2, align = "v")
 ggsave(file="results/fig2_plots.png", plot=fig2_plots, width = 12, height = 8, units = "in")
+
+}  # end if (post_plots == TRUE)
 
 
   #########################  VARIANT DATAFRAMES  ############################
@@ -1693,7 +1732,7 @@ dev.off()
 #file_string <- "results/validated_pos_across_lins.pdf"
 #ggsave(file=file_string, plot=arranged_plot_list)
 
-}  # if position_specific_plots == TRUE bracket
+}  # end if (position_specific_plots == TRUE)
 
 
 ####################### Replicate correlation plot #######################
@@ -1732,58 +1771,26 @@ ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, he
 
 
   #####################  Vectors of allele read proportions ########################
+ ##  (MOVED: created with bcf_SRR_table_lists)
 
 # for each nucleotide ACGT (solves multiallelic problem of more than one AF per genomic position)
 # (weighted?) supporting reads over total reads
 
-AF_vectors <- function(SRR_table, base){
-  #mt_vectors <- data.frame()
-  #colnames(mt_vectors) <- c("A","C","G","T")
-  #for (base in c("A","C","G","T")){
-    mt_vector <- rep(0,16569)
-    for (pos in SRR_table$Pos[which(SRR_table$Variant == base)]){
-      print(paste0("Pos = ",pos))
-      print(SRR_table$Pos[which(SRR_table$Pos == pos)])
-      print(SRR_table$Pos[[pos]])
-        mt_vector[pos] <- SRR_table[SRR_table$Variant == base & SRR_table$Pos == pos, "Variant_AD"]
-    }
-    for (pos in SRR_table$Pos[which(SRR_table$Ref == base)]){
-      print(paste0("ref pos = ", pos))
-      print(SRR_table$Pos[which(SRR_table$Pos == pos)])
-      mt_vector[pos] <- SRR_table[SRR_table$Ref == base & SRR_table$Pos == pos, "Ref_AD"][1]
-    }
-    #mt_vectors[[base]] <- mt_vector
-  return(mt_vector)
-}
-
-
-vector_list <- list()
-for (SRR_name in SRR_names){
-  print(SRR_name)
-  SRR <- SRR_table_list[[SRR]]
-  vectorsA <- AF_vectors(SRR, "A")
-  vectorsC <- AF_vectors(SRR, "C")
-  vectorsG <- AF_vectors(SRR, "G")
-  vectorsT <- AF_vectors(SRR, "T")
-  vector_list[[deparse(substitute(SRR))]] <- data.frame(As=vectorsA, Cs=vectorsC, Gs=vectorsG, Ts=vectorsT)
-}
-
   ## Test AF_vector ##
-#> SRR_table_list$SRR7245880[SRR_table_list$SRR7245880$Pos == 50,]
-# Pos Filter Ref Variant Variant_AD Variant_ADF Variant_ADR Coverage VariantLevel Ref_AD Ref_ADF Ref_ADR  RefLevel Type ylimit
-#56  50   PASS   T       G          2           2           0     2112 0.0009469697   2110    2110       0 0.9990530    2      1
-#57  50   PASS   T       A          1           1           0     2111 0.0004737091   2110    2110       0 0.9995263    2      1
-
-SRR_880_Gs <- AF_vectorise(SRR_table_list$SRR7245880, "G")
-SRR_880_As <- AF_vectorise(SRR_table_list$SRR7245880, "A")
-SRR_880_Gs[50]
-#[1] 0.0009469697
-SRR_880_As[50]
-#0.0004737091
+##> SRR_table_list$SRR7245880[SRR_table_list$SRR7245880$Pos == 50,]
+## Pos Filter Ref Variant Variant_AD Variant_ADF Variant_ADR Coverage VariantLevel Ref_AD Ref_ADF Ref_ADR  RefLevel Type ylimit
+##56  50   PASS   T       G          2           2           0     2112 0.0009469697   2110    2110       0 0.9990530    2      1
+##57  50   PASS   T       A          1           1           0     2111 0.0004737091   2110    2110       0 0.9995263    2      1
+#
+#SRR_880_Gs <- AF_vectorise(SRR_table_list$SRR7245880, "G")
+#SRR_880_As <- AF_vectorise(SRR_table_list$SRR7245880, "A")
+#SRR_880_Gs[50]
+##[1] 0.0009469697
+#SRR_880_As[50]
+##0.0004737091
 
 
 ## return vectors for each lineage
-
 for (p in paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
@@ -1825,7 +1832,10 @@ for (p in paths){
   }
   last_SRR <- SRRs_in_path[length(SRRs_in_path)]
   
-  #for (SRR in SRRs_in_path){
+  for (SRR in SRRs_in_path){
+    vectors_per_lineage[[ p[[1]] ]] <- list()
+    vectors_per_lineage[[ p[[1]] ]] <- c(vectors_per_lineage[[ p[[1]] ]], vector_list[[SRR]])
+  }
     
 }
 
