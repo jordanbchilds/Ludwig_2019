@@ -51,15 +51,19 @@ print(paste0("Make large exploratory plots: ", exploratory_plots))
 # "depths", "depths_qfilt", "all_coverages", "all_coverages_qfilt", "mean_coverage", "mean_coverage_qfilt"
 # the "append_string", then ".txt". This is typically the bam dir name eg. "bam_consensus-nodups".
 # Make sure to add a preceding "_". eg. "_bam_c"
-append_string <- "_bam_cnodups"
+append_string <- "_bam_cnodups_BAQ"
 vcfdir <- paste0("vcf", append_string)
 bcfdir <- paste0("mpileups", append_string)
+group_name <- "SRP149534"
 
 
   ####################  Read SRR files  ########################
 filenames <- list.files(vcfdir, pattern="*_annotated.txt")
+filepath <- paste0("data/group_", group_name, "_SRRs.txt")
+SRR_names <- as.list(read.table(filepath, stringsAsFactors = FALSE))[1]
+SRR_names <- SRR_names$V1
 # Create list of data frame names without the ".txt" part 
-SRR_names <-substr(filenames,1,10)
+#SRR_names <-substr(SRR_names,1,10)
 #SRR_names <- c("SRR7245880", "SRR7245881","SRR7245883", "SRR7245897", "SRR7245917")
 
 
@@ -71,7 +75,7 @@ if (use_pileups == TRUE){
   bcf_mpileups <- list()  # All 
 
 for(i in SRR_names){
-  filepath <- file.path(bcfdir,paste0(i,"_mpileup_nodels.vcf"))
+  filepath <- file.path(bcfdir,paste0(i,"_mpileup.vcf"))
   bcf_mpileups[[i]] <- read.table(filepath, sep = "\t", header = F, stringsAsFactors = T, comment.char = "#") 
   colnames(bcf_mpileups[[i]]) <- c("CHROM", "Pos", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "V10")
   bcf_mpileups[[i]] <- bcf_mpileups[[i]] %>% separate(col = "V10", into = c("Phred-scaled-GT-likelihoods", "STRAND_BIAS_pval", "ADF", "ADR", "AD"), sep = ":")
@@ -446,11 +450,11 @@ SRR_table_list_HET_OR_LOWLVL_potautocor_validated <- list()
 #threshold <- 0.05
 # Load files into list of data.frames
 for(i in SRR_names){
-  filepath <- file.path(vcfdir,paste0(i,"_annotated.txt"))
   if (use_pileups==TRUE){
     SRR_table_list[[i]] <- bcf_SRR_table_list[[i]]
   }
   else {
+    filepath <- file.path(vcfdir,paste0(i,"_annotated.txt"))
     SRR_table_list[[i]] <- read.table(filepath, sep = "\t", header = T, stringsAsFactors = T)
     }
   # remove positions (deletion eg. at 3107)
