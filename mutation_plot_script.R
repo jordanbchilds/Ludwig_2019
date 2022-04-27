@@ -157,14 +157,17 @@ for (i in SRR_names){
   #    as.data.frame(as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD))
   
   # Create vectors, then remove massive number of variants with no supporting reads (all <*> sites)
-    vector_list[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]], "A"))
-    vector_list[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]], "C")
-    vector_list[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G")
-    vector_list[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T")
-    #vector_list[[deparse(substitute(SRR))]] <- data.frame(As=vectorsA, Cs=vectorsC, Gs=vectorsG, Ts=vectorsT)
+  vector_list[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]], "A"))
+  vector_list[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]], "C")
+  vector_list[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G")
+  vector_list[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T")
+  #vector_list[[deparse(substitute(SRR))]] <- data.frame(As=vectorsA, Cs=vectorsC, Gs=vectorsG, Ts=vectorsT)
+  filestring <- paste0("results/", i,"_reads_vector.csv")
+  write.csv(vector_list[[i]], file = filestring, quote = F)
   
   bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Variant_AD >= 1 ),]
   bcf_mpileups[[i]] <- NULL
+  
 
 }
 
@@ -589,6 +592,8 @@ all_variants_in_lineages <- list()
 validated_per_lineage <- list()
 all_potential_autocor_poses <- c()
 all_validated_poses <- c()
+all_validated_pos_base <- data.frame(matrix(ncol = 2))
+colnames(all_validated_pos_base) <- c("Pos", "Base")
 #all_lineages_validated <- data.frame(matrix(ncol = 1)) 
 #colnames(all_lineages_validated) <- "Pos"
 #all_potential_autocor_poses <- data.frame(matrix(ncol = 1))
@@ -683,6 +688,7 @@ for (p in validation_paths){
   # Add new lineage validated mutations to table with all lineage mutations, same for potentially validated with autocorrelation
   #all_lineages_validated <- merge(all_lineages_validated, lineage_validated, by.x = "Pos", by.y = "Pos", all = T) 
   all_validated_poses <- unique(c(all_validated_poses, c(lineage_validated$Pos)))
+  all_validated_pos_base <- unique(rbind(all_validated_pos_base, lineage_validated[,c("Pos", "Base")]))
   #file_string <- paste0("results/",p[[1]],"_lineage_validated.csv")
   #write.csv(all_, file = file_string, quote = F)
   print("stage 7.5")
@@ -691,6 +697,8 @@ for (p in validation_paths){
   #all_potential_autocor_poses <- all_potential_autocor_poses[,1:3]
   print("stage 8")
 }
+
+all_validated_pos_base <- all_validated_pos_base %>% drop_na()
 
 # write table of all lineage validated variants from any lineage
 #all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos), ]  # potential removal of variant levels on repeated SRRs?
@@ -755,7 +763,7 @@ for (i in SRR_table_list_HET_OR_LOWLVL_potautocor_validated){
 print(n)
 
 
-   ###################### Variant stats ###################
+   ###################### Variant stats ########################
 
 #variant_stats <- data.frame(matrix(nrow = length(SRR_names), ncol = 10))
 #colnames(variant_stats) <- c("SRR", "No.Variants", "No.het", "No.hom", "No.lineage.validated","No.transition", "No.transversion", "Ts/Tv", "No.missense", "Strand bias")
@@ -1338,7 +1346,6 @@ for (p in paths){
     print(paste0("skipping LUDWIG line: ", p[[1]]))
     next
   }
-  #if (exists("lin_mut_load_change")){remove(lin_mut_load_change)}
   SRRs_in_path <- list()
   index=0
   at.positions = F
@@ -1382,16 +1389,18 @@ for (p in paths){
       colnames(mut_load_change) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage")
       #print(paste("SRRs_in_path: ", SRRs_in_path))
       for (SRR_name in SRRs_in_path){
-        n=n+1
-        print(SRR_name)
-        mut_load_change$SRR[n] <- SRR_name
-        mut_load_change$Generation[n] <- n-1
-        mut_load_change$Generation_labs[n] <- paste(SRR_lineage_generation$generation_axis_labs[SRR_lineage_generation$SRR_names==SRR_name])
-        mut_load_change$VariantLevel[n] <- SRR_table_list[[SRR_name]]$VariantLevel[which(SRR_table_list[[SRR_name]]$Pos == pos_of_interest)][1] #SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]
-        mut_load_change$Coverage[n] <- depths_qfilt[[SRR_name]][pos_of_interest]
-        mut_load_change$Pos[n] <- pos_of_interest
-        mut_load_change$Lineage <- p[[1]]
-        mut_load_change$Lineage_group <- paste(SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==SRR_name])
+        #for (base in c("A","C","G","T")) {
+          #if (SRR_table_list[[SRR_name]]$Variant[which(SRR_table_list[[SRR_name]]$Pos == pos_of_interest)]) == base)
+          n=n+1
+          print(SRR_name)
+          mut_load_change$SRR[n] <- SRR_name
+          mut_load_change$Generation[n] <- n-1
+          mut_load_change$Generation_labs[n] <- paste(SRR_lineage_generation$generation_axis_labs[SRR_lineage_generation$SRR_names==SRR_name])
+          mut_load_change$VariantLevel[n] <- SRR_table_list[[SRR_name]]$VariantLevel[which(SRR_table_list[[SRR_name]]$Pos == pos_of_interest)] #SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]
+          mut_load_change$Coverage[n] <- depths_qfilt[[SRR_name]][pos_of_interest]
+          mut_load_change$Pos[n] <- pos_of_interest
+          mut_load_change$Lineage <- p[[1]]
+          mut_load_change$Lineage_group <- paste(SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==SRR_name])
       }
       last_SRR <- SRRs_in_path[length(SRRs_in_path)]
       lin <- as.character(SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==last_SRR])
@@ -1566,21 +1575,29 @@ for (p in paths){
   }
   last_SRR <- SRRs_in_path[length(SRRs_in_path)]
   print(paste("n=",n))
-  for (pos in all_validated_poses){
-    print(paste("Position:", pos, "Lineage:", p[[1]]))
+  for (row_num in 1:nrow(all_validated_pos_base)){  # do row so multiple poses can
+    base <- all_validated_pos_base[row_num, "Base"]
+    pos <- all_validated_pos_base[row_num, "Pos"]
     n=0
+    print(paste("Position:", pos, "Lineage:", p[[1]]))
     for (SRR_name in SRRs_in_path){
       #if (pos %in% (SRR_table_list_HET_OR_LOWLVL_validated[[SRR_name]] %>% drop_na(VariantLevel) %>% select(Pos))){
         n=n+1
-        print(SRR_name)
         next_row$SRR <- SRR_name
+        next_row$Pos <- pos
         next_row$Generation <- n-1  #as.numeric(SRR_lineage_generation$generation[SRR_names == SRR_name])
         next_row$Generation_labs <- SRR_lineage_generation$generation_axis_labs[SRR_names == SRR_name]
         print("Stage 2")
-        next_row$VariantLevel <- SRR_table_list[[SRR_name]]$VariantLevel[which(SRR_table_list[[SRR_name]]$Pos == pos)][1] #SRR_table_list[[SRR_name]]$VariantLevel[pos+1]
-        next_row$Coverage <- depths_qfilt[[SRR_name]][pos]
+        #next_row$VariantLevel <- SRR_table_list[[SRR_name]] %>% filter(Pos == pos & Variant == base) %>% select(VariantLevel)
+        if (base %in% SRR_table_list[[SRR_name]]$Variant[which(SRR_table_list[[SRR_name]]$Pos == pos)]) { 
+          next_row$VariantLevel <- SRR_table_list[[SRR_name]]$VariantLevel[which(SRR_table_list[[SRR_name]]$Pos == pos & SRR_table_list[[SRR_name]]$Variant == base)]
+          next_row$Coverage <- SRR_table_list[[SRR_name]]$Variant_AD[which(SRR_table_list[[SRR_name]]$Pos == pos & SRR_table_list[[SRR_name]]$Variant == base)]
+        }
+        else {
+          next_row$VariantLevel <- NA
+          next_row$Coverage <- NA
+        }
         print("Stage 3")
-        next_row$Pos <- pos
         next_row$Lineage <- p[[1]]
         print("Stage 4")
         next_row$Lineage_group <- SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==last_SRR]
@@ -1791,6 +1808,7 @@ ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, he
 
 
 ## return vectors for each lineage
+vectors_per_lineage <- list()
 for (p in paths){
   if (p[[1]] == "#"){
     print("skipping comment line...")
@@ -1813,7 +1831,7 @@ for (p in paths){
       next
     }
     # From lineage_paths.txt: add SRR to list, until the positions of variants of interest are listed
-    # instead. This is indicated by "VARIANTS_OF_INTEREST" instead of SRR name, 
+    # instead. This is indicated by "VARIANTS_OF_INTEREST" after the last SRR name, 
     # and followed by the positions of variants of interest. eg.:
     # LINEAGE_PATH_NAME SRR1 SRR2 SRR3 VARIANTS_OF_INTEREST 1495 12788
     if (string == "VARIANTS_OF_INTEREST") {
@@ -1832,10 +1850,12 @@ for (p in paths){
   }
   last_SRR <- SRRs_in_path[length(SRRs_in_path)]
   
-  for (SRR in SRRs_in_path){
-    vectors_per_lineage[[ p[[1]] ]] <- list()
-    vectors_per_lineage[[ p[[1]] ]] <- c(vectors_per_lineage[[ p[[1]] ]], vector_list[[SRR]])
+  vectors_per_lineage[[ p[[1]] ]] <- list()
+  for (n in seq.int(1,length(SRRs_in_path),1)){
+    vectors_per_lineage[[ p[[1]] ]][n] <- vector_list[ SRRs_in_path[n] ]
   }
     
 }
+
+vector_list
 
