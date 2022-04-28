@@ -1542,6 +1542,7 @@ for (p in paths){
   }
   if (str_detect(p[[1]], 'LUDWIG')){
     print(paste0("skipping LUDWIG line: ", p[[1]]))
+    next
   }
   SRRs_in_path <- list()
   index=0
