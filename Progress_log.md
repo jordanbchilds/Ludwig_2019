@@ -507,9 +507,31 @@ NOTES
  - [x] apply --ambig-reads drop when making pileups: reads that don't span all of a short tandem repeat region
  
 ## Monday 25th April
- - [x] Correct extraction of allele depths from allele positions
+ - [x] Correct extraction of allele depths from allele positions caused by multiallelics
  - [ ] Exclude gen 3 and compare
  - [ ] Correct plotting for multiallelics
  - [ ] Compare results of BAQ and --ambig-reads
- - [ ] Get full pilup with all positions not just mutations to add all reference depths to vectors for Jordan
+ - [x] Get full pilup with all positions not just mutations to add all reference depths to vectors for Jordan
  - [ ] Send vectors to Jordan
+
+## Tuesday 26th April
+ - [x] **Send vectors**
+ - [ ] **Call IT desk**
+ - [ ] Duplicate reads excluded?
+ - [ ] Check SRR number in lineage - direct not doubly indirect on Ludwig tree
+
+## Wednesday 27th April
+ - [x] Remove Gen 3
+ - [x] Correct plotting for multiallelics
+ - [x] Induction meeting
+ - [x] samtools view exclude duplicates for pileups
+ - [ ] compare effect excluding duplicates with samtools view on pileups
+
+## Thursday 28th April 
+- [ ] Email Conor
+- [ ] Research regions of suspected misalignments
+- [x] Increase mapping q threshold to see effect on regions
+- [x] compare effect of excluding duplicates with samtools view on pileups
+- [ ] Check SRR number in lineage - direct not doubly indirect on Ludwig tree
+
+
