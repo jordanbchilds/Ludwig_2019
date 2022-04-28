@@ -17,10 +17,11 @@ export PATH=`pwd`/software/bin/:$PATH
 
 # set dir and group
 bamdir="bam_cnodups"
+outdir="bam_cnodups_BAQ_nodups"
 j="SRP149534"
 
 
-mkdir vcf_${bamdir}/
+mkdir vcf_${outdir}/
 
 
   ## check if mutserve is installed
@@ -45,59 +46,63 @@ fi
 
 echo "Reference fasta file: ${ref}"
 
-for rt in "${rts[@]}"
-do
+#for rt in "${rts[@]}"
+#do
+#
+#  echo ${rt};
+#
+#  if [ -f "vcf_${outdir}/${rt}_annotated.txt" ]; then
+#    echo "${rt} already called";
+#  else 
+#    
+#    # default settings: min heteroplasmy level=0.01, mapping quality=20, base quality=20, alignment quality=30
+#    echo "Calling variants for ${rt}...";
+#    mutserve call ${bamdir}/${rt}.bam --threads 8 --baseQ 30 --mapQ 18 --level 0.001 --reference ${ref} --output vcf_${outdir}/${rt}.vcf.gz ;
+#
+#    gunzip vcf_${outdir}/${rt}.vcf.gz
+#
+#    echo "left aligning with bcftools";
+#    bcftools norm vcf_${outdir}/${rt}.vcf -f ${ref} --multiallelics -any -o vcf_${outdir}/${rt}_normalised.vcf -Ov
+#    
+#    echo "Annotating mutserve .txt output";
+#    mutserve annotate --input vcf_${outdir}/${rt}.txt --annotation software/bin/rCRS_annotation_2020-08-20.txt --output vcf_${outdir}/${rt}_annotated.txt
+#  fi
+#done
+#
 
-  echo ${rt};
 
-  if [ -f "vcf_${bamdir}/${rt}_annotated.txt" ]; then
-    echo "${rt} already called";
-  else 
-    
-    # default settings: min heteroplasmy level=0.01, mapping quality=20, base quality=20, alignment quality=30
-    echo "Calling variants for ${rt}...";
-    mutserve call ${bamdir}/${rt}.bam --threads 8 --baseQ 30 --mapQ 18 --level 0.001 --reference ${ref} --output vcf_${bamdir}/${rt}.vcf.gz ;
+    ###############  Pileups  ##################
 
-    gunzip vcf_${bamdir}/${rt}.vcf.gz
-
-    echo "left aligning with bcftools";
-    bcftools norm vcf_${bamdir}/${rt}.vcf -f ${ref} --multiallelics -any -o vcf_${bamdir}/${rt}_normalised.vcf -Ov
-    
-    echo "Annotating mutserve .txt output";
-    mutserve annotate --input vcf_${bamdir}/${rt}.txt --annotation software/bin/rCRS_annotation_2020-08-20.txt --output vcf_${bamdir}/${rt}_annotated.txt
-  fi
-done
-
-
-# get read depth for allele on each strand using bcftools
+# get read pileups with bcftools: includes depth for allele for each strand 
 # mpileup includes all reads in FORMAT/ADF for example, (mapq and baseq filters only apply to genotype calling), so the filtered bam file must be piped to bcftools pileup
 
-mkdir mpileups_${bamdir}/
-mkdir bcf_calls_${bamdir}/
+mkdir mpileups_${outdir}/
 
 # index reference
 samtools faidx ${ref};
 
+
+# Create pileups:
 for rt in "${rts[@]}"
 do
 
   echo ${rt};
 
-  if [ -f "bcf_out_${bamdir}/${rt}_calls.vcf" ]; then
+  if [ -f "mpileups_${outdir}/${rt}_calls.vcf" ]; then
     echo "${rt} already called";
   else 
     
     echo "Creating mpileup for ${rt}...";
-    samtools view ${bamdir}/${rt}.bam chrM -h -u | bcftools mpileup - --no-BAQ --max-depth 999999 --fasta-ref ${ref} -q 18 -Q 30 --annotate FORMAT/SP,FORMAT/AD,FORMAT/ADF,FORMAT/ADR --threads 8 -Ou | bcftools norm -f ${ref} -m -any -Ov --output mpileups_${bamdir}/${rt}_mpileup.vcf 
+    samtools view ${bamdir}/${rt}.bam chrM -h -u -F DUP | bcftools mpileup - --max-depth 999999 --fasta-ref ${ref} -q 18 -Q 30 --annotate FORMAT/SP,FORMAT/AD,FORMAT/ADF,FORMAT/ADR --threads 8 -Ou | bcftools norm -f ${ref} -m -any -Ov --output mpileups_${outdir}/${rt}_mpileup.vcf 
 #- | bcftools query -f '%CHROM\t%POS\t%REF\t%DP\t%RO\t%AO\t%ALT\t%SAF\t%SAR\t%SRF\t%SRR\n' --output mpileups_${bamdir}/${rt}_mpileup.vcf 
 #FORMAT/AD,FORMAT/ADF,FORMAT/ADR,
     # separate final column with AD, ADF, ADR and SP info into separate columns: replace ";" separator with tabs (\t) 
     #sed "s/;/\t/g" -i mpileups_${bamdir}/${rt}_mpileup.vcf
-    grep -v -P '\t<\*>' mpileups_${bamdir}/${rt}_mpileup.vcf > mpileups_${bamdir}/${rt}_mpileup_nodels.vcf
+    grep -v -P '\t<\*>' mpileups_${outdir}/${rt}_mpileup.vcf > mpileups_${outdir}/${rt}_mpileup_nodels.vcf
     # replace "-" in #headers row with tab separated names of columns
     #sed "s/INFO    FORMAT  -/INFO    FORMAT  AD	ADF	ADR	SP/g" -i mpileups_${bamdir}/${rt}_mpileup.vcf
-    #grep
-    echo "Calling point mutations (bcftools call) for ${rt}...";
+    
+    #echo "Calling point mutations (bcftools call) for ${rt}...";
     #bgzip -i -c mpileups_${bamdir}/${rt}_mpileup.vcf --threads 8 | 
     #bcftools call mpileups_${bamdir}/${rt}_mpileup.vcf --multiallelic-caller --keep-alts --skip-variants indels --regions chrM -Ov --ploidy 1 --output bcf_calls_${bamdir}/${rt}_calls.vcf;
   fi
