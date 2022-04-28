@@ -38,10 +38,10 @@ library("ComplexHeatmap")
 # Change boolian to choose
 use_pileups <- TRUE
 pre_plots <- FALSE
-post_plots <- FALSE
+post_plots <- TRUE
 exploratory_plots <- FALSE
 Ludwig_comparison <- FALSE
-position_specific_plots <- FALSE
+position_specific_plots <- TRUE
 print(paste0("Make large exploratory plots: ", exploratory_plots))
 
 ## Which DATA
@@ -55,7 +55,7 @@ print(paste0("Make large exploratory plots: ", exploratory_plots))
 # Make sure to add a preceding "_". eg. "_bam_c"
 append_string <- "_bam_cnodups"
 vcfdir <- paste0("vcf", append_string)
-bcfdir <- paste0("mpileups", append_string)
+bcfdir <- paste0("mpileups", append_string, "_BAQ_samnodups")
 group_name <- "SRP149534"
 
 
@@ -103,7 +103,7 @@ AF_vectors <- function(SRR_table, base){
 
 # Read in mpileups:
 for(i in SRR_names){
-  filepath <- file.path(paste0(bcfdir,"_BAQ"),paste0(i,"_mpileup.vcf"))
+  filepath <- file.path(bcfdir,paste0(i,"_mpileup.vcf"))
   bcf_mpileups[[i]] <- read.table(filepath, sep = "\t", header = F, stringsAsFactors = T, comment.char = "#") 
   colnames(bcf_mpileups[[i]]) <- c("CHROM", "Pos", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "V10")
   bcf_mpileups[[i]] <- bcf_mpileups[[i]] %>% separate(col = "V10", into = c("Phred-scaled-GT-likelihoods", "STRAND_BIAS_pval", "ADF", "ADR", "AD"), sep = ":")
@@ -196,17 +196,18 @@ SRR_lineage_generation <- data.frame(SRR_names,lineages,generation,generation_ax
 
 lineage_cols <- c("bulk"="royalblue4", "G11"="magenta3", "B3"="orange", "D2"="yellow", "F4"="grey", "B5"="burlywood4", "B11"="palevioletred2", "A9"="lightseagreen", "D3"="palegreen1", "C7"="lightgoldenrod", "C4"="pink2","C10"="cyan", "B9"="plum1","G10"="steelblue2", "D6"="springgreen4","C9"="red", "mix"="darkgreen")
 
-
-  ######################   Pre-alignment   #########################
-  #####################  Plots and tables  #########################
-
-if (pre_plots == TRUE) {
 # table of all sequencing runs in Ludwig paper - only TF1 bulk ATAc-seq needed
 raw_sample_info <- read.csv("data/SraRunTable_1.csv", header = T)
 
 # raw sequencing information
 pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt", header = T) 
 colnames(pre_multiqc) <- c("SRR_sample", "percent_dup", "percent_gc", "sequence_lengths", "percent_fails", "num_seqs")
+
+
+  ######################   Pre-alignment   #########################
+  #####################  Plots and tables  #########################
+
+if (pre_plots == TRUE) {
 
 median.default(pre_multiqc$num_seqs)
 min(pre_multiqc$num_seqs)
@@ -451,7 +452,7 @@ sample_coverage_boxplot_qfilt <- ggplot(data = depths_qfilt_bplot_data, aes(SRRs
   labs(x = "Clone", y="Read depth")
 
 
-
+# Unfiltered:
 mean_coverage_hist
 mean_baseq_hist
 mean_mapq_hist
@@ -462,7 +463,7 @@ sample_baseq_plot
 sample_mapq_plot
 sample_reads_plot
 
-
+# Base and mapping quality filtered
 mean_coverage_hist_qfilt
 mean_baseq_hist_qfilt
 mean_mapq_hist_qfilt
@@ -1591,7 +1592,7 @@ for (p in paths){
         #next_row$VariantLevel <- SRR_table_list[[SRR_name]] %>% filter(Pos == pos & Variant == base) %>% select(VariantLevel)
         if (base %in% SRR_table_list[[SRR_name]]$Variant[which(SRR_table_list[[SRR_name]]$Pos == pos)]) { 
           next_row$VariantLevel <- SRR_table_list[[SRR_name]]$VariantLevel[which(SRR_table_list[[SRR_name]]$Pos == pos & SRR_table_list[[SRR_name]]$Variant == base)]
-          next_row$Coverage <- SRR_table_list[[SRR_name]]$Variant_AD[which(SRR_table_list[[SRR_name]]$Pos == pos & SRR_table_list[[SRR_name]]$Variant == base)]
+          next_row$Coverage <- SRR_table_list[[SRR_name]]$Variant_AD[which(SRR_table_list[[SRR_name]]$Pos == pos & SRR_table_list[[SRR_name]]$Variant == base)] #SRR_table_list[[SRR_name]]$Coverage[which(SRR_table_list[[SRR_name]]$Pos == pos & SRR_table_list[[SRR_name]]$Variant == base)] 
         }
         else {
           next_row$VariantLevel <- NA
@@ -1614,8 +1615,6 @@ cross_lineage_positions_lin_val <- merge(
   (lin_mut_load_change_lin_val %>% filter(!str_detect(Lineage, 'LUDWIG'))), 
   cross_lineage_positions_lin_val, by = 'Pos') %>% filter(n>=2)
 
-# Remove NA position in Pos
-#lin_mut_load_change_lin_val <- lin_mut_load_change_lin_val[!is.na(lin_mut_load_change_lin_val$Pos), ]
 # Convert allele frequency (VariantLevel) NAs to 0.00s for plotting
 cross_lineage_positions_lin_val[is.na(cross_lineage_positions_lin_val)] <- 0
 
@@ -1696,19 +1695,19 @@ for (pos in lin_mut_load_change$Pos){
 
 
 # Plot:
-pdf("results/validated_pos_across_lineages.pdf", onefile = TRUE)
+pdf("results/validated_pos_all_noGen3_noSupportReads.pdf", onefile = TRUE)
 plot_list <- list()
 # for each lineage validated position that occurs more than once: 
 n=0
-for (pos in unique(cross_lineage_positions_lin_val$Pos)){
+for (pos in sort(unique(lin_mut_load_change_lin_val$Pos))){
   # Plot for new variant position
   n=n+1
-  cross_lineages <- unique(cross_lineage_positions_lin_val[ ,c('Pos', 'Lineage')]) %>% filter(Pos == pos)
+  #cross_lineages <- unique(lin_mut_load_change_lin_val[ ,c('Pos', 'Lineage')]) %>% filter(Pos == pos)
   #print(c(pos, cross_lineages$Lineage))
   # Plot ALL interesting variant positions on one graph per lineage
   lin_mut_load_change_lin_val[is.na(lin_mut_load_change_lin_val)] <- 0
   plot_title <- paste0("Position: ", pos, " across lineages")
-  mut_plot <- ggplot(data = cross_lineage_positions_lin_val[cross_lineage_positions_lin_val$Pos == pos, ], 
+  mut_plot <- ggplot(data = lin_mut_load_change_lin_val[lin_mut_load_change_lin_val$Pos == pos, ], 
                      aes(x=Generation,y=VariantLevel,group=Lineage,color=Lineage_group)) +
     geom_line() +
     scale_colour_manual(values=lineage_cols, name="Lineage") + #, breaks=colnames(lineage_cols)) +
