@@ -532,6 +532,10 @@ NOTES
 - [ ] Research regions of suspected misalignments
 - [x] Increase mapping q threshold to see effect on regions
 - [x] compare effect of excluding duplicates with samtools view on pileups
-- [ ] Check SRR number in lineage - direct not doubly indirect on Ludwig tree
+  - (No Difference - bcftools mpileups excludes dups by default)
+- [x] Check SRR number in lineage - direct not doubly indirect on Ludwig tree
+  - [x] save lineage tree with Snumbs into images/
+- [ ] why homoplasmic alleles still present
+
 
 
