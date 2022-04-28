@@ -531,11 +531,14 @@ NOTES
 - [ ] Email Conor
 - [ ] Research regions of suspected misalignments
 - [x] Increase mapping q threshold to see effect on regions
+  - introduced more "validate positions
+- [x] Reresearch mapping quality thresholds for bowtie2
+  - http://biofinysics.blogspot.com/2014/05/how-does-bowtie2-assign-mapq-scores.html
+  - MAPQ >= 23 allows up to 3 mismatches > bq20, (higher the base quality, more impact on mapq: more trustworthy. 
+- [x] Lower mapq to 4: only "uniquely" mapping reads (what are multi and maxi), up to 5 mismatches with bq >20
 - [x] compare effect of excluding duplicates with samtools view on pileups
   - (No Difference - bcftools mpileups excludes dups by default)
 - [x] Check SRR number in lineage - direct not doubly indirect on Ludwig tree
   - [x] save lineage tree with Snumbs into images/
 - [ ] why homoplasmic alleles still present
-
-
-
+- [x] base quality 23.8 like Ludwig - see effect on bulks
