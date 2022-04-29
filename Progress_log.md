@@ -542,3 +542,22 @@ NOTES
   - [x] save lineage tree with Snumbs into images/
 - [ ] why homoplasmic alleles still present
 - [x] base quality 23.8 like Ludwig - see effect on bulks
+
+## Friday 29th April
+- [x] Find further differences between mq4 and mq 18:
+ - Too many reads removed: < 3 mismatches on one read causes read removal, including mutations supporting real mutations: eg. 4214 4446 5007 5862
+  - Mutations missed entirely by lin val: 6055 6025
+- [ ] Add ratios column: find positions with =< 2x mean coverage
+  - Gen 3 spikes coverages 
+- [ ] strand bias calculation
+- [ ] Difference in BAQ
+- [ ] **CALL IT DESK DON'T FORGET**
+- [ ] View suspected misalignment regions
+  - 3107 
+  - 4548: 2 values per gen for all
+- [ ] Add gen 3 back for mq4 - any improvement?
+### Suggestions:
+ - 0.01 threshold not so useful: min no. reads in at least 1 sample: eg. 4552
+ - Mapping Quality much lower, based on how bowtie2 assigns mapping quality, and improved plots.
+ - baseq from Ludwig's gaussian distribution threshold for now. 
+
