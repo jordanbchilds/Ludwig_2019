@@ -556,8 +556,8 @@ NOTES
   - 3107 
   - 4548: 2 values per gen for all
 - [ ] Add gen 3 back for mq4 - any improvement?
+- [ ] Check/rerun alignment to consensus for homoplasmic alleles
 ### Suggestions:
  - 0.01 threshold not so useful: min no. reads in at least 1 sample: eg. 4552
  - Mapping Quality much lower, based on how bowtie2 assigns mapping quality, and improved plots.
  - baseq from Ludwig's gaussian distribution threshold for now. 
-
