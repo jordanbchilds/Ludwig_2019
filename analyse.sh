@@ -26,22 +26,36 @@ while [[ $# -gt 0 ]]; do
     bamdir="$2"
     shift # past argument
     shift # past value
+    echo "Bam directory: ${bamdir}"
   ;;
 
   -r|--reference)
-    ref="$2"
+    ref="$2" 
+    echo "Reference: ${ref}"
     shift # past argument
     shift # past value 
   ;;
 
   -g|--group-name)
     g="$2"
+    echo "Group name: ${g}"
     shift # past argument
     shift # past value 
   ;;
 
+  -h|--help)
+    echo "-g|--group-name       base name for data/group_(group_name)_SRRs.txt, eg. SRP149534"
+    echo "-r|--reference        nuc/reference.fa root name without .fa, eg. nuc/parent_consensus"
+    echo "-b|--bam-directory    name of bam directory without / eg. bam_cnodups"
+    shift # past argument
+    exit 1 
+  ;;
+
   -*|--*)
-    echo "Unknown option $1"
+    echo "Unknown option ${1}. Valid aruguments:"
+    echo "-g|--group-name       base name for data/group_(group_name)_SRRs.txt, eg. SRP149534"
+    echo "-r|--reference        nuc/reference.fa root name without .fa, eg. nuc/parent_consensus"
+    echo "-b|--bam-directory    name of bam directory without / eg. bam_cnodups"
     exit 1
   ;; 
 
@@ -54,6 +68,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 mkdir $bamdir
+
 
 # read bulk ATAC-seq from TF1 cells into array
 echo "Using group name (-g|--group-name): \"${g}\" to read SRR names from data/group_${g}_SRRs.txt"
@@ -75,7 +90,7 @@ elif test -f "${ref}.fa"; then
   echo "bowtie2 reference indices built"
 else
   echo "Error: Fasta of reference sequence and its indexes (base file name: \"${ref}\") could not be found. Make sure --ref|-r is correct and the reference fasta file (.fa) has been downloaded. Exiting..."
-  exit
+  exit 1
 fi
 
 # tmp change ref
