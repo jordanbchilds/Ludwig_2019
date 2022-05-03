@@ -37,6 +37,7 @@ library("ComplexHeatmap")
 
 # Change boolian to choose
 use_pileups <- TRUE
+create_vectors <- FALSE
 pre_plots <- FALSE
 post_plots <- TRUE
 exploratory_plots <- FALSE
@@ -44,7 +45,7 @@ Ludwig_comparison <- FALSE
 position_specific_plots <- TRUE
 print(paste0("Make large exploratory plots: ", exploratory_plots))
 
-## Which DATA
+  ###########################  DATA  ############################
   # Controls for which vcf/ directory and which post-alignment files in alignment_stats/ 
   # are imported. Allows simpler comparison between datasets eg. calls from reads aligned 
   # to rCRS or a consensus sequence of parent clones, duplicates or removed duplicates etc.
@@ -55,7 +56,7 @@ print(paste0("Make large exploratory plots: ", exploratory_plots))
 # Make sure to add a preceding "_". eg. "_bam_c"
 append_string <- "_bam_cnodups"
 vcfdir <- paste0("vcf", append_string)
-bcfdir <- paste0("mpileups", append_string, "_BAQ_samnodups")
+bcfdir <- paste0("mpileups", append_string, "_mq4_bq23.8")
 group_name <- "SRP149534"
 
 
@@ -150,6 +151,8 @@ for (i in SRR_names){
   for (pos in bcf_SRR_table_list[[i]]$Pos[duplicated(bcf_SRR_table_list[[i]]$Pos)]){
     bcf_SRR_table_list[[i]]$Coverage[which(bcf_SRR_table_list[[i]]$Pos == pos)] <- sum(as.numeric(c(bcf_SRR_table_list[[i]]$Variant_AD[which(bcf_SRR_table_list[[i]]$Pos == pos)], bcf_SRR_table_list[[i]]$Ref_AD[which(bcf_SRR_table_list[[i]]$Pos == pos)][1])))
   }
+  mean_cov <- mean(bcf_SRR_table_list[[i]]$Coverage)
+  bcf_SRR_table_list[[SRR_name]]$meanCovRatio <- as.numeric(as.list(bcf_SRR_table_list[[SRR_name]]$Coverage))/mean_cov
   bcf_SRR_table_list[[i]]$VariantLevel <- as.numeric(bcf_mpileups[[i]]$alt_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$RefLevel <- as.numeric(bcf_mpileups[[i]]$ref_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$Type <- 2
@@ -157,21 +160,24 @@ for (i in SRR_names){
   #    as.data.frame(as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD))
   
   # Create vectors, then remove massive number of variants with no supporting reads (all <*> sites)
-  vector_list[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]], "A"))
-  vector_list[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]], "C")
-  vector_list[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G")
-  vector_list[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T")
-  #vector_list[[deparse(substitute(SRR))]] <- data.frame(As=vectorsA, Cs=vectorsC, Gs=vectorsG, Ts=vectorsT)
-  filestring <- paste0("results/", i,"_reads_vector.csv")
-  write.csv(vector_list[[i]], file = filestring, quote = F)
   
+  if (create_vectors == TRUE) {
+    vector_list[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]], "A"))
+    vector_list[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]], "C")
+    vector_list[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G")
+    vector_list[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T")
+    #vector_list[[deparse(substitute(SRR))]] <- data.frame(As=vectorsA, Cs=vectorsC, Gs=vectorsG, Ts=vectorsT)
+    filestring <- paste0("results/", i,"_reads_vector.csv")
+    write.csv(vector_list[[i]], file = filestring, quote = F)
+  }
   bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Variant_AD >= 1 ),]
-  bcf_mpileups[[i]] <- NULL
   
+  bcf_mpileups[[i]] <- NULL
 
 }
 
 }  # end if(use_pileups == T)
+
 
     ###############  Read additional files  #####################
 
@@ -762,6 +768,32 @@ for (i in SRR_table_list_HET_OR_LOWLVL_potautocor_validated){
   n=n+nrow(i)
 }
 print(n)
+
+  ####################  Known sequencing errors  ####################
+# for NextSeq 500:
+
+## Context:
+# a base of the same type as the one preceding the error, eg. CG -> CC
+# EXCEPTIONS for NextSeq 500: TA -> TT (for previous base, A is overrepresented instead), AC -> AA, AT -> AA,
+## post-homopolymer error
+# eg. AAAT
+#        ^ if eg. C-> T: homopolymer of 3 preceding the error  
+
+## Prev 3 bases:
+# GGT
+# CGT
+# AGT
+# CGA
+# CCA
+# GCT
+# 
+
+# string detect
+## get index of base
+# if index in linval$pos, add to list 
+
+
+
 
 
    ###################### Variant stats ########################
