@@ -170,6 +170,14 @@ for (i in SRR_names){
     filestring <- paste0("results/", i,"_reads_vector.csv")
     write.csv(vector_list[[i]], file = filestring, quote = F)
   }
+  # Create reference sequence vector
+  if (i == SRR7245880) {
+    ref_seq <- data.frame(bcf_SRR_table_list[[i]]$Pos, bcf_SRR_table_list[[i]]$Ref)
+    colnames(ref_seq) <- c("Pos", "Ref")
+    ref_seq <- ref_seq[!duplicated(ref_seq$Pos),]
+  }
+  
+  # Remove sites with no variants:
   bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Variant_AD >= 1 ),]
   
   bcf_mpileups[[i]] <- NULL
@@ -706,6 +714,10 @@ for (p in validation_paths){
 }
 
 all_validated_pos_base <- all_validated_pos_base %>% drop_na()
+
+# Remove visually identified sequencing error
+vis_error <- c(309,310,349,457,503,512,519,523,545,550,554,561,565,567,574,3577,3583,4539,4541,4545,4546,4548,4549,4550,4551,4552,4553,4555,4558,5135,5208,5667,6221,6872,6966,7403,7408,8876,9611,13057,14190,16175,16319)
+all_validated_pos_base_noVisErr <- all_validated_pos_base[vis_error %in% all_validated_pos_base$Pos,]
 
 # write table of all lineage validated variants from any lineage
 #all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos), ]  # potential removal of variant levels on repeated SRRs?
@@ -1739,7 +1751,8 @@ for (pos in sort(unique(lin_mut_load_change_lin_val$Pos))){
   #print(c(pos, cross_lineages$Lineage))
   # Plot ALL interesting variant positions on one graph per lineage
   lin_mut_load_change_lin_val[is.na(lin_mut_load_change_lin_val)] <- 0
-  plot_title <- paste0("Position: ", pos, " across lineages")
+  surrounding_bases <- 
+  plot_title <- paste0("Position: ", pos, " across lineages\n", surrounding_bases)
   mut_plot <- ggplot(data = lin_mut_load_change_lin_val[lin_mut_load_change_lin_val$Pos == pos, ], 
                      aes(x=Generation,y=VariantLevel,group=Lineage,color=Lineage_group)) +
     geom_line() +
@@ -1789,16 +1802,18 @@ dev.off()
 # combine AF of replicates
 bulk_replicates_all_nofilt <- merge(SRR_table_list_HET_OR_LOWLVL_nofilt$SRR7245880[, c("Pos", "VariantLevel")], SRR_table_list_HET_OR_LOWLVL_nofilt$SRR7245881[, c("Pos", "VariantLevel")], by = "Pos", all = T)
 colnames(bulk_replicates_all_nofilt) <- c("Pos", "SRR7245880", "SRR7245881")
+bulk_replicates_all_nofilt$validated <- bulk_replicates_all_nofilt$Pos %in% all_validated_pos_base_noVisErr$Pos
 bulk_replicates_all_nofilt[is.na(bulk_replicates_all_nofilt)] <- 0
-
+bulk_replicates_all_validated <- bulk_replicates_all_nofilt %>% filter(validated == TRUE)
 
 #bulk_replicates_Ludwigs_nofilt <- data.frame(our_Ludwig_variants_nofilt$SRR7245880, our_Ludwig_variants_nofilt$SRR7245881)
 #colnames(bulk_replicates_Ludwigs_nofilt) <- c("Bulk_SRR7245880", "Bulk_SRR7245881")
 #bulk_replicates_Ludwigs_nofilt[is.na(bulk_replicates_Ludwigs_nofilt)] <- 0
 
 # plot sqrt AF
-bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(sqrt(SRR7245880),sqrt(SRR7245881))) +
+bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(log(SRR7245880),log(SRR7245881))) +
   geom_point() +
+  geom_point(data=bulk_replicates_all_validated,  aes(log(SRR7245880),log(SRR7245881)), colour = "green") +
   #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
   labs(x ="sqrt(AF) of Bulk replicate SRR7245880", y ="sqrt(AF) of Bulk replicate SRR7245881") +
   scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
@@ -1806,6 +1821,7 @@ bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(sqrt(SRR
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+bulk_rep_corr_plot_all_nofilt
 ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
 
 
