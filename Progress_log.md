@@ -507,9 +507,57 @@ NOTES
  - [x] apply --ambig-reads drop when making pileups: reads that don't span all of a short tandem repeat region
  
 ## Monday 25th April
- - [x] Correct extraction of allele depths from allele positions
+ - [x] Correct extraction of allele depths from allele positions caused by multiallelics
  - [ ] Exclude gen 3 and compare
  - [ ] Correct plotting for multiallelics
  - [ ] Compare results of BAQ and --ambig-reads
- - [ ] Get full pilup with all positions not just mutations to add all reference depths to vectors for Jordan
+ - [x] Get full pilup with all positions not just mutations to add all reference depths to vectors for Jordan
  - [ ] Send vectors to Jordan
+
+## Tuesday 26th April
+ - [x] **Send vectors**
+ - [ ] **Call IT desk**
+ - [ ] Duplicate reads excluded?
+ - [ ] Check SRR number in lineage - direct not doubly indirect on Ludwig tree
+
+## Wednesday 27th April
+ - [x] Remove Gen 3
+ - [x] Correct plotting for multiallelics
+ - [x] Induction meeting
+ - [x] samtools view exclude duplicates for pileups
+ - [ ] compare effect excluding duplicates with samtools view on pileups
+
+## Thursday 28th April 
+- [ ] Email Conor
+- [ ] Research regions of suspected misalignments
+- [x] Increase mapping q threshold to see effect on regions
+  - introduced more "validate positions
+- [x] Reresearch mapping quality thresholds for bowtie2
+  - http://biofinysics.blogspot.com/2014/05/how-does-bowtie2-assign-mapq-scores.html
+  - MAPQ >= 23 allows up to 3 mismatches > bq20, (higher the base quality, more impact on mapq: more trustworthy. 
+- [x] Lower mapq to 4: only "uniquely" mapping reads (what are multi and maxi), up to 5 mismatches with bq >20
+- [x] compare effect of excluding duplicates with samtools view on pileups
+  - (No Difference - bcftools mpileups excludes dups by default)
+- [x] Check SRR number in lineage - direct not doubly indirect on Ludwig tree
+  - [x] save lineage tree with Snumbs into images/
+- [ ] why homoplasmic alleles still present
+- [x] base quality 23.8 like Ludwig - see effect on bulks
+
+## Friday 29th April
+- [x] Find further differences between mq4 and mq 18:
+ - Too many reads removed: < 3 mismatches on one read causes read removal, including mutations supporting real mutations: eg. 4214 4446 5007 5862
+  - Mutations missed entirely by lin val: 6055 6025
+- [ ] Add ratios column: find positions with =< 2x mean coverage
+  - Gen 3 spikes coverages 
+- [ ] strand bias calculation
+- [ ] Difference in BAQ
+- [ ] **CALL IT DESK DON'T FORGET**
+- [ ] View suspected misalignment regions
+  - 3107 
+  - 4548: 2 values per gen for all
+- [ ] Add gen 3 back for mq4 - any improvement?
+- [ ] Check/rerun alignment to consensus for homoplasmic alleles
+### Suggestions:
+ - 0.01 threshold not so useful: min no. reads in at least 1 sample: eg. 4552
+ - Mapping Quality much lower, based on how bowtie2 assigns mapping quality, and improved plots.
+ - baseq from Ludwig's gaussian distribution threshold for now. 
