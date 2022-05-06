@@ -39,9 +39,9 @@ library("ComplexHeatmap")
 use_pileups <- TRUE
 create_vectors <- FALSE
 pre_plots <- FALSE
-post_plots <- TRUE
-exploratory_plots <- FALSE
+post_plots <- FALSE
 Ludwig_comparison <- FALSE
+exploratory_plots <- FALSE
 position_specific_plots <- TRUE
 print(paste0("Make large exploratory plots: ", exploratory_plots))
 
@@ -131,28 +131,38 @@ vector_list <- list()
 for (i in SRR_names){
   bcf_SRR_table_list[[i]] <- data.frame(bcf_mpileups[[i]]$Pos)
   colnames(bcf_SRR_table_list[[i]]) <- "Pos"
-  if (bcf_mpileups[[i]]$STRAND_BIAS_pval > (40+bcf_mpileups[[i]]$Depth/2)){
-    bcf_SRR_table_list[[i]]$Filter <- "STRAND_BIAS"
-  }
-  else{
-    bcf_SRR_table_list[[i]]$Filter <- "PASS"
-  }
+  #if (bcf_mpileups[[i]]$STRAND_BIAS_pval > (40+bcf_mpileups[[i]]$Depth/2)){
+  #  bcf_SRR_table_list[[i]]$Filter <- "STRAND_BIAS"
+  #}
+  #else{
+  #  bcf_SRR_table_list[[i]]$Filter <- "PASS"
+  #}
   bcf_SRR_table_list[[i]]$Ref <- bcf_mpileups[[i]]$REF
   bcf_SRR_table_list[[i]]$Variant <- bcf_mpileups[[i]]$ALT
-  bcf_SRR_table_list[[i]]$Variant_AD <- bcf_mpileups[[i]]$alt_AD
-  bcf_SRR_table_list[[i]]$Variant_ADF <- bcf_mpileups[[i]]$alt_ADF
-  bcf_SRR_table_list[[i]]$Variant_ADR <- bcf_mpileups[[i]]$alt_ADR
-  bcf_SRR_table_list[[i]]$Ref_AD <- bcf_mpileups[[i]]$ref_AD
-  bcf_SRR_table_list[[i]]$Ref_ADF <- bcf_mpileups[[i]]$ref_ADF
-  bcf_SRR_table_list[[i]]$Ref_ADR <- bcf_mpileups[[i]]$ref_ADR
+  bcf_SRR_table_list[[i]]$Variant_AD <- as.numeric(bcf_mpileups[[i]]$alt_AD)
+  bcf_SRR_table_list[[i]]$Variant_ADF <- as.numeric(bcf_mpileups[[i]]$alt_ADF)
+  bcf_SRR_table_list[[i]]$Variant_ADR <- as.numeric(bcf_mpileups[[i]]$alt_ADR)
+  bcf_SRR_table_list[[i]]$Ref_AD <- as.numeric(bcf_mpileups[[i]]$ref_AD)
+  bcf_SRR_table_list[[i]]$Ref_ADF <- as.numeric(bcf_mpileups[[i]]$ref_ADF)
+  bcf_SRR_table_list[[i]]$Ref_ADR <- as.numeric(bcf_mpileups[[i]]$ref_ADR)
   bcf_SRR_table_list[[i]]$Coverage <- as.numeric(bcf_mpileups[[i]]$ref_AD) + as.numeric(bcf_mpileups[[i]]$alt_AD)
   
   # Correct multiallelic allele depths (Coverage): sum of multiallelic allele depths plus ref allele depth
   for (pos in bcf_SRR_table_list[[i]]$Pos[duplicated(bcf_SRR_table_list[[i]]$Pos)]){
     bcf_SRR_table_list[[i]]$Coverage[which(bcf_SRR_table_list[[i]]$Pos == pos)] <- sum(as.numeric(c(bcf_SRR_table_list[[i]]$Variant_AD[which(bcf_SRR_table_list[[i]]$Pos == pos)], bcf_SRR_table_list[[i]]$Ref_AD[which(bcf_SRR_table_list[[i]]$Pos == pos)][1])))
   }
+  # Calculate strand bias
+  for (row in 1:nrow(bcf_SRR_table_list[[i]])) {
+    strand_bias_ratio <- (bcf_SRR_table_list[[i]]$Ref_ADF[row] + bcf_SRR_table_list[[i]]$Variant_ADF[row])/bcf_SRR_table_list[[i]]$Coverage[row]
+    if (0.3 < strand_bias_ratio & strand_bias_ratio < 0.7) {
+      bcf_SRR_table_list[[i]]$Filter <- "PASS"
+    }
+    else {
+      bcf_SRR_table_list[[i]]$Filter <- "STRAND_BIAS"
+    }
+  }
   mean_cov <- mean(bcf_SRR_table_list[[i]]$Coverage)
-  bcf_SRR_table_list[[SRR_name]]$meanCovRatio <- as.numeric(as.list(bcf_SRR_table_list[[SRR_name]]$Coverage))/mean_cov
+  bcf_SRR_table_list[[i]]$meanCovRatio <- as.numeric(as.list(bcf_SRR_table_list[[i]]$Coverage))/mean_cov
   bcf_SRR_table_list[[i]]$VariantLevel <- as.numeric(bcf_mpileups[[i]]$alt_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$RefLevel <- as.numeric(bcf_mpileups[[i]]$ref_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$Type <- 2
@@ -171,7 +181,7 @@ for (i in SRR_names){
     write.csv(vector_list[[i]], file = filestring, quote = F)
   }
   # Create reference sequence vector
-  if (i == SRR7245880) {
+  if (i == "SRR7245880") {
     ref_seq <- data.frame(bcf_SRR_table_list[[i]]$Pos, bcf_SRR_table_list[[i]]$Ref)
     colnames(ref_seq) <- c("Pos", "Ref")
     ref_seq <- ref_seq[!duplicated(ref_seq$Pos),]
@@ -187,7 +197,7 @@ for (i in SRR_names){
 }  # end if(use_pileups == T)
 
 
-    ###############  Read additional files  #####################
+    #################  Read additional files  #####################
 
   ## Read coverage files ##
 file_string <- paste0("alignment_stats/depths_qfilt", append_string, ".txt")  # temporarily filtered depths file as well - depths_qfilt.
@@ -536,19 +546,22 @@ write.csv(bulk_variant_pos, file = "results/bulk_variant_positions.csv", quote =
 
 ### make data frame of positions of all our variants ###
 
-all_variants <-  data.frame(matrix(ncol = 1))
-colnames(all_variants) <- "Pos"
+#all_variants <- data.frame(matrix(ncol = 1))
+#colnames(all_variants) <- "Pos"
 all_variants <- list()
 for (SRR in SRR_names) {
   SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
   colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
   all_variants <- c(all_variants, SRR_pos_level$Pos)
-  all_variants <- unique(all_variants)
+  #all_variants$Pos <- unique(all_variants$Pos)
+  #all_variants <- data.frame(all_variants$Pos)
+  
   #all_variants <- rbind(all_variants, SRR_pos_level$Pos)
   #all_variants <- all_variants[!duplicated(all_variants$Pos), ]
   #all_variants <- merge(all_variants$Pos, SRR_pos_level$Pos, by = "Pos", all = TRUE)
 }
 all_variants <- all_variants[!duplicated(all_variants)]
+length(all_variants)
 
 
    ####  all_variants_in_path  ####
@@ -886,7 +899,7 @@ colnames(Ludwig_variants) <- c("Ludwig_variant_positions", SRR_names)
 Ludwig_variants$tobecombined_Pos <- Ludwig_variants$Ludwig_variant_positions
 
 # Combine with Ludwigs data (all unconverted variant positions: Hg19-rCRS)
-all_variants_df <- data_frame(Pos=all_variants)
+all_variants_df <- data.frame(Pos=all_variants)
 all_variants_and_Ludwigs <- merge(all_variants_df, Ludwig_variants, by.x = "X1", by.y = "tobecombined_Pos", all = T)
 all_pos_and_Ludwigs <- data.frame(all_variants_and_Ludwigs$Pos, all_variants_and_Ludwigs$OurPos, all_variants_and_Ludwigs$Ludwig_variant_positions)
 
