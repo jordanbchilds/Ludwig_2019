@@ -978,10 +978,28 @@ corr_plot_all <- ggplot(melted_correlation_data, aes(log(Ludwigs_variant_level),
         legend.text = element_text(size=10), legend.position = "none") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") +
-  labs(x = "sqrt(Allele Frequency): Ludwig et al, 2019", y = "sqrt(Allele Frequency)", colour = "Variants")+
+  #labs(x = "sqrt(Allele Frequency): Ludwig et al, 2019", y = "sqrt(Allele Frequency)", colour = "Variants")+
   expand_limits(x=1,y=1) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
-ggsave(file="results/correlation_with_Ludwig_by_pos.png", plot=corr_plot_all, width = 8, height = 4, units = "in")
+ggsave(file="results/correlation_with_Ludwig_by_pos.png", plot=corr_plot_all, width = 4, height = 4, units = "in")
+
+
+# Correlation of 44 positions between our Lineage validated AFs and Ludwig's AFs: BULKS ONLY.
+corr_plot_BULKS <- ggplot(melted_correlation_data[melted_correlation_data$SRR_names %in% c("SRR7245880","SRR7245881"), ], aes(log(Ludwigs_variant_level), log(our_variant_level))) +
+  geom_point(aes(colour=factor(rCRS_Ludwig_pos))) +
+  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  #geom_smooth(method = "lm", se = TRUE, color = 'black', aes(alpha = 0.5)) +
+  theme(text = element_text(size = 13), legend.key.size = unit(0.2, "cm"), legend.title = element_text(size=14), #change legend title font size
+        legend.text = element_text(size=10), legend.position = "none") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") +
+  #labs(x = "sqrt(Allele Frequency): Ludwig et al, 2019", y = "sqrt(Allele Frequency)", colour = "Variants")+
+  expand_limits(x=1,y=1) +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+ggsave(file="results/correlation_with_Ludwig_by_pos_BULKS.png", plot=corr_plot_BULKS, width = 4, height = 4, units = "in")
+
+
 
 #shapiro.test(melted_correlation_data$Ludwigs_variant_level)
 
@@ -1033,11 +1051,11 @@ file_string <- paste0("results/Correlation_pearson_perPos.csv")
 write.csv(Ludwig_pearson_by_pos,file = file_string, quote = F)
 
 
-  ##################### Replicate correlation plot #######################
+  ###############  Technical replicates correlation plots  ##################
 
 # combine AF of replicates
-bulk_replicates_all_nofilt <- merge(SRR_table_list_HET_OR_LOWLVL_validated$SRR7245880[, c("Pos", "VariantLevel")], SRR_table_list_HET_OR_LOWLVL_validated$SRR7245881[, c("Pos", "VariantLevel")], by = "Pos", all = T)
-colnames(bulk_replicates_all_nofilt) <- c("Pos", "SRR7245880", "SRR7245881")
+bulk_replicates_all_nofilt <- merge(SRR_table_list_HET_OR_LOWLVL_nofilt$SRR7245880[, c("Pos", "VariantLevel","Variant")], SRR_table_list_HET_OR_LOWLVL_nofilt$SRR7245881[, c("Pos", "VariantLevel","Variant")], by = c("Pos","Variant"), all = T)
+colnames(bulk_replicates_all_nofilt) <- c("Pos", "Variant", "SRR7245880", "SRR7245881")
 bulk_replicates_all_nofilt$validated <- bulk_replicates_all_nofilt$Pos %in% all_validated_pos_base_noVisErr$Pos
 bulk_replicates_all_nofilt$Ludwig_positions <- bulk_replicates_all_nofilt$Pos %in% rCRS_Ludwig_pos
 bulk_replicates_all_nofilt[is.na(bulk_replicates_all_nofilt)] <- 0
@@ -1047,16 +1065,16 @@ bulk_replicates_all_validated <- bulk_replicates_all_nofilt %>% filter(validated
 #colnames(bulk_replicates_Ludwigs_nofilt) <- c("Bulk_SRR7245880", "Bulk_SRR7245881")
 #bulk_replicates_Ludwigs_nofilt[is.na(bulk_replicates_Ludwigs_nofilt)] <- 0
 
-# Technical replicate AFs of bulks (OUR pipeline): plot all validated variants, colour if one of Ludwig's 44 high confidence
-bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(log(SRR7245880),log(SRR7245881), colour=Ludwig_positions)) +
+# Technical replicate AFs of bulks (OUR pipeline): plot all variants, colour if one of Ludwig's 44 high confidence
+bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(log(SRR7245880),log(SRR7245881))) +
   geom_point() +
-  #geom_point(data=Ludwig_variants, aes(log(SRR7245880),log(SRR7245881)), colour = "red") +
-  #geom_point(data = bulk_replicates_all_validated[all_validated_pos_base$Pos %in% rCRS_Ludwig_pos,],aes(log(SRR7245880),log(SRR7245881)), colour = "blue", alpha = 0.5) +
+  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$validated == TRUE,],aes(log(SRR7245880),log(SRR7245881)), colour = "green") +
+  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(log(SRR7245880),log(SRR7245881)), colour = "red") +  
   #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
-  labs(x ="sqrt(AF) of Bulk replicate SRR7245880", y ="sqrt(AF) of Bulk replicate SRR7245881") +
+  labs(x ="log(AF) of Bulk replicate SRR7245880", y ="log(AF) of Bulk replicate SRR7245881") +
   scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  ggtitle("Lineage validated variants") +
+  ggtitle("Correlation between technical replicates") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
@@ -1064,11 +1082,13 @@ bulk_rep_corr_plot_all_nofilt
 ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
 
 
-# Technical replicate of bulks: only positions of 44 Ludwig mutations. SRR80 v 81, our validated AFs v Ludwig's AF data
-bulk_replicates_all_nofilt$Data <- "Lineage validated"
+# Technical replicate of bulks: only positions of 44 Ludwig mutations. SRR_80 v 81, our validated AFs v Ludwig's AF data
+bulk_replicates_all_nofilt$Data <- "Our pipeline"
 Ludwig_variants$Data <- "Ludwig"
-VAL_v_LUD_44_bulks <- rbind(bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE,c("Pos","SRR7245880", "SRR7245881","Data")], Ludwig_variants[,c("Pos","SRR7245880","SRR7245881","Data")])
-bulk_rep_corr_plot_all_nofilt <- ggplot(VAL_v_LUD_44_bulks, aes(log(SRR7245880),log(SRR7245881), colour=Data)) +
+Ludwig_variants$Variant <- "?"
+Ludwig_variants$Pos <- Ludwig_variants$rCRS_Ludwig_pos
+VAL_v_LUD_44_bulks <- rbind(bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE,c("Pos","Variant","SRR7245880", "SRR7245881","Data")], Ludwig_variants[,c("Pos","Variant","SRR7245880","SRR7245881","Data")])
+bulk_rep_corr_plot_44_nofilt <- ggplot(VAL_v_LUD_44_bulks, aes(log(SRR7245880),log(SRR7245881), colour=Data)) +
   geom_point(size=3, alpha=0.5) +
   #geom_point(data=Ludwig_variants, aes(log(SRR7245880),log(SRR7245881)), colour = "red") +
   #geom_point(data = bulk_replicates_all_validated[all_validated_pos_base$Pos %in% rCRS_Ludwig_pos,],aes(log(SRR7245880),log(SRR7245881)), colour = "blue", alpha = 0.5) +
@@ -1080,8 +1100,25 @@ bulk_rep_corr_plot_all_nofilt <- ggplot(VAL_v_LUD_44_bulks, aes(log(SRR7245880),
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
-bulk_rep_corr_plot_all_nofilt
-ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
+bulk_rep_corr_plot_44_nofilt
+ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_44_nofilt, width = 4, height = 4, units = "in")
+
+# Recreate Ludwig's technical replicate plot
+Ludwig_recreation_bulk_rep_corr_plot <- ggplot(Ludwig_variants[,c("Pos","SRR7245880","SRR7245881")], aes(sqrt(SRR7245880),sqrt(SRR7245881))) +
+  geom_point(alpha = 0.5) +
+  xlim(0,1) + ylim(0,1) +
+  #geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$validated == TRUE,],aes(log(SRR7245880),log(SRR7245881)), colour = "green") +
+  #geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(log(SRR7245880),log(SRR7245881)), colour = "red") +  
+  #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
+  labs(x ="log(AF) of Bulk replicate SRR7245880", y ="log(AF) of Bulk replicate SRR7245881") +
+  #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  ggtitle("Recreate Ludwig's technical replicate plot") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+Ludwig_recreation_bulk_rep_corr_plot
+ggsave(file="results/Ludwig_recreation_bulk_technical_replicates.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
 
 
 #Fig 3?
