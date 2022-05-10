@@ -748,10 +748,12 @@ for (p in validation_paths){
 }
 
 all_validated_pos_base <- all_validated_pos_base %>% drop_na()
+rm(SRR_table_1base)
 
 # Remove visually identified sequencing error
 vis_error <- c(309,310,349,457,503,512,519,523,545,550,554,561,565,567,574,3577,3583,4539,4541,4545,4546,4548,4549,4550,4551,4552,4553,4555,4558,5135,5208,5667,6221,6872,6966,7403,7408,8876,9611,13057,14190,16175,16319)
 all_validated_pos_base_noVisErr <- all_validated_pos_base[vis_error %in% all_validated_pos_base$Pos,]
+all_validated_pos_base <- all_validated_pos_base_noVisErr
 
 # write table of all lineage validated variants from any lineage
 #all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos), ]  # potential removal of variant levels on repeated SRRs?
@@ -773,11 +775,12 @@ all_potential_autocor_poses_df <- data.frame(all_potential_autocor_poses)
 colnames(all_potential_autocor_poses_df) <- "Pos"
 # lineage validated, 
 for(i in SRR_names) {
-  SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- merge(all_lineages_validated_poses_df, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], by.x = "Pos", by.y = "Pos")
+  SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- merge(SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], all_validated_pos_base, by.x = c("Pos","Variant"), by.y = c("Pos","Base"), all.y = TRUE)
+  
   print(nrow(SRR_table_list_HET_OR_LOWLVL_validated[[i]]))
   # Don't remove duplicates in $Pos - due to multiallelic pileups
   #SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- SRR_table_list_HET_OR_LOWLVL_validated[[i]][!duplicated(SRR_table_list_HET_OR_LOWLVL_validated[[i]]$Pos), ]
-  print(nrow(SRR_table_list_HET_OR_LOWLVL_validated[[i]]))
+
   #SRR_table_list_HET_OR_LOWLVL_validated[[i]] <- SRR_table_list_HET_OR_LOWLVL_validated[[i]][,1:18] %>% filter(drop_na())
   #SRR_table_list_HET_OR_LOWLVL_validated[[i]] %>% subset(SRR_table_list_HET_OR_LOWLVL_validated[[i]], Filter !="NA")
   SRR_table_list_HET_OR_LOWLVL_potautocor_validated[[i]] <- merge(all_potential_autocor_poses_df, SRR_table_list_HET_OR_LOWLVL_nofilt[[i]], by.x = "Pos", by.y = "Pos")
@@ -787,35 +790,8 @@ for(i in SRR_names) {
 #SRR_table_list_HET_OR_LOWLVL_validated[[i]][!is.na(SRR_table_list_HET_OR_LOWLVL_validated[[i]]$ID),]
 
 
-  # Get total no validated mutations
-n=0
-for (i in SRR_table_list_HET_OR_LOWLVL_validated){
-  n=n+nrow(i)
-}
-print(n)
-
-  # Get total no nofilt mutations
-n=0
-for (i in SRR_table_list_HET_OR_LOWLVL_nofilt){
-  n=n+nrow(i)
-}
-print(n)
-
-  # no het or lowlvl pass (not strand bias)
-n=0
-for (i in SRR_table_list_HET_OR_LOWLVL){
-  n=n+nrow(i)
-}
-print(n)
-
-  # No. potentially validated by autocorrelation
-n=0
-for (i in SRR_table_list_HET_OR_LOWLVL_potautocor_validated){
-  n=n+nrow(i)
-}
-print(n)
-
   ####################  Known sequencing errors  ####################
+
 # for NextSeq 500:
 
 ## Context:
@@ -847,11 +823,6 @@ print(n)
 #variant_stats <- data.frame(matrix(nrow = length(SRR_names), ncol = 10))
 #colnames(variant_stats) <- c("SRR", "No.Variants", "No.het", "No.hom", "No.lineage.validated","No.transition", "No.transversion", "Ts/Tv", "No.missense", "Strand bias")
 #variant_stats$SRR <- SRR_names
-myfunc <- function(x){
-  string = "transversion"
-  ret <- filter(x, x$Substition == string) %>% nrow
-  return(ret)
-}
 
 variant_summaries <- list()
 variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_LOWLVL_validated")
@@ -1106,7 +1077,8 @@ Snumb_path <- list("bulk", "bulk", "S0008", "S0030", "S0036", "S0050", "S0058", 
 SRR_path <- get_SRRs_from_Snumbs(Snumb_path)
 
 
-  ###################  Modify tables for plots  ######################
+  ####################  Modify tables for plots  ######################
+
 ## IMPORTANT: add empty rows to SRR_table_list of variant information, so there is one row for every position (for x axis of mutation plots)
 barplot_lims <- data.frame(0:16569, rep(1,16570))
 colnames(barplot_lims) <- c("Position", "ylimit")
@@ -1608,10 +1580,10 @@ dev.off()
 # "SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage"
 
 # Create table:
-lin_mut_load_change_lin_val <- data.frame(matrix(nrow = 0, ncol = 8))
-next_row <- data.frame(matrix(nrow = 1, ncol = 8))
-colnames(lin_mut_load_change_lin_val) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage")
-colnames(next_row) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage")
+lin_mut_load_change_lin_val <- data.frame(matrix(nrow = 0, ncol = 9))
+next_row <- data.frame(matrix(nrow = 1, ncol = 9))
+colnames(lin_mut_load_change_lin_val) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage", "Base")
+colnames(next_row) <- c("SRR", "Generation", "Generation_labs", "Pos", "Lineage", "Lineage_group", "VariantLevel", "Coverage", "Base")
 n=0
 for (p in paths){
   if (p[[1]] == "#"){
@@ -1665,6 +1637,7 @@ for (p in paths){
         n=n+1
         next_row$SRR <- SRR_name
         next_row$Pos <- pos
+        next_row$Base <- base
         next_row$Generation <- n-1  #as.numeric(SRR_lineage_generation$generation[SRR_names == SRR_name])
         next_row$Generation_labs <- SRR_lineage_generation$generation_axis_labs[SRR_names == SRR_name]
         print("Stage 2")
@@ -1686,7 +1659,7 @@ for (p in paths){
     }
   }
 }
-
+  
 # filter lin_mut_load_change_lin_val for positions of any validated mutations that occur in more than one lineage.
 cross_lineage_positions_lin_val <- unique(lin_mut_load_change_lin_val %>% 
   filter(!str_detect(Lineage, 'LUDWIG')) %>% drop_na(VariantLevel) %>% select(Pos, Lineage)) %>% count(Pos) #%>% filter(n>=2)
@@ -1785,8 +1758,8 @@ for (pos in sort(unique(lin_mut_load_change_lin_val$Pos))){
   #print(c(pos, cross_lineages$Lineage))
   # Plot ALL interesting variant positions on one graph per lineage
   lin_mut_load_change_lin_val[is.na(lin_mut_load_change_lin_val)] <- 0
-  surrounding_bases <- 
-  plot_title <- paste0("Position: ", pos, " across lineages\n", surrounding_bases)
+  #surrounding_bases <- 
+  plot_title <- paste0("Position: ", pos, " across lineages\n")#, surrounding_bases)
   mut_plot <- ggplot(data = lin_mut_load_change_lin_val[lin_mut_load_change_lin_val$Pos == pos, ], 
                      aes(x=Generation,y=VariantLevel,group=Lineage,color=Lineage_group)) +
     geom_line() +
