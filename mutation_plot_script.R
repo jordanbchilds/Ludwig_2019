@@ -38,7 +38,7 @@ library("ComplexHeatmap")
 # Change boolian to choose
 use_pileups <- TRUE
 create_vectors <- FALSE
-pre_plots <- FALSE
+pre_plots <- TRUE
 post_plots <- FALSE
 Ludwig_comparison <- FALSE
 exploratory_plots <- FALSE
@@ -152,17 +152,25 @@ for (i in SRR_names){
     bcf_SRR_table_list[[i]]$Coverage[which(bcf_SRR_table_list[[i]]$Pos == pos)] <- sum(as.numeric(c(bcf_SRR_table_list[[i]]$Variant_AD[which(bcf_SRR_table_list[[i]]$Pos == pos)], bcf_SRR_table_list[[i]]$Ref_AD[which(bcf_SRR_table_list[[i]]$Pos == pos)][1])))
   }
   # Calculate strand bias
-  for (row in 1:nrow(bcf_SRR_table_list[[i]])) {
-    strand_bias_ratio <- (bcf_SRR_table_list[[i]]$Ref_ADF[row] + bcf_SRR_table_list[[i]]$Variant_ADF[row])/bcf_SRR_table_list[[i]]$Coverage[row]
-    if (0.3 < strand_bias_ratio & strand_bias_ratio < 0.7) {
-      bcf_SRR_table_list[[i]]$Filter <- "PASS"
-    }
-    else {
-      bcf_SRR_table_list[[i]]$Filter <- "STRAND_BIAS"
-    }
-  }
+  #for (row in (1:nrow(bcf_SRR_table_list[[i]]))) {
+    # Proportion of forward reads/total reads
+    bcf_SRR_table_list[[i]]$strand_bias_ratio <- (bcf_SRR_table_list[[i]]$Ref_ADF + bcf_SRR_table_list[[i]]$Variant_ADF)/bcf_SRR_table_list[[i]]$Coverage
+  #  if (0.3 < strand_bias_ratio & strand_bias_ratio < 0.7) {
+  #    bcf_SRR_table_list[[i]]$Filter <- "PASS"
+  #  }
+  #  else {
+  #    bcf_SRR_table_list[[i]]$Filter <- "STRAND_BIAS"
+  #  }
+  #}
+  index <- bcf_SRR_table_list[[i]]$strand_bias_ratio <= 0.7 & bcf_SRR_table_list[[i]]$strand_bias_ratio >= 0.3
+  bcf_SRR_table_list[[i]]$Filter[index] <- "PASS"
+  bcf_SRR_table_list[[i]]$Filter[!index] <- "STRAND_BIAS"
   mean_cov <- mean(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$meanCovRatio <- as.numeric(as.list(bcf_SRR_table_list[[i]]$Coverage))/mean_cov
+  # Weighted AF = Weighted Forward + Weighted Reverse = (ADF / (total ADF) * total ADF / total AD(cov))  +  (ADR / (total ADR) * total ADR / total AD(cov))
+  weighted_Forward <- (bcf_SRR_table_list[[i]]$Variant_ADF / (bcf_SRR_table_list[[i]]$Variant_ADF + bcf_SRR_table_list[[i]]$Ref_ADF)) * ((bcf_SRR_table_list[[i]]$Variant_ADF + bcf_SRR_table_list[[i]]$Ref_ADF) / bcf_SRR_table_list[[i]]$Coverage)
+  weighted_Reverse <- (bcf_SRR_table_list[[i]]$Variant_ADR / (bcf_SRR_table_list[[i]]$Variant_ADR + bcf_SRR_table_list[[i]]$Ref_ADR)) * ((bcf_SRR_table_list[[i]]$Variant_ADR + bcf_SRR_table_list[[i]]$Ref_ADR) / bcf_SRR_table_list[[i]]$Coverage)
+  bcf_SRR_table_list[[i]]$WeightedVariantLevel <- weighted_Forward + weighted_Reverse
   bcf_SRR_table_list[[i]]$VariantLevel <- as.numeric(bcf_mpileups[[i]]$alt_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$RefLevel <- as.numeric(bcf_mpileups[[i]]$ref_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$Type <- 2
@@ -190,11 +198,24 @@ for (i in SRR_names){
   # Remove sites with no variants:
   bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Variant_AD >= 1 ),]
   
-  bcf_mpileups[[i]] <- NULL
+  #bcf_mpileups[[i]] <- NULL
 
 }
 
 }  # end if(use_pileups == T)
+aplot_data <- data.frame(bcf_SRR_table_list[[i]]$WeightedVariantLevel, bcf_SRR_table_list[[i]]$VariantLevel)
+colnames(aplot_data) <- c("Weighted", "VariantLevel")
+aplot <- ggplot(data = aplot_data, aes(Weighted, VariantLevel)) +
+  geom_point()
+aplot
+file_string <- "results/aplot.png"
+ggsave(file=file_string, plot=aplot)
+
+strand_bias_ratio_plot <- ggplot(data = bcf_SRR_table_list[[i]], aes(Pos, strand_bias_ratio)) +
+  geom_line()
+file_string <- "results/strand_bias_plot.png"
+ggsave(file=file_string, plot=strand_bias_ratio_plot)
+
 
 
     #################  Read additional files  #####################
