@@ -550,7 +550,7 @@ NOTES
 - [x] Add ratios column: find positions with =< 2x mean coverage
   - Gen 3 spikes coverages 
 - [ ] strand bias calculation
-- [ ] Difference in BAQ
+- [x] Difference in BAQ
 - [ ] **CALL IT DESK DON'T FORGET**
 - [ ] View suspected misalignment regions
   - 3107 
@@ -567,3 +567,38 @@ NOTES
 - [ ] Strand bias score calculation
 - [x] Further research on expected sites: detect errors through autocorrelation - compare to errors at expected sites 
   - [ ] Correlation of expected sites and strand bias score
+- [ ] Re-run alignment to check it's aligned to parent\_consensus - homoplasmic sites shouldn't be present
+- [x] copy chrM of parent\_consensus to laptop and view suspected misalignment regions
+  - 3107 
+  - 4548: 2 values per gen for all
+- [ ] Ludwig - technical replicate or biological?
+  - "two technical replicates of the bulk TF1 sample"
+- [ ] Ludwig bulk parent population clone?
+  - "parental colony" then refer to clones and sub-clones
+  - Also referred to as the bulk TF1 sample
+- [x] replicate plot on log scale, smaller dots, 
+  - [ ] overlay Ludwig and 
+  - [x] my selected positions. 
+- [ ] angela.pyle@ncl.ac.uk <- ticket IT:wq
+
+## Wednesday 4th May
+- [x] research other potential datasets
+- [x] strand bias calculation
+- [x] email IT desk, open new ticket
+
+## Friday 6th May
+- [x] Weighted allele frequency (redundant)
+- [x] Strand bias filter: 0.3 < fwd/(rv+fwd) <0.7
+- [x] Overlay Ludwig's positions
+- [ ] Overlay our AFs for Ludwig positions
+
+## Monday 9th May
+- [x] Overlay our AFs for Ludwig positions
+- [x] Overlay Ludwig's AFs with ours.
+
+## Tuesday 10th May 
+- [x] Write email to angela about IT ticket
+- [ ] No mismatches per read - 35 bp reads with 4 mismatches worse than 75bp reads with 4. Change mapping quality with read length?
+  - [ ] Look at Gen3 read lengths and base q
+- [x] Fix correlation with Ludwig AFs for larger data, multiallelics
+- [ ] Plot with strand bias sites removed
