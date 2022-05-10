@@ -888,77 +888,88 @@ if (Ludwig_comparison == TRUE){
 # read in Ludwigs variants, and variant level in each sample
 Ludwig_variants <- read.csv("data/LUDWIG_TF1_clones_ATAC_alleleFrequencies.csv", header = T)
 colnames(Ludwig_variants) <- c("Ludwig_variant_positions", SRR_names)
-Ludwig_variants$tobecombined_Pos <- Ludwig_variants$Ludwig_variant_positions
-
-# Combine with Ludwigs data (all unconverted variant positions: Hg19-rCRS)
-all_variants_df <- data.frame(Pos=all_variants)
-all_variants_and_Ludwigs <- merge(all_variants_df, Ludwig_variants, by.x = "X1", by.y = "tobecombined_Pos", all = T)
-all_pos_and_Ludwigs <- data.frame(all_variants_and_Ludwigs$Pos, all_variants_and_Ludwigs$OurPos, all_variants_and_Ludwigs$Ludwig_variant_positions)
-
-# Repeat for differently filtered data
-all_variants_HET_OR_LOWLVL <-  data.frame(matrix(ncol = 1))
-colnames(all_variants_HET_OR_LOWLVL) <- "Pos"
-
-for (SRR in SRR_names) {
-  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL[[SRR]]$VariantLevel)
-  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
-  all_variants_HET_OR_LOWLVL <- merge(all_variants_HET_OR_LOWLVL, SRR_pos_level, by = "Pos", all = T)
-}
-all_variants_HET_OR_LOWLVL <- all_variants_HET_OR_LOWLVL[!duplicated(all_variants_HET_OR_LOWLVL$Pos), ]
-all_variants_HET_OR_LOWLVL$OurPos <- all_variants_HET_OR_LOWLVL$Pos
-all_variants_HET_OR_LOWLVL_and_Ludwigs <- merge(all_variants_HET_OR_LOWLVL, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
-all_pos_HET_OR_LOWLVL_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLVL_and_Ludwigs$Pos, all_variants_HET_OR_LOWLVL_and_Ludwigs$OurPos, all_variants_HET_OR_LOWLVL_and_Ludwigs$Ludwig_variant_positions)
-
-
-all_variants_HET_OR_LOWLVL_nofilt <-  data.frame(matrix(ncol = 1))
-colnames(all_variants_HET_OR_LOWLVL_nofilt) <- "Pos"
-
-for (SRR in SRR_names) {
-  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
-  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
-  all_variants_HET_OR_LOWLVL_nofilt <- merge(all_variants_HET_OR_LOWLVL_nofilt, SRR_pos_level, by = "Pos", all = T)
-}
-all_variants_HET_OR_LOWLVL_nofilt$OurPos <- all_variants_HET_OR_LOWLVL_nofilt$Pos
-all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs <- merge(all_variants_HET_OR_LOWLVL_nofilt, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
-all_pos_HET_OR_LOWLVL_nofilt_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Pos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$OurPos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Ludwig_variant_positions)
+#Ludwig_variants$tobecombined_Pos <- Ludwig_variants$Ludwig_variant_positions
 
 # List of Ludwig converted variant positions
 Ludwig_pos <-  c("182","309","824","849","1412","1495","1797","1972","2110","2818","3174","3911","4038","4114","4215","4447","4513","5008","5564","5863","6076","6963","7075","7790","8003","8207","8922","10372","11185","11404","11712","12062","12254","12790","12839","13289","13413","13709","14437","15089","15489","15641","15798","16252")
 rCRS_Ludwig_pos <- c("182","309","822","847","1410","1493","1795","1970","2108","2816","3173","3910","4037","4413","4214","4446","4512","5007","5563","5862","6075","6962","7074","7789","8002","8206","8921","10371","11184","11403","11711","12061","12253","12789","12838","13288","13412","13708","14436","15088","15488","15640","15797","16250")
-Ludwig_positions <- data.frame(Ludwig_pos,rCRS_Ludwig_pos)
 
-# add column of converted positions to Ludwig_variants
-Ludwig_variants <- merge(Ludwig_positions, Ludwig_variants, by.x = "Ludwig_pos", by.y = "Ludwig_variant_positions")
+# Add rCRS positions, remove original
+Ludwig_variants$rCRS_Ludwig_pos <- rCRS_Ludwig_pos
+Ludwig_variants <- Ludwig_variants[,-1]
+ 
+
+## Combine with Ludwigs data (all unconverted variant positions: Hg19-rCRS)
+#all_variants_df <- data.frame(Pos=all_variants)
+#all_variants_and_Ludwigs <- merge(all_variants_df, Ludwig_variants, by.x = "X1", by.y = "tobecombined_Pos", all = T)
+#all_pos_and_Ludwigs <- data.frame(all_variants_and_Ludwigs$Pos, all_variants_and_Ludwigs$OurPos, all_variants_and_Ludwigs$Ludwig_variant_positions)
+
+## Repeat for differently filtered data
+#all_variants_HET_OR_LOWLVL <-  data.frame(matrix(ncol = 1))
+#colnames(all_variants_HET_OR_LOWLVL) <- "Pos"
+#
+#for (SRR in SRR_names) {
+#  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL[[SRR]]$VariantLevel)
+#  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+#  all_variants_HET_OR_LOWLVL <- merge(all_variants_HET_OR_LOWLVL, SRR_pos_level, by = "Pos", all = T)
+#}
+#all_variants_HET_OR_LOWLVL <- all_variants_HET_OR_LOWLVL[!duplicated(all_variants_HET_OR_LOWLVL$Pos), ]
+#all_variants_HET_OR_LOWLVL$OurPos <- all_variants_HET_OR_LOWLVL$Pos
+#all_variants_HET_OR_LOWLVL_and_Ludwigs <- merge(all_variants_HET_OR_LOWLVL, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
+#all_pos_HET_OR_LOWLVL_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLVL_and_Ludwigs$Pos, all_variants_HET_OR_LOWLVL_and_Ludwigs$OurPos, all_variants_HET_OR_LOWLVL_and_Ludwigs$Ludwig_variant_positions)
+#
+#
+#all_variants_HET_OR_LOWLVL_nofilt <-  data.frame(matrix(ncol = 1))
+#colnames(all_variants_HET_OR_LOWLVL_nofilt) <- "Pos"
+
+#for (SRR in SRR_names) {
+#  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos, SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
+#  colnames(SRR_pos_level) <- c("Pos", paste0(SRR,"_variant_lvl"))
+#  all_variants_HET_OR_LOWLVL_nofilt <- merge(all_variants_HET_OR_LOWLVL_nofilt, SRR_pos_level, by = "Pos", all = T)
+#}
+#all_variants_HET_OR_LOWLVL_nofilt$OurPos <- all_variants_HET_OR_LOWLVL_nofilt$Pos
+#all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs <- merge(all_variants_HET_OR_LOWLVL_nofilt, Ludwig_variants, by.x = "Pos", by.y = "tobecombined_Pos", all = T)
+#all_pos_HET_OR_LOWLVL_nofilt_and_Ludwigs <- data.frame(all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Pos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$OurPos, all_variants_HET_OR_LOWLVL_nofilt_and_Ludwigs$Ludwig_variant_positions)
 
 # Extract rCRS Ludwig variants in our data
-HET_OR_LOWLVL_nofilt_Ludwig_variants <-  data.frame(rCRS_Ludwig_pos)
-HET_OR_LOWLVL_nofilt_Ludwig_variants$rCRS_Ludwig_pos <- rCRS_Ludwig_pos
-our_Ludwig_variants_nofilt <-  data.frame(rCRS_Ludwig_pos)
-our_Ludwig_variants_nofilt$rCRS_Ludwig_pos <- rCRS_Ludwig_pos
+#rCRS_Ludwig_pos_df <- data.frame(rCRS_Ludwig_pos)
+HET_OR_LOWLVL_nofilt_Ludwig_variants <- data.frame(rCRS_Ludwig_pos)
+rCRS_Ludwig_pos_df <- data.frame(rCRS_Ludwig_pos)
+
 for (SRR in SRR_names){
-  SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos,SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
+  # HET_OR_LOWLVL
+  SRR_pos_level <- SRR_table_list_HET_OR_LOWLVL_validated[[SRR]][SRR_table_list_HET_OR_LOWLVL_validated[[SRR]]$Pos %in% rCRS_Ludwig_pos, c("Pos", "VariantLevel")]
+  #SRR_pos_level <- data.frame(SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$Pos,SRR_table_list_HET_OR_LOWLVL_nofilt[[SRR]]$VariantLevel)
   colnames(SRR_pos_level) <- c("Pos", SRR)
-  HET_OR_LOWLVL_nofilt_Ludwig_variants <- merge(HET_OR_LOWLVL_nofilt_Ludwig_variants, SRR_pos_level, by.x="rCRS_Ludwig_pos", by.y = "Pos", all.x=T)
-  
-  SRR_pos_level <- data.frame(SRR_table_list[[SRR]]$Pos,SRR_table_list[[SRR]]$VariantLevel)
-  colnames(SRR_pos_level) <- c("Pos", SRR)
-  our_Ludwig_variants_nofilt <- merge(our_Ludwig_variants_nofilt, SRR_pos_level, by.x="rCRS_Ludwig_pos", by.y = "Pos", all.x=T)
+  SRR_pos_level <- merge(rCRS_Ludwig_pos_df, SRR_pos_level, by.x="rCRS_Ludwig_pos", by.y = "Pos", all.x = TRUE)
+  HET_OR_LOWLVL_nofilt_Ludwig_variants <- merge(HET_OR_LOWLVL_nofilt_Ludwig_variants, SRR_pos_level, by.x="rCRS_Ludwig_pos", by.y = "rCRS_Ludwig_pos")
+  # ALL
+  #SRR_pos_level <- data.frame(SRR_table_list[[SRR]]$Pos,SRR_table_list[[SRR]]$VariantLevel)
+  #colnames(SRR_pos_level) <- c("Pos", SRR)
+  #our_Ludwig_variants_nofilt <- merge(our_Ludwig_variants_nofilt, SRR_pos_level, by.x="rCRS_Ludwig_pos", by.y = "Pos", all.x=T)
 }
 
 
   ## Overall correlation ##
 # prepare data
-melted_our_Ludwig_variants <- reshape2::melt(HET_OR_LOWLVL_nofilt_Ludwig_variants)
-Ludwig_variants <- Ludwig_variants[,-72]
-melted_Ludwig_variants <- reshape2::melt(Ludwig_variants[,-1])
+melted_our_Ludwig_variants <- reshape2::melt(HET_OR_LOWLVL_nofilt_Ludwig_variants, id.vars = "rCRS_Ludwig_pos")
+#Ludwig_variants <- Ludwig_variants[,-72]
+melted_Ludwig_variants <- reshape2::melt(Ludwig_variants, id.vars = "rCRS_Ludwig_pos")
 colnames(melted_our_Ludwig_variants) <- c("rCRS_Ludwig_pos", "SRR_names", "our_variant_level")
 colnames(melted_Ludwig_variants) <- c("rCRS_Ludwig_pos", "SRR_names", "Ludwigs_variant_level")
-melted_our_Ludwig_variants[is.na(melted_our_Ludwig_variants)] = 0
-melted_correlation_data <- merge(melted_Ludwig_variants, melted_our_Ludwig_variants, by = c("rCRS_Ludwig_pos", "SRR_names"))
-melted_correlation_data$Ludwigs_variant_level <- sqrt(melted_correlation_data$Ludwigs_variant_level)
-melted_correlation_data$our_variant_level <- sqrt(melted_correlation_data$our_variant_level)
+melted_our_Ludwig_variants[is.na(melted_our_Ludwig_variants)] <- 0
+melted_Ludwig_variants[is.na(melted_Ludwig_variants)] <- 0
+#melted_our_Ludwig_variants$rCRS_Ludwig_pos <- as.numeric(melted_our_Ludwig_variants$rCRS_Ludwig_pos)
+#melted_Ludwig_variants$rCRS_Ludwig_pos <- as.integer(melted_Ludwig_variants$rCRS_Ludwig_pos)
+#melted_our_Ludwig_variants$rCRS_Ludwig_pos <- as.integer(melted_our_Ludwig_variants$rCRS_Ludwig_pos)
+melted_correlation_data <- merge(melted_Ludwig_variants, melted_our_Ludwig_variants, by = c("rCRS_Ludwig_pos", "SRR_names"))  # Only merges 3 positions???
+melted_Ludwig_variants$Data <- "Ludwig AFs"
+melted_our_Ludwig_variants$Data <- "Lineage validated AFs"
+#rbind
+#melted_correlation_data$Ludwigs_variant_level <- sqrt(melted_correlation_data$Ludwigs_variant_level)
+#melted_correlation_data$our_variant_level <- sqrt(melted_correlation_data$our_variant_level)
 
-corr_plot_all <- ggplot(melted_correlation_data, aes(Ludwigs_variant_level, our_variant_level)) +
+corr_plot_all <- ggplot(melted_correlation_data, aes(log(Ludwigs_variant_level), log(our_variant_level))) +
   geom_point(aes(colour=factor(rCRS_Ludwig_pos))) +
   scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
@@ -970,7 +981,7 @@ corr_plot_all <- ggplot(melted_correlation_data, aes(Ludwigs_variant_level, our_
   labs(x = "sqrt(Allele Frequency): Ludwig et al, 2019", y = "sqrt(Allele Frequency)", colour = "Variants")+
   expand_limits(x=1,y=1) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
-ggsave(file="results/correlation_with_Luwig_by_pos.png", plot=corr_plot_all, width = 8, height = 4, units = "in")
+ggsave(file="results/correlation_with_Ludwig_by_pos.png", plot=corr_plot_all, width = 8, height = 4, units = "in")
 
 #shapiro.test(melted_correlation_data$Ludwigs_variant_level)
 
@@ -1020,6 +1031,67 @@ Ludwig_pearson_by_pos$p.values <- pvalues
 Ludwig_pearson_by_pos <- apply(Ludwig_pearson_by_pos,2,as.character)
 file_string <- paste0("results/Correlation_pearson_perPos.csv")
 write.csv(Ludwig_pearson_by_pos,file = file_string, quote = F)
+
+
+  ##################### Replicate correlation plot #######################
+
+# combine AF of replicates
+bulk_replicates_all_nofilt <- merge(SRR_table_list_HET_OR_LOWLVL_validated$SRR7245880[, c("Pos", "VariantLevel")], SRR_table_list_HET_OR_LOWLVL_validated$SRR7245881[, c("Pos", "VariantLevel")], by = "Pos", all = T)
+colnames(bulk_replicates_all_nofilt) <- c("Pos", "SRR7245880", "SRR7245881")
+bulk_replicates_all_nofilt$validated <- bulk_replicates_all_nofilt$Pos %in% all_validated_pos_base_noVisErr$Pos
+bulk_replicates_all_nofilt$Ludwig_positions <- bulk_replicates_all_nofilt$Pos %in% rCRS_Ludwig_pos
+bulk_replicates_all_nofilt[is.na(bulk_replicates_all_nofilt)] <- 0
+bulk_replicates_all_validated <- bulk_replicates_all_nofilt %>% filter(validated == TRUE)
+
+#bulk_replicates_Ludwigs_nofilt <- data.frame(our_Ludwig_variants_nofilt$SRR7245880, our_Ludwig_variants_nofilt$SRR7245881)
+#colnames(bulk_replicates_Ludwigs_nofilt) <- c("Bulk_SRR7245880", "Bulk_SRR7245881")
+#bulk_replicates_Ludwigs_nofilt[is.na(bulk_replicates_Ludwigs_nofilt)] <- 0
+
+# Technical replicate AFs of bulks (OUR pipeline): plot all validated variants, colour if one of Ludwig's 44 high confidence
+bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(log(SRR7245880),log(SRR7245881), colour=Ludwig_positions)) +
+  geom_point() +
+  #geom_point(data=Ludwig_variants, aes(log(SRR7245880),log(SRR7245881)), colour = "red") +
+  #geom_point(data = bulk_replicates_all_validated[all_validated_pos_base$Pos %in% rCRS_Ludwig_pos,],aes(log(SRR7245880),log(SRR7245881)), colour = "blue", alpha = 0.5) +
+  #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
+  labs(x ="sqrt(AF) of Bulk replicate SRR7245880", y ="sqrt(AF) of Bulk replicate SRR7245881") +
+  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  ggtitle("Lineage validated variants") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+bulk_rep_corr_plot_all_nofilt
+ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
+
+
+# Technical replicate of bulks: only positions of 44 Ludwig mutations. SRR80 v 81, our validated AFs v Ludwig's AF data
+bulk_replicates_all_nofilt$Data <- "Lineage validated"
+Ludwig_variants$Data <- "Ludwig"
+VAL_v_LUD_44_bulks <- rbind(bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE,c("Pos","SRR7245880", "SRR7245881","Data")], Ludwig_variants[,c("Pos","SRR7245880","SRR7245881","Data")])
+bulk_rep_corr_plot_all_nofilt <- ggplot(VAL_v_LUD_44_bulks, aes(log(SRR7245880),log(SRR7245881), colour=Data)) +
+  geom_point(size=3, alpha=0.5) +
+  #geom_point(data=Ludwig_variants, aes(log(SRR7245880),log(SRR7245881)), colour = "red") +
+  #geom_point(data = bulk_replicates_all_validated[all_validated_pos_base$Pos %in% rCRS_Ludwig_pos,],aes(log(SRR7245880),log(SRR7245881)), colour = "blue", alpha = 0.5) +
+  #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
+  labs(x ="sqrt(AF) of Bulk replicate SRR7245880", y ="sqrt(AF) of Bulk replicate SRR7245881") +
+  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  ggtitle("Lineage validated variants") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+bulk_rep_corr_plot_all_nofilt
+ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
+
+
+#Fig 3?
+comparison_plots <- list(corr_plot_all, bulk_rep_corr_plot_all_nofilt)
+comparison_plots <- ggarrange(plots = comparison_plots, ncol = 2, align = "hv")
+ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, height = 4, units = "in")
+#comparison_plots_and_heatmap <- plot_grid(
+#  heatmap_ludwig_variants, comparison_plots,
+#  labels = "AUTO", ncol = 1
+#)
 
 
  ############## Heatmap of Ludwig's variant positions ###################
@@ -1803,43 +1875,6 @@ dev.off()
 
 }  # end if (position_specific_plots == TRUE)
 
-
-####################### Replicate correlation plot #######################
-
-# combine AF of replicates
-bulk_replicates_all_nofilt <- merge(SRR_table_list_HET_OR_LOWLVL_nofilt$SRR7245880[, c("Pos", "VariantLevel")], SRR_table_list_HET_OR_LOWLVL_nofilt$SRR7245881[, c("Pos", "VariantLevel")], by = "Pos", all = T)
-colnames(bulk_replicates_all_nofilt) <- c("Pos", "SRR7245880", "SRR7245881")
-bulk_replicates_all_nofilt$validated <- bulk_replicates_all_nofilt$Pos %in% all_validated_pos_base_noVisErr$Pos
-bulk_replicates_all_nofilt[is.na(bulk_replicates_all_nofilt)] <- 0
-bulk_replicates_all_validated <- bulk_replicates_all_nofilt %>% filter(validated == TRUE)
-
-#bulk_replicates_Ludwigs_nofilt <- data.frame(our_Ludwig_variants_nofilt$SRR7245880, our_Ludwig_variants_nofilt$SRR7245881)
-#colnames(bulk_replicates_Ludwigs_nofilt) <- c("Bulk_SRR7245880", "Bulk_SRR7245881")
-#bulk_replicates_Ludwigs_nofilt[is.na(bulk_replicates_Ludwigs_nofilt)] <- 0
-
-# plot sqrt AF
-bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(log(SRR7245880),log(SRR7245881))) +
-  geom_point() +
-  geom_point(data=bulk_replicates_all_validated,  aes(log(SRR7245880),log(SRR7245881)), colour = "green") +
-  #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
-  labs(x ="sqrt(AF) of Bulk replicate SRR7245880", y ="sqrt(AF) of Bulk replicate SRR7245881") +
-  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") +
-  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
-bulk_rep_corr_plot_all_nofilt
-ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
-
-
-#Fig 3?
-comparison_plots <- list(corr_plot_all, bulk_rep_corr_plot_all_nofilt)
-comparison_plots <- ggarrange(plots = comparison_plots, ncol = 2, align = "hv")
-ggsave(file="results/comparison_plots.png", plot=comparison_plots, width = 8, height = 4, units = "in")
-#comparison_plots_and_heatmap <- plot_grid(
-#  heatmap_ludwig_variants, comparison_plots,
-#  labels = "AUTO", ncol = 1
-#)
 
 
   #####################  Vectors of allele read proportions ########################
