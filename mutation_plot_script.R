@@ -213,6 +213,7 @@ ggsave(file=file_string, plot=aplot)
 
 strand_bias_ratio_plot <- ggplot(data = bcf_SRR_table_list[[i]], aes(Pos, strand_bias_ratio)) +
   geom_line()
+strand_bias_ratio_plot
 file_string <- "results/strand_bias_plot.png"
 ggsave(file=file_string, plot=strand_bias_ratio_plot)
 
@@ -247,6 +248,26 @@ raw_sample_info <- read.csv("data/SraRunTable_1.csv", header = T)
 # raw sequencing information
 pre_multiqc <- read.table("multiQC/group_SRP149534_multiQC_report_data/multiqc_general_stats.txt", header = T) 
 colnames(pre_multiqc) <- c("SRR_sample", "percent_dup", "percent_gc", "sequence_lengths", "percent_fails", "num_seqs")
+
+# Coverage (before and after filtering for mapping and base quality):
+# information included (column names): "X.rname", "startpos","endpos","numreads","covbases","coverage","meandepth","meanbaseq","meanmapq","SRRs","read_lengths","calculated_mean_depth","calculated_sd_depth" and min and max depths for qfilt
+file_string <- paste0("alignment_stats/all_coverages_qfilt", append_string, ".txt")
+all_coverages_qfilt <- read.csv(file_string, header = T, sep = "\t")
+all_coverages_qfilt$SRRs <- SRR_names
+
+file_string <- paste0("alignment_stats/all_coverages_qfilt", append_string, ".txt")  # temporarily also filtered version
+all_coverages <- read.csv(file_string, header = T, sep = "\t")
+all_coverages$SRRs <- SRR_names
+df_SRR_names <- data.frame(SRR_names)
+all_coverages$read_lengths <- merge(data.frame(SRR_names), raw_sample_info, all.x = T, by.x = "SRR_names", by.y = "Run")[,3]
+all_coverages_qfilt$read_lengths <- merge(data.frame(SRR_names), raw_sample_info, all.x = T, by.x = "SRR_names", by.y = "Run")[,3]
+
+all_coverages$calculated_mean_depth <- as.numeric(lapply(depths[,3:ncol(depths)], mean))
+all_coverages$calculated_sd_depth <- as.numeric(lapply(depths[,3:ncol(depths)], sd))
+all_coverages_qfilt$calculated_mean_depth <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], mean))
+all_coverages_qfilt$calculated_sd_depth <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], sd))
+all_coverages_qfilt$min_depth <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], min))
+all_coverages_qfilt$max_depth <- as.numeric(lapply(depths_qfilt[,3:ncol(depths_qfilt)], max))
 
 
   ######################   Pre-alignment   #########################
@@ -554,6 +575,9 @@ for(i in SRR_names){
   # no strand bias filter to see if variants are filtered differently in different samples across lineage paths
   SRR_table_list_HET_OR_LOWLVL_nofilt[[i]] <- subset(SRR_table_list[[i]], Type ==2)
   # Lineage_validated created below 
+  
+  #### TEMPORARILY remove strand bias sites from all downstream ####
+  #SRR_table_list[[i]] <- SRR_table_list_PASS[[i]]
 }
 
 
@@ -897,7 +921,7 @@ rCRS_Ludwig_pos <- c("182","309","822","847","1410","1493","1795","1970","2108",
 # Add rCRS positions, remove original
 Ludwig_variants$rCRS_Ludwig_pos <- rCRS_Ludwig_pos
 Ludwig_variants <- Ludwig_variants[,-1]
- 
+
 
 ## Combine with Ludwigs data (all unconverted variant positions: Hg19-rCRS)
 #all_variants_df <- data.frame(Pos=all_variants)
@@ -1752,6 +1776,7 @@ for (p in paths){
         print("Stage 2")
         #next_row$VariantLevel <- SRR_table_list[[SRR_name]] %>% filter(Pos == pos & Variant == base) %>% select(VariantLevel)
         if (base %in% SRR_table_list[[SRR_name]]$Variant[which(SRR_table_list[[SRR_name]]$Pos == pos)]) { 
+        #if (SRR_table_list[[SRR_name]]$Variant[which(SRR_table_list[[SRR_name]]$Pos == pos)] %in% base) { 
           next_row$VariantLevel <- SRR_table_list[[SRR_name]]$VariantLevel[which(SRR_table_list[[SRR_name]]$Pos == pos & SRR_table_list[[SRR_name]]$Variant == base)]
           next_row$Coverage <- SRR_table_list[[SRR_name]]$Variant_AD[which(SRR_table_list[[SRR_name]]$Pos == pos & SRR_table_list[[SRR_name]]$Variant == base)] #SRR_table_list[[SRR_name]]$Coverage[which(SRR_table_list[[SRR_name]]$Pos == pos & SRR_table_list[[SRR_name]]$Variant == base)] 
         }
@@ -1768,17 +1793,18 @@ for (p in paths){
     }
   }
 }
-  
-# filter lin_mut_load_change_lin_val for positions of any validated mutations that occur in more than one lineage.
-cross_lineage_positions_lin_val <- unique(lin_mut_load_change_lin_val %>% 
-  filter(!str_detect(Lineage, 'LUDWIG')) %>% drop_na(VariantLevel) %>% select(Pos, Lineage)) %>% count(Pos) #%>% filter(n>=2)
-cross_lineage_positions_lin_val <- merge(
-  (lin_mut_load_change_lin_val %>% filter(!str_detect(Lineage, 'LUDWIG'))), 
-  cross_lineage_positions_lin_val, by = 'Pos') %>% filter(n>=2)
 
-# Convert allele frequency (VariantLevel) NAs to 0.00s for plotting
-cross_lineage_positions_lin_val[is.na(cross_lineage_positions_lin_val)] <- 0
-
+#  
+### Filter lin_mut_load_change_lin_val for positions of any validated mutations that occur in more than one lineage.
+#cross_lineage_positions_lin_val <- unique(lin_mut_load_change_lin_val %>% 
+#  filter(!str_detect(Lineage, 'LUDWIG')) %>% drop_na(VariantLevel) %>% select(Pos, Lineage)) %>% count(Pos) #%>% filter(n>=2)
+#cross_lineage_positions_lin_val <- merge(
+#  (lin_mut_load_change_lin_val %>% filter(!str_detect(Lineage, 'LUDWIG'))), 
+#  cross_lineage_positions_lin_val, by = 'Pos') %>% filter(n>=2)
+#
+## Convert allele frequency (VariantLevel) NAs to 0.00s for plotting
+#cross_lineage_positions_lin_val[is.na(cross_lineage_positions_lin_val)] <- 0
+#
 # Calculate differences between generation 3 and the rest - spike in number and AF of alleles for some positions
 # general tests (mapping qualities, base qualities), position specific tests (depths, SP)
 gen3_poerpos_stats <- data.frame(Pos=lin_mut_load_change_lin_val$Pos)
