@@ -595,10 +595,36 @@ NOTES
 ## Monday 9th May
 - [x] Overlay our AFs for Ludwig positions
 - [x] Overlay Ludwig's AFs with ours.
+- [ ] Find cause of weird 4548 plot
+  -> insertion in one sample caused misalignment and false calls from 4541:4555
 
 ## Tuesday 10th May 
 - [x] Write email to angela about IT ticket
 - [ ] No mismatches per read - 35 bp reads with 4 mismatches worse than 75bp reads with 4. Change mapping quality with read length?
+  - [ ] increase mapping quality to 1 less mismatch for 75bp reads: peaks in Gen 2 and 3 (only some in Gen 2 and 3 have longer reads) 
   - [ ] Look at Gen3 read lengths and base q
 - [x] Fix correlation with Ludwig AFs for larger data, multiallelics
+- [x] Recreate Ludwigs correlation plot from their data
+  - NOT IDENTICAL TO THEIR PUBLISHED PLOT?
+- [x] Plot just bulks correlation
+  - [ ] Repeat for 
 - [ ] Plot with strand bias sites removed
+
+## Wednesday 11th May
+- [ ] STRAND BIAS
+  - [x] Plot mut load plots with strand bias sites removed
+  - [ ] Research flexible strand bias removal 
+    - [ ] look at the strand bias of the same site in different samples?
+    - [ ] measures of strand bias eg. bcftools, GATK
+    - occassionally removes sites in generations with genuine mutation eg.4214
+    - occassionally doesn't remove sequencing error sites (
+    - detect misalignment?
+  - [ ] Plot correlation plots with strand bias sites removed
+  - Implement unequal strand weight check/unequal strand AF - whichever is not atm
+- [x] Find reason for AF difference between plots: STRAND\_BIAS sites removed (PASS) vs nofilt
+  - No difference in AF just some seq err peaks removed!!
+- [ ] How low an AF before correlation plot blobs?
+
+- [ ] Each strand equally weighted or by no. reads?
+  - atm the strand with more coverage influences AF the most. If removing sites with low coverage/unequal strand weight
+  - See results
