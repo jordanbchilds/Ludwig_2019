@@ -37,7 +37,8 @@ library("ComplexHeatmap")
 
 # Change boolian to choose
 use_pileups <- TRUE
-create_vectors <- FALSE
+filter_strand_bias <- TRUE
+create_vectors <- TRUE
 pre_plots <- FALSE
 post_plots <- FALSE
 Ludwig_comparison <- TRUE
@@ -146,7 +147,7 @@ for (i in SRR_names){
     bcf_SRR_table_list[[i]]$Coverage[which(bcf_SRR_table_list[[i]]$Pos == pos)] <- sum(as.numeric(c(bcf_SRR_table_list[[i]]$Variant_AD[which(bcf_SRR_table_list[[i]]$Pos == pos)], bcf_SRR_table_list[[i]]$Ref_AD[which(bcf_SRR_table_list[[i]]$Pos == pos)][1])))
   }
   
-  ###  Variant Level or Allele Frequency (AF)
+  ###  Variant Level or Allele Frequency (AF)  ###
   ## Equal weight between strands (WeightedVariantLevel) and weighted by no. reads on each strand (VariantLevel)
   # Calculate forward and reverse AFs:
   bcf_SRR_table_list[[i]]$forward_AF <- bcf_SRR_table_list[[i]]$Variant_ADF / (bcf_SRR_table_list[[i]]$Variant_ADF + bcf_SRR_table_list[[i]]$Ref_ADF)
@@ -159,22 +160,36 @@ for (i in SRR_names){
   bcf_SRR_table_list[[i]]$VariantLevel <- as.numeric(bcf_mpileups[[i]]$alt_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$RefLevel <- as.numeric(bcf_mpileups[[i]]$ref_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
   
-  ###  Calculate strand bias
+  
+  ###  Calculate strand bias  ###
   # Strand_bias_ratio_TOTAL: total no forward reads (ref and variant) / total no reads. 
   bcf_SRR_table_list[[i]]$strand_bias_ratio_TOTAL <- (bcf_SRR_table_list[[i]]$Variant_ADF + bcf_SRR_table_list[[i]]$Ref_ADF)/bcf_SRR_table_list[[i]]$Coverage
-
+  
   # Strand_bias_ratio_SUPPORTING: total no forward variant supporting reads / total no supporting reads. 
   bcf_SRR_table_list[[i]]$strand_bias_ratio_SUPPORTING <- bcf_SRR_table_list[[i]]$Variant_ADF / (bcf_SRR_table_list[[i]]$Variant_ADF + bcf_SRR_table_list[[i]]$Variant_ADR)
   
-  # strand_AF_bias_ratio: Proportion of forward reads/total reads
+  # strand_bias_AF_ratio: Proportion of forward AF/forward +reverse AF
   bcf_SRR_table_list[[i]]$strand_bias_ratio_AF <- bcf_SRR_table_list[[i]]$forward_AF / (bcf_SRR_table_list[[i]]$forward_AF + bcf_SRR_table_list[[i]]$reverse_AF)
   
-  # Strand bias AF
+  # NaN for strand bias measures if supporting reads on either/both strands is 0 (zero division). If only one of the two strands is 0 then strand bias is present, but if both strands are 0 then there is no strand bias.
+  # if no. forward supporting reads = 0, set strand bias ratios to 0 
+  bcf_SRR_table_list[[i]]$strand_bias_ratio_TOTAL[bcf_SRR_table_list[[i]]$Variant_ADF == 0] <- 0
+  bcf_SRR_table_list[[i]]$strand_bias_ratio_SUPPORTING[bcf_SRR_table_list[[i]]$Variant_ADF == 0] <- 0
+  bcf_SRR_table_list[[i]]$strand_bias_ratio_AF[bcf_SRR_table_list[[i]]$Variant_ADF == 0] <- 0
+  # if no. reverse supporting reads = 0, set strand bias ratios to 1
+  bcf_SRR_table_list[[i]]$strand_bias_ratio_TOTAL[bcf_SRR_table_list[[i]]$Variant_ADR == 0] <- 1
+  bcf_SRR_table_list[[i]]$strand_bias_ratio_SUPPORTING[bcf_SRR_table_list[[i]]$Variant_ADR == 0] <- 1
+  bcf_SRR_table_list[[i]]$strand_bias_ratio_AF[bcf_SRR_table_list[[i]]$Variant_ADR == 0] <- 1
+  # if no. supporting reads on both strands = 0, set strand bias ratios to 0.5 (balanced)
+  bcf_SRR_table_list[[i]]$strand_bias_ratio_TOTAL[bcf_SRR_table_list[[i]]$Variant_ADF == 0 & bcf_SRR_table_list[[i]]$Variant_ADR == 0] <- 0.5
+  bcf_SRR_table_list[[i]]$strand_bias_ratio_SUPPORTING[bcf_SRR_table_list[[i]]$Variant_ADF == 0 & bcf_SRR_table_list[[i]]$Variant_ADR == 0] <- 0.5
+  bcf_SRR_table_list[[i]]$strand_bias_ratio_AF[bcf_SRR_table_list[[i]]$Variant_ADF == 0 & bcf_SRR_table_list[[i]]$Variant_ADR == 0] <- 0.5
   
-  # Filter by strand_AF_bias_ratio
+  ## Filter status: by strand_bias_ratio_AF
   index <- bcf_SRR_table_list[[i]]$strand_bias_ratio_AF <= 0.7 & bcf_SRR_table_list[[i]]$strand_bias_ratio_AF >= 0.3
   bcf_SRR_table_list[[i]]$Filter[index] <- "PASS"
   bcf_SRR_table_list[[i]]$Filter[!index] <- "STRAND_BIAS"
+
   mean_cov <- mean(bcf_SRR_table_list[[i]]$Coverage)
   bcf_SRR_table_list[[i]]$meanCovRatio <- as.numeric(as.list(bcf_SRR_table_list[[i]]$Coverage))/mean_cov
   ## Weighted AF = Weighted Forward + Weighted Reverse = (ADF / (total ADF) * total ADF / total AD(cov))  +  (ADR / (total ADR) * total ADR / total AD(cov))
@@ -201,10 +216,19 @@ for (i in SRR_names){
   # Function defined above
   # Create vectors, then remove massive number of variants with no supporting reads (all <*> sites)
   if (create_vectors == TRUE) {
-    vector_list[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "A"))
-    vector_list[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "C")
-    vector_list[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "G")
-    vector_list[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "T")
+    if (filter_strand_bias == TRUE) {
+      vector_list[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "A"))
+      vector_list[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "C")
+      vector_list[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "G")
+      vector_list[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "T")
+    }
+    else {
+      vector_list[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]][,], "A"))
+      vector_list[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]], "C")
+      vector_list[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G")
+      vector_list[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T")
+    }
+    
     filestring <- paste0("results/", i,"_reads_vector.csv")
     write.csv(vector_list[[i]], file = filestring, quote = F)
   }
@@ -230,76 +254,11 @@ for (i in SRR_names){
 # Adjustment without running whole pileup and bcf_SRR_table_list generation again.
 for (i in SRR_names){
   #bcf_SRR_table_list[[i]]$VariantLevel <- bcf_SRR_table_list[[i]]$EqualWeightVariantLevel  ## TEMPORARY set VariantLevel to WEIGHTED VARIANT LEVEL: equal influence of each strand on AF ##
-  
-  ## See relationship between degree of strand bias and difference in read-count vs equally weighted between strand AFs
-  # (- Actual Ratio - Expected ratio of Forward/total reads) ^2 = 0.5 - (Forward Reads / Total Reads)
-  bcf_SRR_table_list[[i]]$DeviationFrmEqualNoReadsPerStrand <- (bcf_SRR_table_list[[i]]$strand_bias_ratio_AF - 0.5)^2
-  ## Difference in mean Allele Frequency from expected AF if Forward and Reverse were equal .
-  
-  # (Expected AF when each strand detects the same AF - AF skewed by STRAND_BIAS) ^2 
-  bcf_SRR_table_list[[i]]$strand_bias_ratio_AF_SqrDiff <- (bcf_SRR_table_list[[i]]$EqualWeightVariantLevel - bcf_SRR_table_list[[i]]$VariantLevel)^2
-  
-  # Forward supporting AF / Forward + Reverse supporting AF = Ratio of 
-  # same but for AF supporting reads not total reads
-  bcf_SRR_table_list[[i]]$DeviationFrmEquallyWeightedAF <- bcf_SRR_table_list[[i]]$Variant_ADF / (bcf_SRR_table_list[[i]]$Variant_ADF + bcf_SRR_table_list[[i]]$R_ADR)
-  
+  bcf_SRR_table_list[[i]]$VariantLevel <- as.numeric(bcf_SRR_table_list[[i]]$Variant_AD) / as.numeric(bcf_SRR_table_list[[i]]$Coverage)
+  # Remove all STRAND_BIAS variants
+  #bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),]
+  print(i)
 }
-
-test <- bcf_SRR_table_list[[i]][bcf_SRR_table_list[[i]]$Variant_ADF > 0 & bcf_SRR_table_list[[i]]$Variant_ADR > 0, ]
-
-## STRAND BIAS plots
-aplot <- ggplot(data = bcf_SRR_table_list[[i]], aes(EqualWeightVariantLevel, VariantLevel)) +
-  #geom_point() #+
-  geom_point(data = bcf_SRR_table_list[[i]][bcf_SRR_table_list[[i]]$Filter!="STRAND_BIAS",], colour = "black") +
-  geom_point(data = bcf_SRR_table_list[[i]][bcf_SRR_table_list[[i]]$Filter=="STRAND_BIAS",], colour = "red", alpha = 0.1) +
-  scale_x_log10() + scale_y_log10() + annotation_logticks()
-aplot
-file_string <- "results/Equally_vs_read_weighted_AFs_STRAND_BIAS_plot.png"
-ggsave(file=file_string, plot=aplot)
-aplot <- ggplot(data = test, aes(EqualWeightVariantLevel, VariantLevel)) +
-  #geom_point() #+
-  geom_point(data = test[test$Filter!="STRAND_BIAS",], colour = "black", alpha = 0.3) +
-  geom_point(data = test[test$Filter=="STRAND_BIAS",], colour = "red", alpha = 0.3) +
-  scale_x_log10() + scale_y_log10() + annotation_logticks()
-aplot
-file_string <- "results/Equally_vs_read_weighted_AFs_STRAND_BIAS_plot.png"
-ggsave(file=file_string, plot=aplot)
-
-
-aplot <- ggplot(data = bcf_SRR_table_list[[i]][], aes(VariantLevel, strand_bias_ratio_AF_SqrDiff)) +
-  #geom_point() #+
-  geom_point(data = bcf_SRR_table_list[[i]][bcf_SRR_table_list[[i]]$Filter!="STRAND_BIAS",], colour = "black", alpha = 0.1) +
-  geom_point(data = bcf_SRR_table_list[[i]][bcf_SRR_table_list[[i]]$Filter=="STRAND_BIAS",], colour = "red", alpha = 0.1) +
-  scale_x_log10() + scale_y_log10() + annotation_logticks()
-aplot
-file_string <- "results/Equally_weighted_AFs_STRAND_BIAS_plot.png"
-ggsave(file=file_string, plot=aplot)
-aplot <- ggplot(data = test[], aes(VariantLevel, strand_bias_ratio_AF_SqrDiff)) +
-  #geom_point() #+
-  geom_point(data = test[test$Filter!="STRAND_BIAS",], colour = "black", alpha = 0.3) +
-  geom_point(data = test[test$Filter=="STRAND_BIAS",], colour = "red", alpha = 0.3) +
-  scale_x_log10() + scale_y_log10() + annotation_logticks()
-aplot
-file_string <- "results/Equally_weighted_AFs_STRAND_BIAS_plot.png"
-ggsave(file=file_string, plot=aplot)
-
-# Plot deviation from equal no. reads on each strand vs deviation of AF when weighted by no. supporting reads per strand, from AF when strands are equally weighted
-aplot <- ggplot(data = bcf_SRR_table_list[[i]], aes(DeviationFrmEquallyWeightedAF, DeviationFrmEqualNoReads)) +
-  geom_point(data = bcf_SRR_table_list[[i]][bcf_SRR_table_list[[i]]$Filter!="STRAND_BIAS",], colour = "black") +
-  geom_point(data = bcf_SRR_table_list[[i]][bcf_SRR_table_list[[i]]$Filter=="STRAND_BIAS",], colour = "red") +
-  coord_cartesian(xlim = c(0,0.5),ylim = c(0,0.5)) +
-  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
-aplot
-file_string <- "results/Equally_weighted_AFs_STRAND_BIAS_plot.png"
-ggsave(file=file_string, plot=aplot)
-
-strand_bias_ratio_plot <- ggplot(data = bcf_SRR_table_list[[i]], aes(Pos, strand_bias_ratio)) +
-  geom_line()
-strand_bias_ratio_plot
-file_string <- "results/strand_bias_plot.png"
-ggsave(file=file_string, plot=strand_bias_ratio_plot)
-
-
 
     #################  Read additional files  #####################
 
@@ -853,13 +812,14 @@ for (p in validation_paths){
   print("stage 8")
 }
 
+length(all_validated_poses)
 all_validated_pos_base <- all_validated_pos_base %>% drop_na()
 rm(SRR_table_1base)
 
 # Remove visually identified sequencing error
 vis_error <- c(309,310,349,457,503,512,519,523,545,550,554,561,565,567,574,3577,3583,4539,4541,4545,4546,4548,4549,4550,4551,4552,4553,4555,4558,5135,5208,5667,6221,6872,6966,7403,7408,8876,9611,13057,14190,16175,16319)
 all_validated_pos_base_noVisErr <- all_validated_pos_base[vis_error %in% all_validated_pos_base$Pos,]
-all_validated_pos_base <- all_validated_pos_base_noVisErr
+#all_validated_pos_base <- all_validated_pos_base_noVisErr
 
 # write table of all lineage validated variants from any lineage
 #all_lineages_validated <- all_lineages_validated[!duplicated(all_lineages_validated$Pos), ]  # potential removal of variant levels on repeated SRRs?
@@ -943,10 +903,12 @@ variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_
   #Mean.Coverage <- 
   No.Variants.Per.SRR <- sapply(SRR_table_list_HET_OR_LOWLVL_nofilt, nrow)
   No.Variants <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_nofilt, nrow))
+  #No.Variants.alt_AD.greaterthan1 <- 
   No.Positions <- length(all_variants)
   No.Validated.Variants.Per.SRR <- sapply(SRR_table_list_HET_OR_LOWLVL_validated, nrow)
   No.Validated.Variants <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_validated, nrow))
-  No.Validated.Positions <- length(all_validated_poses)
+  No.Validated.unique.Position.Base <- length(all_validated_poses)
+  No.Validated.Positions <- nrow(all_validated_pos_base)
   No.Potential.AutoCor.Valid.Variants.per.SRR <- sapply(SRR_table_list_HET_OR_LOWLVL_potautocor_validated, nrow)
   No.Potential.AutoCor.Valid.Variants <- sum(sapply(SRR_table_list_HET_OR_LOWLVL_potautocor_validated, nrow))
   No.Potential.AutoCor.Valid.Postions <- length(all_potential_autocor_poses)
@@ -957,7 +919,7 @@ variant_summaries_dfnames <- c("HET_OR_LOWLVL_nofilt", "HET_OR_LOWLVL", "HET_OR_
   No.Variants.Per.SRR.STRAND.BIAS <- No.Variants.Per.SRR.nofilt - No.Variants.Per.SRR.PASS.FILTERS  # implement strand bias check and filter
   No.Variants.STRAND.BIAS <- No.Variants.nofilt - No.Variants.PASS
   
-  variant_summaries <- data.frame(No.Variants, No.Positions, No.Validated.Variants, No.Validated.Positions, No.Potential.AutoCor.Valid.Variants, No.Potential.AutoCor.Valid.Postions, No.Variants.STRAND.BIAS)
+  variant_summaries <- data.frame(No.Variants, No.Positions, No.Validated.Variants, No.Validated.unique.Position.Base, No.Validated.Positions, No.Potential.AutoCor.Valid.Variants, No.Potential.AutoCor.Valid.Postions, No.Variants.STRAND.BIAS)
   print(variant_summaries)
   file_string <- paste0("results/variant_summaries.csv")
   write.csv(variant_summaries, file = file_string, quote = F)
@@ -1078,7 +1040,7 @@ melted_our_Ludwig_variants$Data <- "Lineage validated AFs"
 # Correlation between all our AFs and Ludwig's AFs
 corr_plot_all <- ggplot(melted_correlation_data, aes(Ludwigs_variant_level, our_variant_level)) +
   geom_point(aes(colour=factor(rCRS_Ludwig_pos))) +
-  scale_x_log10() + scale_y_log10() +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
   annotation_logticks() +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
@@ -1098,7 +1060,7 @@ ggsave(file="results/correlation_with_Ludwig_by_pos.png", plot=corr_plot_all, wi
 # Correlation of 44 positions between our Lineage validated AFs and Ludwig's AFs: BULKS ONLY.
 corr_plot_BULKS <- ggplot(melted_correlation_data[melted_correlation_data$SRR_names %in% c("SRR7245880","SRR7245881"), ], aes(Ludwigs_variant_level, our_variant_level)) +
   geom_point(aes(colour=factor(rCRS_Ludwig_pos))) +
-  scale_x_log10() + scale_y_log10() +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
   annotation_logticks() +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
@@ -1186,8 +1148,8 @@ bulk_rep_corr_plot_44_nofilt <- ggplot(VAL_v_LUD_44_bulks, aes(SRR7245880,SRR724
   #geom_point(data=Ludwig_variants, aes(log(SRR7245880),log(SRR7245881)), colour = "red") +
   #geom_point(data = bulk_replicates_all_validated[all_validated_pos_base$Pos %in% rCRS_Ludwig_pos,],aes(log(SRR7245880),log(SRR7245881)), colour = "blue", alpha = 0.5) +
   #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
-  labs(x ="sqrt(AF) of Bulk replicate SRR7245880", y ="sqrt(AF) of Bulk replicate SRR7245881") +
-  scale_x_log10() + scale_y_log10() +
+  labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
   annotation_logticks() +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
@@ -1196,14 +1158,14 @@ bulk_rep_corr_plot_44_nofilt <- ggplot(VAL_v_LUD_44_bulks, aes(SRR7245880,SRR724
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
 bulk_rep_corr_plot_44_nofilt
-ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_44_nofilt, width = 4, height = 4, units = "in")
+ggsave(file="results/bulk_replicate_scatter_overlay_both_pipelines_AFs.png", plot=bulk_rep_corr_plot_44_nofilt, width = 4, height = 4, units = "in")
 
 # Recreate Ludwig's technical replicate plot
 Ludwig_recreation_bulk_rep_corr_plot <- ggplot(Ludwig_variants[,c("Pos","SRR7245880","SRR7245881")], aes(SRR7245880,SRR7245881)) +
   geom_point(alpha = 0.5) +
   #xlim(0,1) + ylim(0,1) +
   labs(x ="log(AF) of Bulk replicate SRR7245880", y ="log(AF) of Bulk replicate SRR7245881") +
-  scale_x_log10() + scale_y_log10() +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   ggtitle("Recreate Ludwig's technical replicate plot") +
@@ -1212,13 +1174,13 @@ Ludwig_recreation_bulk_rep_corr_plot <- ggplot(Ludwig_variants[,c("Pos","SRR7245
   geom_abline(intercept = 0, slope = 1, alpha = 0.4) +
   annotation_logticks()
 Ludwig_recreation_bulk_rep_corr_plot
-ggsave(file="results/Ludwig_recreation_bulk_technical_replicates.png", plot=Ludwig_recreation_bulk_rep_corr_plot, width = 4, height = 4, units = "in")
+ggsave(file="results/Ludwig_recreation_bulk_technical_replicates_Log.png", plot=Ludwig_recreation_bulk_rep_corr_plot, width = 4, height = 4, units = "in")
 
 # Recreate Ludwig's technical replicate plot
 Ludwig_recreation_bulk_rep_corr_plot <- ggplot(Ludwig_variants[,c("Pos","SRR7245880","SRR7245881")], aes(sqrt(SRR7245880),sqrt(SRR7245881))) +
   geom_point(alpha = 0.5) +
   #xlim(0,1) + ylim(0,1) +
-  labs(x ="log(AF) of Bulk replicate SRR7245880", y ="log(AF) of Bulk replicate SRR7245881") +
+  labs(x ="Bulk replicate SRR7245880", y = "Bulk replicate SRR7245881") +
   #scale_x_log10() + scale_y_log10() +
   scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
@@ -1231,25 +1193,25 @@ ggsave(file="results/Ludwig_recreation_bulk_technical_replicates.png", plot=Ludw
 
 
 # Technical replicate plot AFs of bulks (OUR pipeline): plot only Ludwig's 44 high confidence
-bulk_rep_corr_plot_44_nofilt <- ggplot(bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(log(SRR7245880),log(SRR7245881))) +
+bulk_rep_corr_plot_44_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(SRR7245880,SRR7245881)) +
   geom_point() +
-  labs(x ="log(AF) of Bulk replicate SRR7245880", y ="log(AF) of Bulk replicate SRR7245881") +
-  #scale_x_log10() + scale_y_log10() +
+  labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  ggtitle("Correlation between technical replicates") +
+  ggtitle("Correlation between technical replicates (our pipeline)") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
 bulk_rep_corr_plot_44_nofilt
-ggsave(file="results/bulk_replicate_scatter_44.png", plot=bulk_rep_corr_plot_44_nofilt, width = 4, height = 4, units = "in")
+ggsave(file="results/bulk_replicate_scatter_all.png", plot=bulk_rep_corr_plot_44_nofilt, width = 4, height = 4, units = "in")
 
 
 # Technical replicate plot AFs of bulks (OUR pipeline): plot only Ludwig's 44 high confidence
 bulk_rep_corr_plot_44_nofilt <- ggplot(bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(SRR7245880,SRR7245881)) +
   geom_point() +
-  labs(x ="log(AF) of Bulk replicate SRR7245880", y ="log(AF) of Bulk replicate SRR7245881") +
-  scale_x_log10() + scale_y_log10() + 
+  labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) + 
   annotation_logticks() +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
@@ -1265,20 +1227,21 @@ ggsave(file="results/bulk_replicate_scatter_44.png", plot=bulk_rep_corr_plot_44_
 bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(SRR7245880,SRR7245881)) +
   geom_point() +
   geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$validated == TRUE,],aes(SRR7245880,SRR7245881), colour = "green") +
-  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(SRR7245880,SRR7245881), colour = "red") +  
+  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(SRR7245880,SRR7245881), colour = "red", alpha = 0.7) +  
   #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
   labs(x ="log(AF) of Bulk replicate SRR7245880", y ="log(AF) of Bulk replicate SRR7245881") +
-  scale_x_continuous(trans='log10') +
-  scale_y_continuous(trans='log10') +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) + 
   annotation_logticks() +
+  
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   ggtitle("Correlation between technical replicates") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
-  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4) +
+  geom_abline(intercept = 0.0001, slope = 1, alpha = 0.4)
 bulk_rep_corr_plot_all_nofilt
-ggsave(file="results/bulk_replicate_scatter.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
+ggsave(file="results/bulk_replicate_scatter_all_coloured.png", plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
 
 
 
@@ -1718,7 +1681,7 @@ for (p in paths){
           mut_load_change$Generation[n] <- n-1
           mut_load_change$Generation_labs[n] <- paste(SRR_lineage_generation$generation_axis_labs[SRR_lineage_generation$SRR_names==SRR_name])
           mut_load_change$VariantLevel[n] <- SRR_table_list[[SRR_name]]$VariantLevel[which(SRR_table_list[[SRR_name]]$Pos == pos_of_interest)] #SRR_table_list[[SRR_name]]$VariantLevel[pos_of_interest+1]
-          mut_load_change$Coverage[n] <- depths_qfilt[[SRR_name]][pos_of_interest]
+          mut_load_change$Coverage[n] <- SRR_table_list[[SRR_name]]$Coverage[which(SRR_table_list[[SRR_name]]$Pos == pos_of_interest)] #depths_qfilt[[SRR_name]][pos_of_interest]
           mut_load_change$Pos[n] <- pos_of_interest
           mut_load_change$Lineage <- p[[1]]
           mut_load_change$Lineage_group <- paste(SRR_lineage_generation$lineages[SRR_lineage_generation$SRR_names==SRR_name])
