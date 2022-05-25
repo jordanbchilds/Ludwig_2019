@@ -37,7 +37,7 @@ library("ComplexHeatmap")
 
 # Change boolian to choose
 use_pileups <- TRUE
-filter_strand_bias <- TRUE
+filter_strand_bias <- FALSE
 create_vectors <- TRUE
 pre_plots <- FALSE
 post_plots <- FALSE
@@ -82,23 +82,27 @@ if (use_pileups == TRUE){
   # for each nucleotide ACGT (solves multiallelic problem of more than one AF per genomic position)
   # (weighted?) supporting reads over total reads
   
-# Create function. (Vectors themselves created when making bcf_SRR_table_lists below, so sites with no variants can be removed from large dfs)
-AF_vectors <- function(SRR_table, base){
-  #mt_vectors <- data.frame()
-  #colnames(mt_vectors) <- c("A","C","G","T")
-  #for (base in c("A","C","G","T")){
+# Create function to get supporting read counts for each allele, including reference allele. (Vectors themselves created when making bcf_SRR_table_lists below, so sites with no variants can be removed from large dfs)
+  # Specify which strand for allele reads counts: forward/reverse/both
+AF_vectors <- function(SRR_table, base, which_strand){
+  if (which_strand == "forward") {
+    column <- "Variant_ADF"
+    ref_column <- "Ref_ADF"} 
+  else if (which_strand == "reverse"){
+    column <- "Variant_ADR"
+    ref_column <- "Ref_ADR"}
+  else if (which_strand == "both") {
+    column <- "Variant_AD"
+    ref_column <- "Ref_AD"}
   mt_vector <- rep(0,16569)
   for (pos in SRR_table$Pos[which(SRR_table$Variant == base)]){
     #print(paste0("Pos = ",pos))
     #print(SRR_table$Pos[which(SRR_table$Pos == pos)])
-    mt_vector[pos] <- as.numeric(SRR_table[SRR_table$Variant == base & SRR_table$Pos == pos, "Variant_AD"])
+    mt_vector[pos] <- as.numeric(SRR_table[SRR_table$Variant == base & SRR_table$Pos == pos, column])
   }
   for (pos in SRR_table$Pos[which(SRR_table$Ref == base)]){
-    #print(paste0("ref pos = ", pos))
-    #print(SRR_table$Pos[which(SRR_table$Pos == pos)])
-    mt_vector[pos] <- as.numeric(SRR_table[SRR_table$Ref == base & SRR_table$Pos == pos, "Ref_AD"][1])
+    mt_vector[pos] <- as.numeric(SRR_table[SRR_table$Ref == base & SRR_table$Pos == pos, ref_column][1])
   }
-  #mt_vectors[[base]] <- mt_vector
   return(mt_vector)
 }
 
@@ -128,7 +132,8 @@ for(i in SRR_names){
 #ID      Filter  Pos     Ref     Variant VariantLevel    MajorBase       MajorLevel      MinorBase       MinorLevel      Coverage            CoverageFWD     CoverageREV     Type
 
 bcf_SRR_table_list <- list()
-vector_list <- list()
+fwd_vector <- list()
+rv_vector <- list()
 for (i in SRR_names){
   bcf_SRR_table_list[[i]] <- data.frame(bcf_mpileups[[i]]$Pos)
   colnames(bcf_SRR_table_list[[i]]) <- "Pos"
@@ -217,20 +222,34 @@ for (i in SRR_names){
   # Create vectors, then remove massive number of variants with no supporting reads (all <*> sites)
   if (create_vectors == TRUE) {
     if (filter_strand_bias == TRUE) {
-      vector_list[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "A"))
-      vector_list[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "C")
-      vector_list[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "G")
-      vector_list[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "T")
+      fwd_vector[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "A", "forward"))
+      fwd_vector[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "C", "forward")
+      fwd_vector[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "G", "forward")
+      fwd_vector[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "T", "forward")
+      filestring <- paste0("results/", i,"_fwd_vector_SBias_removed.csv")
+      write.csv(fwd_vector[[i]], file = filestring, quote = F)
+      rv_vector[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "A", "reverse"))
+      rv_vector[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "C", "reverse")
+      rv_vector[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "G", "reverse")
+      rv_vector[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Filter == "PASS"),], "T", "reverse")
+      filestring <- paste0("results/", i,"_rv_vector_SBias_removed.csv")
+      write.csv(vector_list[[i]], file = filestring, quote = F)
     }
     else {
-      vector_list[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]][,], "A"))
-      vector_list[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]], "C")
-      vector_list[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G")
-      vector_list[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T")
+      fwd_vector[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]][,], "A", "forward"))
+      fwd_vector[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]], "C", "forward")
+      fwd_vector[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G", "forward")
+      fwd_vector[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T", "forward")
+      filestring <- paste0("results/", i,"_fwd_vector.csv")
+      write.csv(vector_list[[i]], file = filestring, quote = F)
+      rv_vector[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]], "A", "reverse"))
+      rv_vector[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]], "C", "reverse")
+      rv_vector[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G", "reverse")
+      rv_vector[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T", "reverse")
+      filestring <- paste0("results/", i,"_rv_vector.csv")
+      write.csv(vector_list[[i]], file = filestring, quote = F)
     }
     
-    filestring <- paste0("results/", i,"_reads_vector.csv")
-    write.csv(vector_list[[i]], file = filestring, quote = F)
   }
   
   # Create reference sequence vector
