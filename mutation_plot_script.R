@@ -40,7 +40,6 @@ use_pileups <- TRUE
 filter_strand_bias <- FALSE  # remove all allele reads that have strand bias from bcf_SRR_table
 min_1_each_strand <- TRUE  # remove all sites that have 0 reads 
 equally_weighted <- FALSE  # use EqualWeightVariantLevel: both strands have equal influence on AF, not skewed by coverage
-
 create_vectors <- FALSE
 pre_plots <- FALSE
 post_plots <- FALSE
@@ -63,7 +62,7 @@ vcfdir <- paste0("vcf", append_string)
 bcfdir <- paste0("mpileups", append_string, "_mq4_bq23.8")
 group_name <- "SRP149534"
 
-outdir <- "results_min_1_read_per_strand/"
+outdir <- "results/"
 
 
   ####################  Read SRR files  ########################
@@ -258,10 +257,11 @@ for (i in SRR_names){
   }
   
   # Create reference sequence vector
-  if (i == "SRR7245880") {
+  if (exists("ref_seq") == FALSE) {
     ref_seq <- data.frame(bcf_SRR_table_list[[i]]$Pos, bcf_SRR_table_list[[i]]$Ref)
     colnames(ref_seq) <- c("Pos", "Ref")
     ref_seq <- ref_seq[!duplicated(ref_seq$Pos),]
+    print("Extracting reference sequence (ref_seq)")
   }
   
   # Remove sites with no variants:
@@ -651,9 +651,7 @@ for(i in SRR_names){
   # no strand bias filter to see if variants are filtered differently in different samples across lineage paths
   SRR_table_list_HET_OR_LOWLVL_nofilt[[i]] <- subset(SRR_table_list[[i]], Type ==2)
   # Lineage_validated created below 
-  
-  #### TEMPORARILY remove strand bias sites from all downstream ####
-  #SRR_table_list[[i]] <- SRR_table_list_PASS[[i]]
+
 }
 
 
@@ -1073,8 +1071,8 @@ melted_our_Ludwig_variants$Data <- "Lineage validated AFs"
 #melted_correlation_data$our_variant_level <- sqrt(melted_correlation_data$our_variant_level)
 
 # Correlation between all our AFs and Ludwig's AFs
-corr_plot_all <- ggplot(melted_correlation_data, aes(Ludwigs_variant_level, our_variant_level)) +
-  geom_point(aes(colour=factor(rCRS_Ludwig_pos))) +
+corr_plot_all <- ggplot(melted_correlation_data, aes(Ludwigs_variant_level, our_variant_level, color = SRR_names)) +
+  geom_point(aes(alpha = 0.3))+#aes(colour=factor(rCRS_Ludwig_pos))) +
   scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
   annotation_logticks() +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
@@ -1093,21 +1091,24 @@ ggsave(file=paste0(outdir,"correlation_with_Ludwig_by_pos.png"), plot=corr_plot_
 
 
 # Correlation of 44 positions between our Lineage validated AFs and Ludwig's AFs: BULKS ONLY.
-corr_plot_BULKS <- ggplot(melted_correlation_data[melted_correlation_data$SRR_names %in% c("SRR7245880","SRR7245881"), ], aes(Ludwigs_variant_level, our_variant_level)) +
-  geom_point(aes(colour=factor(rCRS_Ludwig_pos))) +
+corr_plot_BULKS <- ggplot(melted_correlation_data[melted_correlation_data$SRR_names %in% c("SRR7245880","SRR7245881"), ], aes(Ludwigs_variant_level, our_variant_level, color = SRR_names)) +
+  geom_point(alpha = 0.8) +
+  scale_alpha(guide = 'none') +
+  scale_color_manual(values=c("orange", "purple")) +
   scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
   annotation_logticks() +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #geom_smooth(method = "lm", se = TRUE, color = 'black', aes(alpha = 0.5)) +
-  theme(text = element_text(size = 13), legend.key.size = unit(0.2, "cm"), legend.title = element_text(size=14), #change legend title font size
-        legend.text = element_text(size=10), legend.position = "none") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") +
+  #theme(text = element_text(size = 13), legend.key.size = unit(0.2, "cm"), legend.title = element_text(size=14), #change legend title font size
+  #      legend.text = element_text(size=10)) +
+  theme(axis.line = element_line(colour = "black"), panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(), panel.background = element_blank(), 
+        text = element_text(size = 13), legend.key.size = unit(0.2, "cm"), legend.title = element_text(size=14), #change legend title font size
+        legend.text = element_text(size=10)) +
   ggtitle("Correlation of AFs between our pipeline and Ludwig's\n BULKs only") +
   #labs(x = "sqrt(Allele Frequency): Ludwig et al, 2019", y = "sqrt(Allele Frequency)", colour = "Variants")+
   expand_limits(x=1,y=1) +
-  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4, colour = "red")
 corr_plot_BULKS
 ggsave(file=paste0(outdir,"correlation_with_Ludwig_by_pos_BULKS.png"), plot=corr_plot_BULKS, width = 4, height = 4, units = "in")
 
@@ -1179,63 +1180,60 @@ Ludwig_variants$Variant <- "?"
 Ludwig_variants$Pos <- Ludwig_variants$rCRS_Ludwig_pos
 VAL_v_LUD_44_bulks <- rbind(bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE,c("Pos","Variant","SRR7245880", "SRR7245881","Data")], Ludwig_variants[,c("Pos","Variant","SRR7245880","SRR7245881","Data")])
 bulk_rep_corr_plot_44_nofilt <- ggplot(VAL_v_LUD_44_bulks, aes(SRR7245880,SRR7245881, colour=Data)) +
-  geom_point(size=3, alpha=0.5) +
-  #geom_point(data=Ludwig_variants, aes(log(SRR7245880),log(SRR7245881)), colour = "red") +
-  #geom_point(data = bulk_replicates_all_validated[all_validated_pos_base$Pos %in% rCRS_Ludwig_pos,],aes(log(SRR7245880),log(SRR7245881)), colour = "blue", alpha = 0.5) +
-  #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
+  geom_point(alpha=0.7) +
+  scale_color_manual(values=c("magenta", "green")) +
   labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
-  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
+  scale_x_log10(labels = scales::comma, limits = c(0.0001,1)) + scale_y_log10(labels = scales::comma, limits = c(0.0001,1)) +
+  #expand_limits(x=c(0,1)) + expand_limits(y=c0,1) +
+  #xlim(0,1) + ylim(0,1) +
   annotation_logticks() +
-  #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   ggtitle("Ludwig's 44 variant AFs between technical replicates") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
-  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4, colour = "red")
 bulk_rep_corr_plot_44_nofilt
 ggsave(file=paste0(outdir,"bulk_replicate_scatter_overlay_both_pipelines_AFs.png"), plot=bulk_rep_corr_plot_44_nofilt, width = 4, height = 4, units = "in")
 
-# Recreate Ludwig's technical replicate plot
+# Recreate Ludwig's technical replicate plot LOG SCALE
 Ludwig_recreation_bulk_rep_corr_plot <- ggplot(Ludwig_variants[,c("Pos","SRR7245880","SRR7245881")], aes(SRR7245880,SRR7245881)) +
-  geom_point(alpha = 0.5) +
+  geom_point(alpha = 0.6, colour = "magenta") +
   #xlim(0,1) + ylim(0,1) +
-  labs(x ="log(AF) of Bulk replicate SRR7245880", y ="log(AF) of Bulk replicate SRR7245881") +
-  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
-  #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  ggtitle("Recreate Ludwig's technical replicate plot") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
+  scale_color_manual(values=c("magenta", "green")) +
+  labs(x ="SRR7245880 Allele Frequency", y ="SRR7245881 Allele Frequency") +
+  scale_x_log10(labels = scales::comma, limits = c(0.0001,1)) + scale_y_log10(labels = scales::comma, limits = c(0.0001,1)) +
+  ggtitle("(Ludwig) Allele frequencies of parent technical replicates") +
+  theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
-  geom_abline(intercept = 0, slope = 1, alpha = 0.4) +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4, colour = "red") +
   annotation_logticks()
 Ludwig_recreation_bulk_rep_corr_plot
 ggsave(file=paste0(outdir, "Ludwig_recreation_bulk_technical_replicates_Log.png"), plot=Ludwig_recreation_bulk_rep_corr_plot, width = 4, height = 4, units = "in")
 
-# Recreate Ludwig's technical replicate plot
+# Recreate Ludwig's technical replicate plot SQRT
 Ludwig_recreation_bulk_rep_corr_plot <- ggplot(Ludwig_variants[,c("Pos","SRR7245880","SRR7245881")], aes(sqrt(SRR7245880),sqrt(SRR7245881))) +
-  geom_point(alpha = 0.5) +
+  geom_point(colour = "magenta", alpha = 0.5) +
   #xlim(0,1) + ylim(0,1) +
   labs(x ="Bulk replicate SRR7245880", y = "Bulk replicate SRR7245881") +
   #scale_x_log10() + scale_y_log10() +
   scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   ggtitle("Recreate Ludwig's technical replicate plot") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
-  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4, colour = "red")
 Ludwig_recreation_bulk_rep_corr_plot
 ggsave(file=paste0(outdir, "Ludwig_recreation_bulk_technical_replicates.png"), plot=Ludwig_recreation_bulk_rep_corr_plot, width = 4, height = 4, units = "in")
-
 
 # Technical replicate plot AFs of bulks (OUR pipeline): plot only Ludwig's 44 high confidence
 bulk_rep_corr_plot_44_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(SRR7245880,SRR7245881)) +
   geom_point() +
   labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
-  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
+  scale_x_log10(labels = scales::comma, limits = c(0.0001,1)) + scale_y_log10(labels = scales::comma, limits = c(0.0001,1)) +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  ggtitle("Correlation between technical replicates (our pipeline)") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  ggtitle("Allele Frequencies of technical replicates (our pipeline)") +
+  theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
 bulk_rep_corr_plot_44_nofilt
@@ -1244,34 +1242,33 @@ ggsave(file=paste0(outdir, "bulk_replicate_scatter_all.png"), plot=bulk_rep_corr
 
 # Technical replicate plot AFs of bulks (OUR pipeline): plot only Ludwig's 44 high confidence
 bulk_rep_corr_plot_44_nofilt <- ggplot(bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(SRR7245880,SRR7245881)) +
-  geom_point() +
+  geom_point(colour = "green", alpha = 0.5) +
   labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
   scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) + 
   annotation_logticks() +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   ggtitle("Correlation between technical replicates") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
-  geom_abline(intercept = 0, slope = 1, alpha = 0.4)
+  geom_abline(intercept = 0, slope = 1, alpha = 0.4, colour = "red")
 bulk_rep_corr_plot_44_nofilt
 ggsave(file=paste0(outdir, "bulk_replicate_scatter_44.png"), plot=bulk_rep_corr_plot_44_nofilt, width = 4, height = 4, units = "in")
 
 
 # Technical replicate plot AFs of bulks (OUR pipeline): plot all variants, colour if one of Ludwig's 44 high confidence
 bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(SRR7245880,SRR7245881)) +
-  geom_point() +
-  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$validated == TRUE,],aes(SRR7245880,SRR7245881), colour = "green") +
-  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(SRR7245880,SRR7245881), colour = "red", alpha = 0.7) +  
+  geom_point(alpha = 0.2) +
+  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$validated == TRUE,],aes(SRR7245880,SRR7245881), colour = "green", alpha = 0.6) +
+  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(SRR7245880,SRR7245881), colour = "magenta", alpha = 0.9) +  
   #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
-  labs(x ="log(AF) of Bulk replicate SRR7245880", y ="log(AF) of Bulk replicate SRR7245881") +
+  labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
   scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) + 
   annotation_logticks() +
-  
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   ggtitle("Correlation between technical replicates") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4) +
   geom_abline(intercept = 0.0001, slope = 1, alpha = 0.4)
