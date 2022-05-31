@@ -48,6 +48,8 @@ exploratory_plots <- FALSE
 position_specific_plots <- TRUE
 print(paste0("Make large exploratory plots: ", exploratory_plots))
 
+lin_val_threshold <- 0.005
+
   ###########################  DATA  ############################
   # Controls for which vcf/ directory and which post-alignment files in alignment_stats/ 
   # are imported. Allows simpler comparison between datasets eg. calls from reads aligned 
@@ -62,7 +64,7 @@ vcfdir <- paste0("vcf", append_string)
 bcfdir <- paste0("mpileups", append_string, "_mq4_bq23.8")
 group_name <- "SRP149534"
 
-outdir <- "results/"
+outdir <- "results_min_1_read_per_strand_linval_no005cutoff/"
 
 
   ####################  Read SRR files  ########################
@@ -70,6 +72,7 @@ filenames <- list.files(vcfdir, pattern="*_annotated.txt")
 filepath <- paste0("data/group_", group_name, "_SRRs.txt")
 SRR_names <- as.list(read.table(filepath, stringsAsFactors = FALSE))[1]
 SRR_names <- SRR_names$V1
+#SRR_names <- c("SRR7245880", "SRR7245881")
 # Create list of data frame names without the ".txt" part 
 #SRR_names <-substr(SRR_names,1,10)
 #SRR_names <- c("SRR7245880", "SRR7245881","SRR7245883", "SRR7245897", "SRR7245917")
@@ -139,6 +142,7 @@ bcf_SRR_table_list <- list()
 fwd_vector <- list()
 rv_vector <- list()
 for (i in SRR_names){
+  print(i)
   bcf_SRR_table_list[[i]] <- data.frame(bcf_mpileups[[i]]$Pos)
   colnames(bcf_SRR_table_list[[i]]) <- "Pos"
   bcf_SRR_table_list[[i]]$Ref <- bcf_mpileups[[i]]$REF
@@ -265,7 +269,7 @@ for (i in SRR_names){
   }
   
   # Remove sites with no variants:
-  bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][bcf_SRR_table_list[[i]]$Variant_AD > 0,]
+  #bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][bcf_SRR_table_list[[i]]$Variant_AD > 0,]
   #bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][bcf_SRR_table_list[[i]]$Variant_ADF >= 1 & bcf_SRR_table_list[[i]]$Variant_ADR >= 1, ]
   
   # Remove bcf_mpileups from memory
@@ -796,7 +800,7 @@ for (p in validation_paths){
   ###  LINEAGE VALIDATION  ###
   
   # only keep variants which have at least one allele with an allele frequency > 0.01, and are present at least twice in the lineage
-  lineage_validated_1base <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt %>% filter_at(-1, any_vars(.>0.01))
+  lineage_validated_1base <- all_variants_in_lineage_HET_OR_LOWLVL_nofilt %>% filter_at(-1, any_vars(.>lin_val_threshold))
   lineage_validated_1base <- lineage_validated_1base[rowSums(!is.na(lineage_validated_1base[,-1]))>=2,]
   
   # Merge so the lineage validated of all four bases are in one multiallelic table
@@ -1080,14 +1084,14 @@ corr_plot_all <- ggplot(melted_correlation_data, aes(Ludwigs_variant_level, our_
   #geom_smooth(method = "lm", se = TRUE, color = 'black', aes(alpha = 0.5)) +
   theme(text = element_text(size = 13), legend.key.size = unit(0.2, "cm"), legend.title = element_text(size=14), #change legend title font size
         legend.text = element_text(size=10), legend.position = "none") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = "none") +
   ggtitle("Correlation of AFs between our pipeline and Ludwig's") +
   #labs(x = "sqrt(Allele Frequency): Ludwig et al, 2019", y = "sqrt(Allele Frequency)", colour = "Variants")+
   expand_limits(x=1,y=1) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
 corr_plot_all
-ggsave(file=paste0(outdir,"correlation_with_Ludwig_by_pos.png"), plot=corr_plot_all, width = 4, height = 4, units = "in")
+ggsave(file=paste0(outdir,"correlation_with_Ludwig_by_pos.png"), plot=corr_plot_all, width = 8, height = 8, units = "in")
 
 
 # Correlation of 44 positions between our Lineage validated AFs and Ludwig's AFs: BULKS ONLY.
@@ -1110,7 +1114,7 @@ corr_plot_BULKS <- ggplot(melted_correlation_data[melted_correlation_data$SRR_na
   expand_limits(x=1,y=1) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4, colour = "red")
 corr_plot_BULKS
-ggsave(file=paste0(outdir,"correlation_with_Ludwig_by_pos_BULKS.png"), plot=corr_plot_BULKS, width = 4, height = 4, units = "in")
+ggsave(file=paste0(outdir,"correlation_with_Ludwig_by_pos_BULKS.png"), plot=corr_plot_BULKS, width = 8, height = 8, units = "in")
 
 #shapiro.test(melted_correlation_data$Ludwigs_variant_level)
 
@@ -1182,17 +1186,17 @@ VAL_v_LUD_44_bulks <- rbind(bulk_replicates_all_nofilt[bulk_replicates_all_nofil
 bulk_rep_corr_plot_44_nofilt <- ggplot(VAL_v_LUD_44_bulks, aes(SRR7245880,SRR7245881, colour=Data)) +
   geom_point(alpha=0.7) +
   scale_color_manual(values=c("magenta", "green")) +
-  labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
+  labs(x ="SRR7245880 Allele Frequency", y ="SRR7245881 Allele Frequency") +
   scale_x_log10(labels = scales::comma, limits = c(0.0001,1)) + scale_y_log10(labels = scales::comma, limits = c(0.0001,1)) +
   #expand_limits(x=c(0,1)) + expand_limits(y=c0,1) +
   #xlim(0,1) + ylim(0,1) +
   annotation_logticks() +
-  ggtitle("Ludwig's 44 variant AFs between technical replicates") +
+  ggtitle("Comparison of technical replicate Allele Frequencies") +
   theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13), legend.position = c(0.8,0.2)) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4, colour = "red")
 bulk_rep_corr_plot_44_nofilt
-ggsave(file=paste0(outdir,"bulk_replicate_scatter_overlay_both_pipelines_AFs.png"), plot=bulk_rep_corr_plot_44_nofilt, width = 4, height = 4, units = "in")
+ggsave(file=paste0(outdir,"bulk_replicate_scatter_overlay_both_pipelines_AFs.png"), plot=bulk_rep_corr_plot_44_nofilt, width = 8, height = 8, units = "in")
 
 # Recreate Ludwig's technical replicate plot LOG SCALE
 Ludwig_recreation_bulk_rep_corr_plot <- ggplot(Ludwig_variants[,c("Pos","SRR7245880","SRR7245881")], aes(SRR7245880,SRR7245881)) +
@@ -1208,28 +1212,28 @@ Ludwig_recreation_bulk_rep_corr_plot <- ggplot(Ludwig_variants[,c("Pos","SRR7245
   geom_abline(intercept = 0, slope = 1, alpha = 0.4, colour = "red") +
   annotation_logticks()
 Ludwig_recreation_bulk_rep_corr_plot
-ggsave(file=paste0(outdir, "Ludwig_recreation_bulk_technical_replicates_Log.png"), plot=Ludwig_recreation_bulk_rep_corr_plot, width = 4, height = 4, units = "in")
+ggsave(file=paste0(outdir, "Ludwig_recreation_bulk_technical_replicates_Log.png"), plot=Ludwig_recreation_bulk_rep_corr_plot, width = 8, height = 8, units = "in")
 
 # Recreate Ludwig's technical replicate plot SQRT
 Ludwig_recreation_bulk_rep_corr_plot <- ggplot(Ludwig_variants[,c("Pos","SRR7245880","SRR7245881")], aes(sqrt(SRR7245880),sqrt(SRR7245881))) +
   geom_point(colour = "magenta", alpha = 0.5) +
   #xlim(0,1) + ylim(0,1) +
-  labs(x ="Bulk replicate SRR7245880", y = "Bulk replicate SRR7245881") +
+  labs(x ="sqrt(SRR7245880 Allele Frequency)", y = "sqrt(SRR7245881 Allele Frequency") +
   #scale_x_log10() + scale_y_log10() +
   scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  ggtitle("Recreate Ludwig's technical replicate plot") +
+  ggtitle("(Ludwig) Sqrt(Allele frequencies) of parent technical replicates") +
   theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4, colour = "red")
 Ludwig_recreation_bulk_rep_corr_plot
-ggsave(file=paste0(outdir, "Ludwig_recreation_bulk_technical_replicates.png"), plot=Ludwig_recreation_bulk_rep_corr_plot, width = 4, height = 4, units = "in")
+ggsave(file=paste0(outdir, "Ludwig_recreation_bulk_technical_replicates.png"), plot=Ludwig_recreation_bulk_rep_corr_plot, width = 8, height = 8, units = "in")
 
-# Technical replicate plot AFs of bulks (OUR pipeline): plot only Ludwig's 44 high confidence
+# Technical replicate plot AFs of bulks (OUR pipeline)
 bulk_rep_corr_plot_44_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(SRR7245880,SRR7245881)) +
-  geom_point() +
+  geom_point(alpha = 0.2) +
   labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
-  scale_x_log10(labels = scales::comma, limits = c(0.0001,1)) + scale_y_log10(labels = scales::comma, limits = c(0.0001,1)) +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   ggtitle("Allele Frequencies of technical replicates (our pipeline)") +
@@ -1237,7 +1241,7 @@ bulk_rep_corr_plot_44_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(SRR724588
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4)
 bulk_rep_corr_plot_44_nofilt
-ggsave(file=paste0(outdir, "bulk_replicate_scatter_all.png"), plot=bulk_rep_corr_plot_44_nofilt, width = 4, height = 4, units = "in")
+ggsave(file=paste0(outdir, "bulk_replicate_scatter_all.png"), plot=bulk_rep_corr_plot_44_nofilt, width = 8, height = 8, units = "in")
 
 
 # Technical replicate plot AFs of bulks (OUR pipeline): plot only Ludwig's 44 high confidence
@@ -1253,29 +1257,88 @@ bulk_rep_corr_plot_44_nofilt <- ggplot(bulk_replicates_all_nofilt[bulk_replicate
         panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
   geom_abline(intercept = 0, slope = 1, alpha = 0.4, colour = "red")
 bulk_rep_corr_plot_44_nofilt
-ggsave(file=paste0(outdir, "bulk_replicate_scatter_44.png"), plot=bulk_rep_corr_plot_44_nofilt, width = 4, height = 4, units = "in")
+ggsave(file=paste0(outdir, "bulk_replicate_scatter_44.png"), plot=bulk_rep_corr_plot_44_nofilt, width = 8, height = 8, units = "in")
 
+bulk_replicates_all_nofilt$Colours <- "Not Lineage Validated"#rep("Not Lineage Validated", 28410)
+index <- bulk_replicates_all_nofilt$validated == TRUE #<- "Validated"
+bulk_replicates_all_nofilt$Colours[index] <- "Lineage Validated"
+index <- bulk_replicates_all_nofilt$Ludwig_positions == TRUE #<- "Validated"
+bulk_replicates_all_nofilt$Colours[index] <- "One of the 44 Ludwig positions"
 
 # Technical replicate plot AFs of bulks (OUR pipeline): plot all variants, colour if one of Ludwig's 44 high confidence
-bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, aes(SRR7245880,SRR7245881)) +
-  geom_point(alpha = 0.2) +
-  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$validated == TRUE,],aes(SRR7245880,SRR7245881), colour = "green", alpha = 0.6) +
-  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(SRR7245880,SRR7245881), colour = "magenta", alpha = 0.9) +  
+bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, mapping = aes(SRR7245880,SRR7245881, colour = Colours, alpha = 1)) +
+  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$validated == FALSE & bulk_replicates_all_nofilt$Ludwig_positions == FALSE,], alpha = 0.1, colour = "black") +
+  scale_colour_manual(values = c("Not Lineage Validated" = "Black", "Lineage Validated" = "green", "One of the 44 Ludwig positions" = "magenta")) +
+  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$validated == TRUE | bulk_replicates_all_nofilt$Ludwig_positions == TRUE,], alpha = 0.4) +
+#  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(SRR7245880,SRR7245881), colour = "magenta", alpha = 0.9) +  
   #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
   labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
   scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) + 
   annotation_logticks() +
   #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
   #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  ggtitle("Correlation between technical replicates") +
+  ggtitle("Allele Frequencies of technical replicates") +
   theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13)) +
-  geom_abline(intercept = 0, slope = 1, alpha = 0.4) +
-  geom_abline(intercept = 0.0001, slope = 1, alpha = 0.4)
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13),legend.position = c(0.8, 0.2), legend.title = element_blank()) +
+  #geom_abline(intercept = 0, slope = 1, alpha = 0.4) +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.2, colour = "red")
 bulk_rep_corr_plot_all_nofilt
-ggsave(file=paste0(outdir, "bulk_replicate_scatter_all_coloured.png"), plot=bulk_rep_corr_plot_all_nofilt, width = 4, height = 4, units = "in")
+ggsave(file=paste0(outdir, "bulk_replicate_scatter_all_coloured.png"), plot=bulk_rep_corr_plot_all_nofilt, width = 8, height = 8, units = "in")
+
+# 1 read on each strand: 
+## Filter status: more than one read on both strands
+index <- bcf_SRR_table_list[[i]]$Variant_ADF > 0 & bcf_SRR_table_list[[i]]$Variant_ADR > 0
+bcf_SRR_table_list[[i]]$Filter[index] <- "PASS"
+
+#Technical replicate plot AFs of bulks (OUR pipeline): plot all variants, colour if one of Ludwig's 44 high confidence
+bulk_rep_corr_plot_all_nofilt <- ggplot(bulk_replicates_all_nofilt, mapping = aes(SRR7245880,SRR7245881, colour = Colours, alpha = 1)) +
+  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$validated == FALSE & bulk_replicates_all_nofilt$Ludwig_positions == FALSE,], alpha = 0.1, colour = "black") +
+  scale_colour_manual(values = c("Not Lineage Validated" = "Black", "Lineage Validated" = "green", "One of the 44 Ludwig positions" = "magenta")) +
+  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$validated == TRUE | bulk_replicates_all_nofilt$Ludwig_positions == TRUE,], alpha = 0.4) +
+  #  geom_point(data = bulk_replicates_all_nofilt[bulk_replicates_all_nofilt$Ludwig_positions == TRUE, ], aes(SRR7245880,SRR7245881), colour = "magenta", alpha = 0.9) +  
+  #geom_point(data=bulk_replicates_Ludwigs_nofilt, aes(sqrt(Bulk_SRR7245880),sqrt(Bulk_SRR7245881), colour = "red")) +
+  labs(x ="Bulk replicate SRR7245880", y ="Bulk replicate SRR7245881") +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) + 
+  annotation_logticks() +
+  #scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  #scale_y_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
+  ggtitle("Allele Frequencies of technical replicates") +
+  theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13),legend.position = c(0.8, 0.2), legend.title = element_blank()) +
+  #geom_abline(intercept = 0, slope = 1, alpha = 0.4) +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.2, colour = "red")
+bulk_rep_corr_plot_all_nofilt
+ggsave(file=paste0(outdir, "bulk_replicate_scatter_all_coloured.png"), plot=bulk_rep_corr_plot_all_nofilt, width = 8, height = 8, units = "in")
 
 
+SRR80 <- SRR_table_list$SRR7245880[,c("Pos","VariantLevel", "EqualWeightVariantLevel","Coverage")]
+colnames(SRR80) <- c("Pos", "SRR7245880_VariantLevel", "SRR7245880_EqualWeightVariantLevel","SRR7245880_Coverage")
+SRR81 <- SRR_table_list$SRR7245881[,c("Pos","VariantLevel", "EqualWeightVariantLevel","Coverage")]
+colnames(SRR81) <- c("Pos", "SRR7245881_VariantLevel", "SRR7245881_EqualWeightVariantLevel","SRR7245881_Coverage")
+Replicate_Covs <- merge(SRR80, SRR81, by = "Pos")
+Replicate_Covs_plot <- ggplot(Replicate_Covs, aes(SRR7245880_Coverage,SRR7245881_Coverage)) +
+  geom_point(aes(1/SRR7245880_Coverage,1/SRR7245881_Coverage, colour = "1/SRR*80 coverage, 1/SRR*81 coverage")) +
+  geom_point(aes(2/SRR7245880_Coverage,1/SRR7245881_Coverage, colour = "2/SRR*80 coverage, 1/SRR*81 coverage")) +
+  geom_point(aes(3/SRR7245880_Coverage,1/SRR7245881_Coverage, colour = "3/SRR*80 coverage, 1/SRR*81 coverage")) +
+  geom_point(aes(3/SRR7245880_Coverage,2/SRR7245881_Coverage, colour = "3/SRR*80 coverage, 2/SRR*81 coverage")) +
+  #scale_color_gradient2(low = "green", mid = "blue", high = "red", midpoint = 8000) +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.2, colour = "red") +
+  ggtitle("Simulated No. reads / actual coverage per site of technical replicates (SRR7245880,SRR7245881)") +
+  theme(panel.grid.major = element_line(colour = "lightgrey"), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=13),legend.position = c(0.45, 0.9), legend.title = element_blank()) +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) + 
+  xlab("SRR7245880 simulated Allele Frequency") + ylab("SRR7245881 simulated Allele Frequency") +
+  annotation_logticks() 
+Replicate_Covs_plot
+ggsave(file=paste0(outdir, "logstripestheory.png"), plot=Replicate_Covs_plot, width = 8, height = 8, units = "in")
+
+Replicate_Covs_plot <- ggplot(Replicate_Covs, aes(SRR7245880_Coverage,SRR7245881_Coverage, colour = Pos)) +
+  geom_point(alpha = 0.1)+
+  scale_color_gradient2(low = "green", mid = "blue", high = "red", midpoint = 8000) +
+  geom_abline(intercept = 0, slope = 1, alpha = 0.2, colour = "red") +
+  scale_x_log10(labels = scales::comma) + scale_y_log10(labels = scales::comma) + 
+  annotation_logticks() 
+Replicate_Covs_plot
 
 #Fig 3?
 comparison_plots <- list(corr_plot_all, bulk_rep_corr_plot_all_nofilt)
@@ -2039,7 +2102,7 @@ for (pos in sort(unique(lin_mut_load_change_lin_val$Pos))){
     ggtitle(plot_title) +
     scale_x_continuous(breaks = lin_mut_load_change_lin_val$Generation, labels = lin_mut_load_change_lin_val$Generation_labs) +
     expand_limits(y = c(0,0.01)) +
-    geom_hline(yintercept=0.01, size = 1,linetype="dotted", colour = "red") +
+    geom_hline(yintercept=lin_val_threshold, size = 1,linetype="dotted", colour = "red") +
     labs(y = "Allele Frequency")
   print(mut_plot)
   #plot_list[[((n-1)%%6 + 1)]] <- mut_plot
@@ -2090,57 +2153,3 @@ dev.off()
 ##[1] 0.0009469697
 #SRR_880_As[50]
 ##0.0004737091
-
-
-## return vectors for each lineage
-vectors_per_lineage <- list()
-for (p in paths){
-  if (p[[1]] == "#"){
-    print("skipping comment line...")
-    next
-  }
-  if (str_detect(p[[1]], 'LUDWIG')){
-    print(paste0("skipping LUDWIG line: ", p[[1]]))
-  }
-  SRRs_in_path <- list()
-  index=0
-  at.positions = F
-  
-  for (string in p){
-    print(string)
-    index=index+1
-    print(index)
-    print(at.positions)
-    # skip lineage name
-    if (index==1){
-      next
-    }
-    # From lineage_paths.txt: add SRR to list, until the positions of variants of interest are listed
-    # instead. This is indicated by "VARIANTS_OF_INTEREST" after the last SRR name, 
-    # and followed by the positions of variants of interest. eg.:
-    # LINEAGE_PATH_NAME SRR1 SRR2 SRR3 VARIANTS_OF_INTEREST 1495 12788
-    if (string == "VARIANTS_OF_INTEREST") {
-      print("Reached VARIANTS_OF_INTEREST for this lineage")
-      at.positions <- T
-      print(paste("n =",n))
-      next
-    }
-    paste(string, at.positions)
-    if (at.positions == F){
-      SRRs_in_path <- c(SRRs_in_path, string)
-    }
-    if (at.positions == T){
-      break
-    }
-  }
-  last_SRR <- SRRs_in_path[length(SRRs_in_path)]
-  
-  vectors_per_lineage[[ p[[1]] ]] <- list()
-  for (n in seq.int(1,length(SRRs_in_path),1)){
-    vectors_per_lineage[[ p[[1]] ]][n] <- vector_list[ SRRs_in_path[n] ]
-  }
-    
-}
-
-vector_list
-
