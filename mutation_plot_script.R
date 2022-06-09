@@ -38,13 +38,13 @@ library("ComplexHeatmap")
 # Change boolian to choose
 use_pileups <- TRUE
 filter_strand_bias <- FALSE  # remove all allele reads that have strand bias from bcf_SRR_table
-min_1_each_strand <- TRUE  # remove all sites that have 0 reads 
+min_1_each_strand <- FALSE  # remove all sites that have 0 reads 
 equally_weighted <- FALSE  # use EqualWeightVariantLevel: both strands have equal influence on AF, not skewed by coverage
 create_vectors <- FALSE
 pre_plots <- FALSE
 post_plots <- FALSE
 Ludwig_comparison <- TRUE
-exploratory_plots <- FALSE
+exploratory_plots <- TRUE
 position_specific_plots <- TRUE
 print(paste0("Make large exploratory plots: ", exploratory_plots))
 
@@ -289,8 +289,8 @@ for (i in SRR_names){
   if (min_1_each_strand == TRUE){
     ## Filter status: more than one read on both strands
     index <- bcf_SRR_table_list[[i]]$Variant_ADF > 0 & bcf_SRR_table_list[[i]]$Variant_ADR > 0
-    bcf_SRR_table_list[[i]]$Filter[index] <- "PASS"
-    bcf_SRR_table_list[[i]]$Filter[!index] <- "STRAND_BIAS"
+    #bcf_SRR_table_list[[i]]$Filter[index] <- "PASS"
+    #bcf_SRR_table_list[[i]]$Filter[!index] <- "STRAND_BIAS"
     bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][index,]
     #bcf_SRR_table_list[[i]] <- bcf_SRR_table_list[[i]][which(bcf_SRR_table_list[[i]]$Variant_ADF > 0 & bcf_SRR_table_list[[i]]$Variant_ADR > 0),]
   }

@@ -14,7 +14,7 @@ module load parallel/20200522-GCCcore-10.2.0
 
 
     ## check if sratools is installed
-if [ -f "sratoolkit.2.11.0-ubuntu64/README.md" ]; then 
+if [ -f "software/sratoolkit.2.11.0-ubuntu64/README.md" ]; then 
   echo "SRA-tools is installed";
 else
   echo "SRA-tools is not installed. Please see the README.md document to install and configure.";
