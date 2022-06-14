@@ -22,7 +22,7 @@ else
 fi
 
 # Export to shell PATH variable
-export PATH=`pwd`/software/bin:$PATH:`pwd`/sratoolkit.2.11.0-ubuntu64/bin/;
+export PATH=`pwd`/software/bin:$PATH:`pwd`/software/sratoolkit.2.11.0-ubuntu64/bin/;
 
 
 # create directories
