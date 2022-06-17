@@ -45,8 +45,8 @@ while [[ $# -gt 0 ]]; do
 
   -h|--help)
     echo "-g|--group-name       base name for data/group_(group_name)_SRRs.txt, eg. SRP149534"
-    echo "-r|--reference        nuc/reference.fa root name without .fa, eg. nuc/parent_consensus"
-    echo "-b|--bam-directory    name of bam directory without / eg. bam_cnodups"
+    echo "-r|--reference        nuc/reference.fa file root name (without .fa), eg. nuc/parent_consensus or nuc/hg38"
+    echo "-b|--bam-directory    name of bam directory without / eg. bam_consensus_nodups"
     shift # past argument
     exit 1 
   ;;
@@ -82,9 +82,9 @@ fi
 
   ## build indices and set reference genome ##
 
-if test -f "${ref}.1.bt2"; then
+if test -f "nuc/${ref}.1.bt2"; then
   echo "Reference indexes (${ref}.1.bt2 etc.) found."
-elif test -f "${ref}.fa"; then
+elif test -f "nuc/${ref}.fa"; then
   echo "Reference fasta file found but not indexed, indexing..."
   bowtie2-build --threads 8 ${ref}.fa ${ref}; 
   echo "bowtie2 reference indices built"
