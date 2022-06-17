@@ -624,7 +624,79 @@ NOTES
 - [x] Find reason for AF difference between plots: STRAND\_BIAS sites removed (PASS) vs nofilt
   - No difference in AF just some seq err peaks removed!!
 - [ ] How low an AF before correlation plot blobs?
-
 - [ ] Each strand equally weighted or by no. reads?
   - atm the strand with more coverage influences AF the most. If removing sites with low coverage/unequal strand weight
-  - See results
+   See results
+
+## Friday 13th May
+- [x] Create vectors without supporting reads of strand bias variants
+- [ ] log plots of correlations
+
+## Monday 16th May 
+- [ ] 
+
+## Tuesday 17th May
+- [ ] Run pipeline wih weighted AFs
+  - [ ] compare plots
+- [ ] tidy and make frd and rv AFs, types of strand bias, difference columns 
+
+## Wednesday 18th
+- [ ] implement min no reads on pileup data
+- [ ] degree difference in AF depend on no supporting reads
+
+## Thursday 19th
+- [ ] check strand bias filtering for all positions that have 0 on one strand
+- [x] write parse\_longest\_paths.txt for Jordan
+- [x] email Jordan with lineage tree reading
+
+## Friday 20th May
+- [ ] Run pipeline wih weighted AFs
+  - [ ] compare plots
+- [ ] difference between weighted and unweighted, and AF strand bias 
+- [ ] check strand bias filtering for all positions that have 0 on one strand
+- [ ] bcftools SB values with strand difference in AF
+
+- strand bias adjustment should incorporate no supporting reads and AF
+
+## Thursday
+- [ ] change lineage validation to if >=1 read on both strands, not >0.01 AF in at least onei
+  - [ ] then >= 1 read on both strands in at least one sample
+- [ ] option to change results dir
+- [ ] implement GATK strand bias measure
+- [ ] email Conor
+  - change alpha of plots
+  - change axis of plots 
+  - thoughts on working remotely
+
+## Monday 30th May
+- [ ] min 1 read per strand
+
+## Tuesday 31st May
+- [x] implement GATK strand bias 
+- [ ] how to implement filters into stats? 
+  - raw reads vs filtered?
+  - for any autocorrelated, a test for correlation between lineages would help identify sequencing error eg. 16175 in min_1_read, 309 310
+- [ ] CALL IT DESK
+- [ ] remove lineage labels from plots which aren't in lineage_paths.txt
+- [ ] Proportion test
+- [x] View results of all SB methods
+
+
+## Monday 6th June
+- [ ] Proportion test vs others
+- [ ] Message Jordan
+- [x] actually call the IT desk
+- [ ] g score between autocorrelation of all vs autocorrelation of strand bias calls
+- [ ] write methods for Jordan
+
+## Tuesday 7th June
+- [ ] compare and decide on strand bias measure
+  - [ ] strand_bias_ratio_AF_SqrDiff
+  - [ ] how each works
+Questions
+- How to implement strand bias with autocorrelation stats
+
+## Wednesday 8th June
+- [ ] get missing values for bcftools
+- [ ] error log $>
+- [ ] add checks the file is present

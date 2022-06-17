@@ -13,7 +13,7 @@ module load MultiQC/1.7-foss-2018b-Python-3.6.6;
 
 export PATH=`pwd`/software/bin/:$PATH
 
-python software/MultiQC/setup.py install
+python3 software/MultiQC/setup.py install
 
 mkdir fastQC_results;
 
