@@ -4,12 +4,12 @@
 ====================================
 
 Maps the sequencing reads from the .fasta files to the reference genome's sequence, to create an aliginment in the .bam format. Once aligned, mutations can be identified, eg.
-                   TTGGGGACTCTGG
-                   TTGGGGACTC  <- successfully aligned read
-                  TTAGGGGAC  <- successfully aligned read with a potential T->C mutation 
-             TCGCGTTTGGG
-         GGATTCGC
-ref seq:   ATTCGCGTTTGGGGACTCT
+.                   TTGGGGACTCTGG
+.                   TTGGGGACTC  <- successfully aligned read
+.                  TTAGGGGAC  <- successfully aligned read with a potential T->C mutation 
+.             TCGCGTTTGGG
+.         GGATTCGC
+.ref seq:   ATTCGCGTTTGGGGACTCT
 
 ### Stages in the script:
 1. Parse arguments
