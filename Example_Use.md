@@ -1,8 +1,12 @@
 ### Example Usage for bulk ATAC-seq of TF1 cells
+This guide demonstrates how to run the full pipeline on a linux machine (not the newcastle HPC).
+Some quick notes:
+- When running scripts, the warning messages "module not found" can be ignored: refers to commands left in the script so that they can be ran on the newcastle HPC with the SLURM workload manager.
+- The "group name" referred to throughout is used to select a subset of clones from all the sequencing data uploaded to the Sequence Read Archive by Ludwig _et al._, 2019. To include all bulk ATAC-seq sequencing data of TF1 clones use the group name "SRP149534". To test a smaller subset, "B11" can be used, but any combination of clones can be selected; see details in ________.
+
+## Summary of pipeline
 
 Stages of the pipeline are split into 6 bash scripts. This is to allow different stages to be evaluated and adjusted if necessary before proceeding. For example: checking the quality of the sequencing data before alignment.
-
-Run scripts for the following stages by submitting batch jobs to SLURM partitions: sbatch SCRIPT_NAME.sh
 
 1. Prefetch .sra files from the sequence read archive, and convert to fastq format (prefetch_files.sh)
 2. Assess prealignment quality (QC.sh)
@@ -11,21 +15,26 @@ Run scripts for the following stages by submitting batch jobs to SLURM partition
 5. Variant call (variant\_call.sh)
 6. Visualise and explore clonal expansion in heteroplasmic variants (plot\_mutations.sh)
 
+Scripts are generally run as any bash script: `bash SCRIPTNAME.sh`  
+
+Additional software must be downloaded first: `bash install_software.sh`
+
 **1. prefetch_files.sh**
 ===============================================
-===============================================
+Downloads the raw sequencing data from the sequence read archive 
 
 **3. analyse.sh**
 ====================================
 
 Maps the sequencing reads from the .fasta files to the reference genome's sequence, to create an aliginment in the .bam format. Once aligned, mutations can be identified, eg.
------------------TTGGGGACTCTGG-
------------------TTGGGGACTC---- <--aligned read
-----------------TT*A*GGGGAC------ <--aligned read with a potential T>A mutation
------------TCGCGTTTGGG---------
--------GGATTCGC----------------
+<pre>
+                 TTGGGGACTCTGG   
+                 TTGGGGACTC     <--aligned read  
+                TTAGGGGAC       <--aligned read with a potential T>A mutation  
+           TCGCGTTTGGG           
+       GGATTCGC                 
 ref-seq: ATTCGCGTTTGGGGACTCT   
-
+</pre>
 ### Stages in the script:
 1. Parse arguments
 2. Index reference sequence
