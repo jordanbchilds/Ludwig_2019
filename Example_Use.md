@@ -22,11 +22,20 @@ Additional software must be downloaded first: `bash install_software.sh`
 **1. prefetch_files.sh**
 ===============================================
 Downloads the raw sequencing data of the clones from the sequence read archive (SRR\*.sra) and converts it into fastq format.  
-### Stages in the script:
 
 ### Output
 1. Information about which clones have been selected: "data/group_GROUPNAME_SRRs.txt" and "data/group_GROUPNAME_SRXs.txt". Contains the SRR names of the clones included under that GROUPNAME.
 2. fastq files of each clone: "fastq/SRR\*\_1.fastq" and "fastq/SRR\*\_2.fastq" for the forward and reverse reads of a clone, eg. SRR7245880_1.fastq
+
+### Information needed to run: (`bash prefetch_files.sh -h` for help/options)
+- group name / previously chosen keyword used to choose and extract sequencing runs from data/SraRunTable.txt, eg. B11 (five clones in the B11 lineage), SRP149534 (sequencing runs of ATAC-seq of TF1 clones)  
+
+### Execute
+eg. `bash prefetch_files.sh --group-name SRP149534`
+
+**2. QC.sh**
+===============================================  
+#TODO  
 
 **3. analyse.sh**
 ====================================
@@ -101,3 +110,6 @@ Need to know:
 Then execute:
 - change input and output directories in the script, and the group name.
 - `bash variant_call.sh`
+
+**6. plot_mutations.sh**
+Call me with what you need from it Jordan, bit overly complicated and has different requirements I think hahah
