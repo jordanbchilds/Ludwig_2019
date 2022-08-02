@@ -1,8 +1,7 @@
 ### Example Usage for bulk ATAC-seq of TF1 cells
-This guide demonstrates how to run the full pipeline on a linux machine (not the newcastle HPC).
-Some quick notes:
-- When running scripts, the warning messages "module not found" can be ignored: refers to commands left in the script so that they can be ran on the newcastle HPC with the SLURM workload manager.
-- The "group name" referred to throughout is used to select a subset of clones from all the sequencing data uploaded to the Sequence Read Archive by Ludwig _et al._, 2019. To include all bulk ATAC-seq sequencing data of TF1 clones use the group name "SRP149534". To test a smaller subset of five clones in the B11 lineage, "B11" can be used, but any combination of clones can be selected; see details in ________.
+This guide demonstrates how to run the full pipeline on a linux machine (not the newcastle HPC).  
+> - When running scripts, the warning messages "module not found" can be ignored: refers to commands left in the script so that they can be ran on the newcastle HPC with the SLURM workload manager.
+> - The "group name" referred to throughout is used to select a subset of clones from all the sequencing data uploaded to the Sequence Read Archive by Ludwig _et al._, 2019. To include all bulk ATAC-seq sequencing data of TF1 clones use the group name "SRP149534". To test a smaller subset of five clones in the B11 lineage, "B11" can be used, but any combination of clones can be selected; see details in 'QC.sh' and 'prefetch\_files.sh'.  
 
 ## Summary of pipeline
 
