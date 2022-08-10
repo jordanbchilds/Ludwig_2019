@@ -32,34 +32,30 @@ Run scripts for the following stages by submitting batch jobs to SLURM partition
 5. Variant call ([variant\_call.sh](variant\_call.sh))
 6. Visualise and explore clonal expansion in heteroplasmic variants ([plot\_mutations.sh](plot\_mutations.sh))
 
-**prefetch\_files.sh** is a BASH shell script. Calls **parse.py** to get metadata (creates SRR\_Acc\_List.txt with all the SRR names: one name per sample, for all the samples Ludwig et al., 2019). Uses SRR names in SRR\_Acc\_List.txt to download SRR files from the sequence read archive. Checks to make sure each SRR has been downloaded and is complete. If not, attempts to redownload. Saves .sra files to sra/sra/SRR\*.sra
+**prefetch\_files.sh** is a BASH shell script. Calls **parse.py** to get metadata (data/SRR\_Acc\_List.txt) with all the SRR names: one name per sample, for all the samples Ludwig et al., 2019). Uses SRX names in SRR\_Acc\_List.txt to download SRR files from the sequence read archive. Checks to make sure each SRR has been downloaded and is complete and reattempts download if not. Converts .sra files to .fastq format.
 
 **parse.py** is a custom python script called by analyse.sh which gets the connection between GSM IDs (e.g. from metadata [here](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE115218) and SRX IDs, which are needed to download the actual raw data.
 
 **QC.sh** is a BASH shell script. Takes the SRR\*.fastq files in the group/s defined in **categories.txt**, and produces a quality report for each file using the program fastQC (results in fastQC\_results/). Then produces a summary of the whole group's quality using the program multiQC (results in multiQC/). See **categories.txt** for details.
 
-**categories.txt** is a text file which contains one "SRP" number per line. This refers to a group of sequencing runs from Ludwig et al., 2019. eg."SRP149534" refers to all TF1 cells bulk-ATAC-seq samples. Select one of the 14 subseries from GSE115218 GEO entry of Ludwig et al., data to see the corresponding "SRP" number: [https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE115218]
+**analyse.sh** is a BASH shell script that builds indices from the reference genome, aligns reads to the whole human genome, using [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml). In this way reads of NUMTs (nuclear mitochondrial DNA: transposed from the mitochondrial genome to the nuclear genome) should not be mapped to the mitochondrial genome where they can introduce false variant calls. The raw alignment results (alignment\_stdout.txt) and a summary (alignment\_summary.txt) are produced.
 
-**analyse.sh** is a BASH shell script that builds indices from the reference genome, aligns reads to the whole human genome, using [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml). In this way reads of NUMTs (nuclear mitochondrial DNA: transposed from the mitochondrial genome to the nuclear genome) should not be mapped to the mitochondrial genome where they can introduce false variant calls. The raw alignment results (alignment\_stdout.txt) and a summary (alignment\_summary.txt) are produced. 
+**post\_alignment\_QC.sh** is a BASH shell script that outputs files with detailed stats of the alignment, both for the raw data and after applying filters for base and mapping quality. For each clone: mean coverage, base quality, per genomic position coverage and base quality are calculated. Can be repeated for different thresholds.
 
-**post\_alignment\_QC.sh** is a BASH shell script that TODO  
+**variant_call.sh** is a BASH shell script that filters the reads and outputs the pileups of all mutations.
  
 **plot\_mutations\_script.R** is an R script which outputs tables and plots to summarise and visualise heteroplasmic point mutations, to explore how allele frequencies change through different cell lineages. It also produces plots for different stages of pipeline, including pre-alignment quality plots, post-alignment. Finally it provides comparisons with the 44 high confidence alleles detected by Ludwig et al., 2019. 
 It takes annotated mutserve variant files, coverage and read depth files, sample metadata, and Ludwig et al., allele frequency data, and lineage path information specified in **lineages\_paths.txt**.
 
 ### Variant Calling
 1. Read filtering: 
-* Mapping quality >18
-* Base quality >20
-* Alignment quality >30
+* Mapping quality >4 
+* Base quality >30
 2. Variant filtering:
 * Allele frequency >0.001 and < 0.990 (heteroplasmic)
-* Exclude sites with coverage of <10 reads per strand
-* Exclude alleles with < 3 reads per allele per strand
-* Mutserve applies a maximum likelihood model to account for sequencing errors
-* Mutserve annotates calls with strand bias
-3. __Lineage Validation__
-* Mutation must be _present in >1 clone in a lineage_, and have an _allele frequency >0.01 in at least one clone_ in the lineage. This allows confidence in a mutation with an allele frequency above the standard minimum threshold for sequencing/PCR errors (0.01) to be extended to low-level and indirectly inherited mutations (which would otherwise be indistinguishable from PCR error) at the same genomic position of related clones, in the same lineage.
+* Exclude alleles with < 1 reads per allele per strand
+3. __Lineage Validation__  <- FILTERING FOR MASTER'S THESIS, EXCLUDED FOR AUTOCORRELATION ANALYSIS IN UPDATED PIPELINE
+* Mutation must be _present in >=2 clone in a lineage_, and have an _allele frequency >0.01 in at least one clone_ in the lineage. This allows confidence in a mutation with an allele frequency above the standard minimum threshold for sequencing/PCR errors (0.01) to be extended to low-level and indirectly inherited mutations (which would otherwise be indistinguishable from PCR error) at the same genomic position of related clones, in the same lineage.
 
 Below is an exploratory plot of unfiltered, heteroplasmic or low-level variants for the samples in one possible path through the G11 lineage (Fig. 2). Using this plot (and tables of heteroplasmic mutations' allele frequencies) candidate mutations which demonstrate a pattern of autocorrelated allele frequencies throughout a specific lineage, indicative of clonal expansion, can be visually identified. Then a mutation load profile can be plotted for each candidate position (see Fig. 3). Each graph represents the mitochondrial genome of an clone in a specific lineage (see the [clone lineage tree](Lineage_tree_README.jpg)), with the genomic position on the x axis, and allele frequency of _heteroplasmic_ mutations on the y axis.   
 
