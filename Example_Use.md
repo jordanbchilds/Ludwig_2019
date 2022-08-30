@@ -1,8 +1,11 @@
 ### Example Usage for bulk ATAC-seq of TF1 cells
+This guide demonstrates how to run the full pipeline on a linux machine (not the newcastle HPC).  
+> - When running scripts, the warning messages "module not found" can be ignored: refers to commands left in the script so that they can be ran on the newcastle HPC with the SLURM workload manager.
+> - The "group name" referred to throughout is used to select a subset of clones from all the sequencing data uploaded to the Sequence Read Archive by Ludwig _et al._, 2019. To include all bulk ATAC-seq sequencing data of TF1 clones use the group name "SRP149534". To test a smaller subset of five clones in the B11 lineage, "B11" can be used, but any combination of clones can be selected; see details in 'QC.sh' and 'prefetch\_files.sh'.  
+
+## Summary of pipeline
 
 Stages of the pipeline are split into 6 bash scripts. This is to allow different stages to be evaluated and adjusted if necessary before proceeding. For example: checking the quality of the sequencing data before alignment.
-
-Run scripts for the following stages by submitting batch jobs to SLURM partitions: sbatch SCRIPT_NAME.sh
 
 1. Prefetch .sra files from the sequence read archive, and convert to fastq format (prefetch_files.sh)
 2. Assess prealignment quality (QC.sh)
@@ -11,21 +14,40 @@ Run scripts for the following stages by submitting batch jobs to SLURM partition
 5. Variant call (variant\_call.sh)
 6. Visualise and explore clonal expansion in heteroplasmic variants (plot\_mutations.sh)
 
+Scripts are generally run as any bash script: `bash SCRIPTNAME.sh`, with any required arguments.  
+
+Additional software must be downloaded first: `bash install_software.sh`
+
 **1. prefetch_files.sh**
 ===============================================
-===============================================
+Downloads the raw sequencing data of the clones from the sequence read archive (SRR\*.sra) and converts it into fastq format.  
+
+### Output
+1. Information about which clones have been selected: "data/group_GROUPNAME_SRRs.txt" and "data/group_GROUPNAME_SRXs.txt". Contains the SRR names of the clones included under that GROUPNAME.
+2. fastq files of each clone: "fastq/SRR\*\_1.fastq" and "fastq/SRR\*\_2.fastq" for the forward and reverse reads of a clone, eg. SRR7245880_1.fastq
+
+### Information needed to run: (`bash prefetch_files.sh -h` for help/options)
+- group name / previously chosen keyword used to choose and extract sequencing runs from data/SraRunTable.txt, eg. B11 (five clones in the B11 lineage), SRP149534 (sequencing runs of ATAC-seq of TF1 clones)  
+
+### Execute
+eg. `bash prefetch_files.sh --group-name SRP149534`
+
+**2. QC.sh**
+===============================================  
+#TODO  
 
 **3. analyse.sh**
 ====================================
 
 Maps the sequencing reads from the .fasta files to the reference genome's sequence, to create an aliginment in the .bam format. Once aligned, mutations can be identified, eg.
------------------TTGGGGACTCTGG-
------------------TTGGGGACTC---- <--aligned read
-----------------TT*A*GGGGAC------ <--aligned read with a potential T>A mutation
------------TCGCGTTTGGG---------
--------GGATTCGC----------------
+<pre>
+                 TTGGGGACTCTGG   
+                 TTGGGGACTC     <--aligned read  
+                TTAGGGGAC       <--aligned read with a potential T>A mutation  
+           TCGCGTTTGGG           
+       GGATTCGC                 
 ref-seq: ATTCGCGTTTGGGGACTCT   
-
+</pre>
 ### Stages in the script:
 1. Parse arguments
 2. Index reference sequence
@@ -87,3 +109,6 @@ Need to know:
 Then execute:
 - change input and output directories in the script, and the group name.
 - `bash variant_call.sh`
+
+**6. plot_mutations.sh**
+Call me with what you need from it Jordan, bit overly complicated and has different requirements I think hahah
