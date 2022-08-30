@@ -22,7 +22,7 @@ Specific properties are expected in mutations which show clonal expansion: they 
 Stages of the pipeline are split into 6 bash scripts. This is to allow different stages to be evaluated and adjusted if necessary before proceeding. For example: the quality of the data should be checked before alignment.
 
 
-Run scripts for the following stages by submitting batch jobs to SLURM partitions: `sbatch SCRIPT_NAME.sh`
+If running on the Newcastle rocket HPC, run scripts by submitting batch jobs to SLURM partitions: `sbatch SCRIPT_NAME.sh`. Otherwise run as normal `bash SCRIPT_NAME.sh`
 
 
 1. Prefetch .sra files from the sequence read archive, and convert to fastq format ([prefetch\_files.sh](prefetch\_files.sh))
@@ -49,11 +49,11 @@ It takes annotated mutserve variant files, coverage and read depth files, sample
 
 ### Variant Calling
 1. Read filtering: 
-* Mapping quality >18
-* Base quality >20
-* Alignment quality >30
+* Mapping quality >=4
+* Base quality >=20
+* Alignment quality >=30
 2. Variant filtering:
-* Allele frequency >0.001 and < 0.990 (heteroplasmic)
+* Allele frequency >=0.001 and <= 0.990 (heteroplasmic)
 * Exclude sites with coverage of <10 reads per strand
 * Exclude alleles with < 3 reads per allele per strand
 * Mutserve applies a maximum likelihood model to account for sequencing errors
@@ -74,7 +74,9 @@ For each candidate mutation, a mutation load profile (Fig. 3 below) can be used 
 Using exploratory plots like the example above (Fig. 2) and the tables of heteroplasmic variant frequencies, individual point mutations which may show stochastic changes in allele frequency can be identified, and their mutation load profiles for a lineage plotted. 
 For each candidate mutation, a mutation load profile (Fig. 3 below) can be used to observe the change in allele frequency between generations.  
 # Additional software 
-Most of the programs used in this pipeline are already installed as a SLURM module, or are automatically downloaded and installed. However, SRAtoolkit must be installed _interactively_. To do this, execute **configure\_sratools.sh** line by line from the login node terminal (ie. do not submit script to SLURM), by pasting and executing all commands from [configure_sratools.sh](configure_sratools.sh). When prompted set default configuration by inputting: "f","y","o","x","y","o".
+Most of the programs used in this pipeline are already installed as a SLURM module, or can be automatically downloaded and installed using [scripts/install\_software.sh](install\_software.sh). However, SRAtoolkit must be installed _interactively_ by pasting and executing [scripts/configure\_sratools.sh](configure\_sratools.sh) _line by line_. On the rocket HPC, do this from the login node terminal (ie. do not submit script to SLURM). When prompted set default configuration by inputting: "f","y","o","x","y","o" (see the [scripts/configure\_sratools.sh](script) for more detail).
+
+
 
 ## TODO Overall
 (See Progress\_log.md for shorter term aims)
