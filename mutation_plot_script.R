@@ -28,7 +28,6 @@ lapply(packages, FUN = function(i) {
 
 if (!require("ComplexHeatmap")){
   BiocManager::install("ComplexHeatmap")
-  library("ComplexHeatmap")
 }
 library("ComplexHeatmap")
 
@@ -39,16 +38,16 @@ library("ComplexHeatmap")
 use_pileups <- TRUE
 filter_strand_bias <- FALSE  # remove all allele reads that have strand bias from bcf_SRR_table
 min_1_each_strand <- FALSE  # remove all sites that have 0 reads 
-equally_weighted <- FALSE  # use EqualWeightVariantLevel: both strands have equal influence on AF, not skewed by coverage
-create_vectors <- FALSE
+equally_weighted <- TRUE  # use EqualWeightVariantLevel: both strands have equal influence on AF, not skewed by coverage
+create_vectors <- TRUE
 pre_plots <- FALSE
 post_plots <- FALSE
 Ludwig_comparison <- TRUE
-exploratory_plots <- TRUE
+exploratory_plots <- FALSE
 position_specific_plots <- TRUE
 print(paste0("Make large exploratory plots: ", exploratory_plots))
 
-lin_val_threshold <- 0.005
+lin_val_threshold <- 0
 
   ###########################  DATA  ############################
   # Controls for which vcf/ directory and which post-alignment files in alignment_stats/ 
@@ -64,7 +63,7 @@ vcfdir <- paste0("vcf", append_string)
 bcfdir <- paste0("mpileups", append_string, "_mq4_bq23.8")
 group_name <- "SRP149534"
 
-outdir <- "results_min_1_read_per_strand_linval_no005cutoff/"
+outdir <- "results_allreads4J/"  # TODO read argument from command line
 
 
   ####################  Read SRR files  ########################
@@ -249,13 +248,13 @@ for (i in SRR_names){
       fwd_vector[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G", "forward")
       fwd_vector[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T", "forward")
       filestring <- paste0(outdir, i,"_fwd_vector.csv")
-      write.csv(vector_list[[i]], file = filestring, quote = F)
+      write.csv(fwd_vector[[i]], file = filestring, quote = F)
       rv_vector[[i]] <- data.frame("As"=AF_vectors(bcf_SRR_table_list[[i]], "A", "reverse"))
       rv_vector[[i]]$Cs <- AF_vectors(bcf_SRR_table_list[[i]], "C", "reverse")
       rv_vector[[i]]$Gs <- AF_vectors(bcf_SRR_table_list[[i]], "G", "reverse")
       rv_vector[[i]]$Ts <- AF_vectors(bcf_SRR_table_list[[i]], "T", "reverse")
       filestring <- paste0(outdir, i,"_rv_vector.csv")
-      write.csv(vector_list[[i]], file = filestring, quote = F)
+      write.csv(rv_vector[[i]], file = filestring, quote = F)
     }
     
   }
