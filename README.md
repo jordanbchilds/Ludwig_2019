@@ -5,7 +5,7 @@
 &nbsp;  
 &nbsp;  
 # A framework for tracking heteroplasmic mitochondrial mutations through cell lineages
-> This research project was carried out and written up as the thesis for my MSc Bioinformatics degree at Newcastle University, continued as a temporary bioinformatic research assistant for the Wellcome Centre for Mitochondrial Research. It was supervised by Dr Conor Lawless and Dr Dasha Deen. My full thesis can be found [here](./A_framework_for_tracking_heteroplasmic_mitochondrial_mutations_through_cell_lineages.pdf).
+> This research project was carried out and written up as the thesis for my MSc Bioinformatics degree at Newcastle University, and continued as a temporary bioinformatic research assistant for the Wellcome Centre for Mitochondrial Research. It was supervised by Dr Conor Lawless and Dr Dasha Deen. My full thesis can be found [here](./A_framework_for_tracking_heteroplasmic_mitochondrial_mutations_through_cell_lineages.pdf).
 
 This specialized variant calling pipeline was developed to identify (non-pathogenic) mitochondrial mutations undergoing clonal expansion in human cell lineages. Improved understanding of clonal expansion may be necessary for the development of treatments for mitochondrial diseases in the future; this pipeline is intended to provide allele frequency data for mathematical modelling of mtDNA population dynamics.
 
